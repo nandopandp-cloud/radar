@@ -47,6 +47,7 @@ export function Painel({ usuario }: { usuario: { nome: string; email: string } }
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [modoEmail, setModoEmail] = useState<'SMTP' | 'PREVIEW' | null>(null);
 
   const notificar = useCallback((texto: string, tipo: Toast['tipo'] = 'info') => {
     const id = Date.now() + Math.random();
@@ -56,13 +57,15 @@ export function Painel({ usuario }: { usuario: { nome: string; email: string } }
 
   const carregar = useCallback(async () => {
     try {
-      const [rc, rd] = await Promise.all([
+      const [rc, rd, rs] = await Promise.all([
         fetch('/api/colaboradores'),
         fetch('/api/demandas'),
+        fetch('/api/status'),
       ]);
       if (!rc.ok || !rd.ok) throw new Error('Falha ao carregar os dados.');
       setColaboradores(await rc.json());
       setDemandas(await rd.json());
+      if (rs.ok) setModoEmail((await rs.json()).modoEmail);
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro ao carregar.', 'erro');
     } finally {
@@ -115,6 +118,12 @@ export function Painel({ usuario }: { usuario: { nome: string; email: string } }
             </div>
           </div>
           <div className="topo-usuario">
+            {modoEmail === 'PREVIEW' && (
+              <span className="selo-modo" title="Nenhum e-mail é enviado enquanto o SMTP não for configurado.">
+                <span className="ponto aviso" />
+                E-mail desligado
+              </span>
+            )}
             <span className="selo-modo">
               <span className="ponto" />
               Hoje · {formatarDiaCurto(hoje)}

@@ -114,7 +114,9 @@ export function AbaAlertas({
       notificar(
         dados.erros > 0
           ? `Concluído com ${dados.erros} erro(s).`
-          : `${dados.enviados} alerta(s) processado(s).`,
+          : dados.modo === 'SMTP'
+            ? `${dados.enviados} e-mail(s) enviado(s).`
+            : `${dados.enviados} prévia(s) gerada(s) — nenhum e-mail foi enviado.`,
         dados.erros > 0 ? 'erro' : 'ok',
       );
       await Promise.all([carregarPrevia(), aoDisparar()]);
@@ -142,10 +144,14 @@ export function AbaAlertas({
 
         <div className="cartao-corpo pilha">
           {previa?.modo === 'PREVIEW' ? (
-            <Aviso tipo="info" icone="👁">
-              <strong>Modo preview ativo.</strong> Nenhum e-mail sai de verdade — cada mensagem
-              gerada fica guardada e pode ser aberta no histórico de disparos, abaixo. Configure
-              as variáveis <span className="mono">SMTP_*</span> para enviar de verdade.
+            <Aviso tipo="alerta" icone="📭">
+              <strong>Nenhum e-mail está sendo enviado.</strong> O Radar está em modo preview:
+              ele monta a mensagem e guarda para conferência, mas não existe servidor de e-mail
+              configurado, então nada chega à caixa de entrada de ninguém — nem ao reenviar.
+              <br />
+              Para enviar de verdade, defina <span className="mono">SMTP_HOST</span>,{' '}
+              <span className="mono">SMTP_PORT</span>, <span className="mono">SMTP_USER</span> e{' '}
+              <span className="mono">SMTP_PASS</span> nas variáveis de ambiente.
             </Aviso>
           ) : previa && !previa.smtp.ok ? (
             <Aviso tipo="erro">
@@ -213,7 +219,10 @@ export function AbaAlertas({
             <div className="cartao" style={{ boxShadow: 'none' }}>
               <div className="cartao-cabecalho">
                 <div className="cartao-titulo">
-                  Resultado · {resultado.enviados} processado(s)
+                  Resultado ·{' '}
+                  {resultado.modo === 'SMTP'
+                    ? `${resultado.enviados} e-mail(s) enviado(s)`
+                    : `${resultado.enviados} prévia(s) gerada(s), nenhum e-mail enviado`}
                   {resultado.erros > 0 && ` · ${resultado.erros} erro(s)`}
                   {resultado.ignorados > 0 && ` · ${resultado.ignorados} ignorado(s)`}
                 </div>
@@ -243,10 +252,12 @@ export function AbaAlertas({
                                 ? 'selo-CRITICA'
                                 : i.status === 'IGNORADO'
                                   ? 'selo-neutro'
-                                  : 'selo-CONCLUIDA'
+                                  : i.status === 'PREVIEW'
+                                    ? 'selo-MEDIA'
+                                    : 'selo-CONCLUIDA'
                             }`}
                           >
-                            {i.status}
+                            {i.status === 'PREVIEW' ? 'NÃO ENVIADO' : i.status}
                           </span>
                         </td>
                         <td className="texto-suave" style={{ maxWidth: 320, wordBreak: 'break-word' }}>
@@ -376,8 +387,13 @@ export function AbaAlertas({
                               ? 'selo-MEDIA'
                               : 'selo-CONCLUIDA'
                         }`}
+                        title={
+                          a.status === 'PREVIEW'
+                            ? 'Mensagem gerada para conferência; nenhum e-mail saiu.'
+                            : undefined
+                        }
                       >
-                        {a.status}
+                        {a.status === 'PREVIEW' ? 'NÃO ENVIADO' : a.status}
                       </span>
                     </td>
                     <td className="col-estreita texto-suave">
