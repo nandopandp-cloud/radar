@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import nodemailer, { type Transporter } from 'nodemailer';
 
 export type ResultadoEnvio = {
@@ -7,10 +5,7 @@ export type ResultadoEnvio = {
   modo: 'SMTP' | 'PREVIEW';
   destino: string;
   detalhe?: string;
-  arquivo?: string;
 };
-
-const PASTA_PREVIEW = path.join(process.cwd(), '.preview-emails');
 
 /** Só consideramos SMTP configurado quando há host — o resto tem padrão razoável. */
 export function smtpConfigurado(): boolean {
@@ -37,12 +32,6 @@ function obterTransporter(): Transporter {
   return transporterCache;
 }
 
-function nomeArquivoSeguro(email: string, dia: string): string {
-  const base = email.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const carimbo = new Date().toISOString().replace(/[:.]/g, '-');
-  return `${dia}__${base}__${carimbo}.html`;
-}
-
 export async function enviarEmail(opcoes: {
   para: string;
   assunto: string;
@@ -52,26 +41,15 @@ export async function enviarEmail(opcoes: {
 }): Promise<ResultadoEnvio> {
   const remetente = process.env.MAIL_FROM?.trim() || 'Radar MSA <radar-msa@localhost>';
 
-  // Modo preview: grava o HTML em disco em vez de enviar.
+  // Modo preview: nada é enviado. O HTML é guardado no banco pelo chamador
+  // (lib/disparo.ts) — o filesystem é somente leitura em serverless.
   if (!smtpConfigurado()) {
-    try {
-      await mkdir(PASTA_PREVIEW, { recursive: true });
-      const arquivo = path.join(PASTA_PREVIEW, nomeArquivoSeguro(opcoes.para, opcoes.diaReferencia));
-      const cabecalho =
-        `<!-- PREVIEW (não enviado)\n` +
-        `     De: ${remetente}\n` +
-        `     Para: ${opcoes.para}\n` +
-        `     Assunto: ${opcoes.assunto}\n-->\n`;
-      await writeFile(arquivo, cabecalho + opcoes.html, 'utf8');
-      return { ok: true, modo: 'PREVIEW', destino: opcoes.para, arquivo };
-    } catch (erro) {
-      return {
-        ok: false,
-        modo: 'PREVIEW',
-        destino: opcoes.para,
-        detalhe: erro instanceof Error ? erro.message : String(erro),
-      };
-    }
+    return {
+      ok: true,
+      modo: 'PREVIEW',
+      destino: opcoes.para,
+      detalhe: 'Prévia gerada — nenhum e-mail enviado.',
+    };
   }
 
   try {

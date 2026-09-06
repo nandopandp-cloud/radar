@@ -42,8 +42,20 @@ type Resultado = {
     qtdDemandas: number;
     status: string;
     detalhe?: string;
-    arquivo?: string;
+    temPrevia?: boolean;
   }[];
+};
+
+type AlertaHistorico = {
+  id: string;
+  nome: string;
+  email: string;
+  dataReferencia: string;
+  qtdDemandas: number;
+  status: string;
+  assunto: string | null;
+  enviadoEm: string;
+  temPrevia: boolean;
 };
 
 export function AbaAlertas({
@@ -60,13 +72,18 @@ export function AbaAlertas({
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [postergar, setPostergar] = useState(true);
   const [forcar, setForcar] = useState(false);
+  const [historico, setHistorico] = useState<AlertaHistorico[]>([]);
 
   const carregarPrevia = useCallback(async () => {
     setCarregando(true);
     try {
-      const res = await fetch(`/api/disparo?dia=${dia}`);
-      if (!res.ok) throw new Error('Falha ao carregar a prévia.');
-      setPrevia(await res.json());
+      const [rp, rh] = await Promise.all([
+        fetch(`/api/disparo?dia=${dia}`),
+        fetch('/api/alertas?limite=25'),
+      ]);
+      if (!rp.ok) throw new Error('Falha ao carregar a prévia.');
+      setPrevia(await rp.json());
+      if (rh.ok) setHistorico(await rh.json());
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro.', 'erro');
     } finally {
@@ -234,7 +251,7 @@ export function AbaAlertas({
                           </span>
                         </td>
                         <td className="texto-suave" style={{ maxWidth: 320, wordBreak: 'break-word' }}>
-                          {i.arquivo ? i.arquivo.split('/').slice(-1)[0] : i.detalhe ?? '—'}
+                          {i.detalhe ?? '—'}
                         </td>
                       </tr>
                     ))}
@@ -317,6 +334,82 @@ export function AbaAlertas({
           )}
         </div>
       </div>
+
+      {historico.length > 0 && (
+        <div className="cartao">
+          <div className="cartao-cabecalho">
+            <div>
+              <div className="cartao-titulo">Histórico de disparos</div>
+              <div className="cartao-desc">
+                Últimos {historico.length} alertas · abra a prévia para ver a mensagem gerada
+              </div>
+            </div>
+          </div>
+          <div className="tabela-envolvente">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th className="col-estreita">Referência</th>
+                  <th className="col-estreita">Demandas</th>
+                  <th className="col-estreita">Situação</th>
+                  <th className="col-estreita">Quando</th>
+                  <th className="col-estreita" style={{ textAlign: 'right' }}>Prévia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historico.map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      <div className="celula-titulo">{a.nome}</div>
+                      <div className="celula-sub">{a.email}</div>
+                    </td>
+                    <td className="col-estreita">
+                      {formatarDiaCurto(a.dataReferencia.slice(0, 10))}
+                    </td>
+                    <td className="col-estreita">{a.qtdDemandas}</td>
+                    <td className="col-estreita">
+                      <span
+                        className={`selo ${
+                          a.status === 'ERRO'
+                            ? 'selo-CRITICA'
+                            : a.status === 'PREVIEW'
+                              ? 'selo-MEDIA'
+                              : 'selo-CONCLUIDA'
+                        }`}
+                      >
+                        {a.status}
+                      </span>
+                    </td>
+                    <td className="col-estreita texto-suave">
+                      {new Date(a.enviadoEm).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="col-estreita" style={{ textAlign: 'right' }}>
+                      {a.temPrevia ? (
+                        <a
+                          className="btn btn-mini btn-secundario"
+                          href={`/api/preview?alertaId=${a.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          👁 Abrir
+                        </a>
+                      ) : (
+                        <span className="texto-suave">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

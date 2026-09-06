@@ -68,6 +68,9 @@ model Alerta {
   qtdDemandas    Int
   status         String   @default("ENVIADO") // ENVIADO | PREVIEW | ERRO
   detalhe        String?
+  /// HTML da mensagem gerada. Preenchido no modo preview para conferência.
+  corpoHtml      String?
+  assunto        String?
   enviadoEm      DateTime @default(now())
 
   @@index([dataReferencia])

@@ -10,7 +10,8 @@ export type ItemResultado = {
   qtdDemandas: number;
   status: 'ENVIADO' | 'PREVIEW' | 'ERRO' | 'IGNORADO';
   detalhe?: string;
-  arquivo?: string;
+  /// Presente no modo preview: a prévia pode ser aberta na interface.
+  temPrevia?: boolean;
 };
 
 export type ResultadoDisparo = {
@@ -69,10 +70,13 @@ export async function dispararAlertas(opcoes: {
       }
     }
 
+    const assunto = assuntoEmail(grupo, diaReferencia);
+    const html = montarHtml(grupo, diaReferencia);
+
     const resultado = await enviarEmail({
       para: grupo.email,
-      assunto: assuntoEmail(grupo, diaReferencia),
-      html: montarHtml(grupo, diaReferencia),
+      assunto,
+      html,
       texto: montarTexto(grupo, diaReferencia),
       diaReferencia,
     });
@@ -96,12 +100,17 @@ export async function dispararAlertas(opcoes: {
         dataReferencia: dataRef,
         qtdDemandas: grupo.demandas.length,
         status,
-        detalhe: resultado.detalhe ?? resultado.arquivo,
+        detalhe: resultado.detalhe,
+        assunto,
+        // Guardamos o HTML só na prévia; no envio real a mensagem já foi entregue.
+        corpoHtml: status === 'PREVIEW' ? html : null,
       },
       update: {
         qtdDemandas: grupo.demandas.length,
         status,
-        detalhe: resultado.detalhe ?? resultado.arquivo,
+        detalhe: resultado.detalhe,
+        assunto,
+        corpoHtml: status === 'PREVIEW' ? html : null,
         enviadoEm: new Date(),
       },
     });
@@ -112,7 +121,7 @@ export async function dispararAlertas(opcoes: {
       qtdDemandas: grupo.demandas.length,
       status,
       detalhe: resultado.detalhe,
-      arquivo: resultado.arquivo,
+      temPrevia: status === 'PREVIEW',
     });
   }
 
