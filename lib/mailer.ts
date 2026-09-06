@@ -19,7 +19,9 @@ function obterTransporter(): Transporter {
 
   const porta = Number(process.env.SMTP_PORT || 587);
   const usuario = process.env.SMTP_USER?.trim();
-  const senha = process.env.SMTP_PASS ?? '';
+  // O Google mostra a senha de aplicativo em grupos de 4 ("abcd efgh ijkl mnop"),
+  // mas os espaços são apenas visuais — enviá-los faz a autenticação falhar.
+  const senha = (process.env.SMTP_PASS ?? '').replace(/\s+/g, '');
 
   transporterCache = nodemailer.createTransport({
     host: process.env.SMTP_HOST!.trim(),
@@ -68,9 +70,29 @@ export async function enviarEmail(opcoes: {
       ok: false,
       modo: 'SMTP',
       destino: opcoes.para,
-      detalhe: erro instanceof Error ? erro.message : String(erro),
+      detalhe: explicarErro(erro),
     };
   }
+}
+
+/** Traduz os erros de SMTP mais comuns para algo acionável. */
+function explicarErro(erro: unknown): string {
+  const bruto = erro instanceof Error ? erro.message : String(erro);
+
+  if (/Authentication Required|5\.7\.0|Username and Password not accepted|535/i.test(bruto)) {
+    return (
+      'O servidor recusou a autenticação. Confira SMTP_USER (o e-mail completo) e ' +
+      'SMTP_PASS (senha de aplicativo, não a senha da conta). ' +
+      `Resposta do servidor: ${bruto}`
+    );
+  }
+  if (/ENOTFOUND|EAI_AGAIN/i.test(bruto)) {
+    return `Servidor SMTP não encontrado — confira SMTP_HOST. Detalhe: ${bruto}`;
+  }
+  if (/ETIMEDOUT|ECONNREFUSED/i.test(bruto)) {
+    return `Não foi possível conectar — confira SMTP_PORT e o firewall. Detalhe: ${bruto}`;
+  }
+  return bruto;
 }
 
 /** Testa a conexão SMTP sem enviar mensagem. */
@@ -82,6 +104,6 @@ export async function verificarSmtp(): Promise<{ ok: boolean; detalhe: string }>
     await obterTransporter().verify();
     return { ok: true, detalhe: `Conectado a ${process.env.SMTP_HOST}.` };
   } catch (erro) {
-    return { ok: false, detalhe: erro instanceof Error ? erro.message : String(erro) };
+    return { ok: false, detalhe: explicarErro(erro) };
   }
 }
