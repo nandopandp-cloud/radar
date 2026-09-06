@@ -40,6 +40,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Tudo, menos assets estáticos do Next.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  /*
+   * Tudo, menos os assets estáticos. As imagens de public/ precisam ficar de
+   * fora: o e-mail carrega a logo sem sessão, e o favicon é pedido antes do login.
+   */
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff2?)$).*)',
+  ],
 };
