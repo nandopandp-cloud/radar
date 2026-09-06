@@ -1,0 +1,65 @@
+// Radar MSA — modelo de dados
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Colaborador que recebe os alertas de demandas postergadas.
+model Colaborador {
+  id        String    @id @default(cuid())
+  nome      String
+  email     String    @unique
+  equipe    String?
+  ativo     Boolean   @default(true)
+  criadoEm  DateTime  @default(now())
+
+  demandas  Demanda[]
+
+  @@index([ativo])
+}
+
+/// Demanda alimentada manualmente (futuramente via Teams / Google Chat).
+model Demanda {
+  id             String   @id @default(cuid())
+  titulo         String
+  descricao      String?
+  prioridade     String   @default("MEDIA") // BAIXA | MEDIA | ALTA | CRITICA
+  status         String   @default("ABERTA") // ABERTA | EM_ANDAMENTO | CONCLUIDA | CANCELADA
+  origem         String   @default("MANUAL") // MANUAL | TEAMS | GOOGLE_CHAT
+  solicitante    String?
+
+  /// Dia de trabalho para o qual a demanda estava prevista.
+  dataPrevista   DateTime
+  /// Quantas vezes já foi empurrada para o dia seguinte.
+  vezesAdiada    Int      @default(0)
+  concluidaEm    DateTime?
+
+  colaboradorId  String
+  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  @@index([status, dataPrevista])
+  @@index([colaboradorId])
+}
+
+/// Registro de cada disparo de alerta, para auditoria e para evitar envio duplicado.
+model Alerta {
+  id             String   @id @default(cuid())
+  colaboradorId  String
+  email          String
+  /// Dia de referência do alerta (as demandas postergadas PARA este dia).
+  dataReferencia DateTime
+  qtdDemandas    Int
+  status         String   @default("ENVIADO") // ENVIADO | PREVIEW | ERRO
+  detalhe        String?
+  enviadoEm      DateTime @default(now())
+
+  @@index([dataReferencia])
+  @@unique([colaboradorId, dataReferencia])
+}
