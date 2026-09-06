@@ -19,10 +19,10 @@ function segredo(): Uint8Array {
   return new TextEncoder().encode(valor);
 }
 
-export type Sessao = { sub: string; email: string; nome: string };
+export type Sessao = { sub: string; email: string; nome: string; perfil: 'ANALISTA' | 'ADMIN' };
 
 export async function criarToken(sessao: Sessao): Promise<string> {
-  return new SignJWT({ email: sessao.email, nome: sessao.nome })
+  return new SignJWT({ email: sessao.email, nome: sessao.nome, perfil: sessao.perfil })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(sessao.sub)
     .setIssuedAt()
@@ -38,6 +38,7 @@ export async function lerToken(token: string): Promise<Sessao | null> {
       sub: payload.sub,
       email: String(payload.email ?? ''),
       nome: String(payload.nome ?? ''),
+      perfil: payload.perfil === 'ADMIN' ? 'ADMIN' : 'ANALISTA',
     };
   } catch {
     return null;
@@ -61,3 +62,8 @@ export function opcoesCookie(maxAgeSegundos: number) {
 }
 
 export const DURACAO_SEGUNDOS = DURACAO_HORAS * 3600;
+
+/** Sessão exigida em rotas de API; lança 401 implicitamente ao retornar null. */
+export async function exigirSessao(): Promise<Sessao | null> {
+  return sessaoAtual();
+}

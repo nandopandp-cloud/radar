@@ -1,63 +1,81 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate, paraDiaISO } from '@/lib/datas';
 import { ehOrigem, ehPrioridade, ehStatus } from '@/lib/dominio';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Lista demandas. Analista vê só as próprias; admin vê as de todos e pode
+ * filtrar por autor com ?autorId=. O recorte por mês (?de=&ate=) alimenta o
+ * calendário sem trazer o histórico inteiro.
+ */
 export async function GET(req: Request) {
+  const sessao = await sessaoAtual();
+  if (!sessao) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status');
-  const colaboradorId = searchParams.get('colaboradorId');
+  const de = searchParams.get('de');
+  const ate = searchParams.get('ate');
+  const autorFiltro = searchParams.get('autorId');
+
+  // O escopo é a regra de segurança: analista nunca escapa do próprio id.
+  const autorId =
+    sessao.perfil === 'ADMIN'
+      ? autorFiltro && autorFiltro !== 'TODOS'
+        ? autorFiltro
+        : undefined
+      : sessao.sub;
 
   const demandas = await prisma.demanda.findMany({
     where: {
-      ...(status && ehStatus(status) ? { status } : {}),
-      ...(colaboradorId ? { colaboradorId } : {}),
+      ...(autorId ? { autorId } : {}),
+      ...(de && ate
+        ? { prazo: { gte: diaParaDate(de), lte: diaParaDate(ate) } }
+        : {}),
     },
-    include: { colaborador: true },
-    orderBy: [{ dataPrevista: 'asc' }, { criadoEm: 'desc' }],
+    include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
+    orderBy: [{ prazo: 'asc' }, { criadoEm: 'asc' }],
   });
 
   return NextResponse.json(demandas);
 }
 
 export async function POST(req: Request) {
+  const sessao = await sessaoAtual();
+  if (!sessao) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
+
   const corpo = await req.json().catch(() => null);
   if (!corpo) return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 });
 
   const titulo = String(corpo.titulo ?? '').trim();
-  const colaboradorId = String(corpo.colaboradorId ?? '').trim();
-
   if (!titulo) return NextResponse.json({ erro: 'Informe o título da demanda.' }, { status: 400 });
-  if (!colaboradorId) {
-    return NextResponse.json({ erro: 'Selecione o colaborador responsável.' }, { status: 400 });
+
+  const prazo = String(corpo.prazo ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(prazo)) {
+    return NextResponse.json({ erro: 'Informe um prazo válido.' }, { status: 400 });
   }
 
-  const colaborador = await prisma.colaborador.findUnique({ where: { id: colaboradorId } });
-  if (!colaborador) {
-    return NextResponse.json({ erro: 'Colaborador não encontrado.' }, { status: 404 });
-  }
-
-  const prioridade = ehPrioridade(corpo.prioridade) ? corpo.prioridade : 'MEDIA';
-  const status = ehStatus(corpo.status) ? corpo.status : 'ABERTA';
-  const origem = ehOrigem(corpo.origem) ? corpo.origem : 'MANUAL';
-
-  const dia = String(corpo.dataPrevista ?? '').trim();
-  const diaValido = /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : paraDiaISO();
+  // Um admin pode lançar em nome de outro analista; o analista, só para si.
+  const autorId =
+    sessao.perfil === 'ADMIN' && typeof corpo.autorId === 'string' && corpo.autorId
+      ? corpo.autorId
+      : sessao.sub;
 
   const demanda = await prisma.demanda.create({
     data: {
       titulo,
       descricao: String(corpo.descricao ?? '').trim() || null,
       solicitante: String(corpo.solicitante ?? '').trim() || null,
-      prioridade,
-      status,
-      origem,
-      dataPrevista: diaParaDate(diaValido),
-      colaboradorId,
+      categoria: String(corpo.categoria ?? '').trim() || null,
+      prioridade: ehPrioridade(corpo.prioridade) ? corpo.prioridade : 'MEDIA',
+      status: ehStatus(corpo.status) ? corpo.status : 'ABERTA',
+      origem: ehOrigem(corpo.origem) ? corpo.origem : 'MANUAL',
+      prazo: diaParaDate(prazo),
+      autorId,
     },
-    include: { colaborador: true },
+    include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
   });
 
   return NextResponse.json(demanda, { status: 201 });

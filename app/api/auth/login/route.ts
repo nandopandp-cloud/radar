@@ -18,6 +18,11 @@ export async function POST(req: Request) {
 
   const usuario = await prisma.usuario.findUnique({ where: { email } });
 
+  // Conta desativada não entra, mesmo com a senha correta.
+  if (usuario && !usuario.ativo) {
+    return NextResponse.json({ erro: 'Esta conta está desativada.' }, { status: 403 });
+  }
+
   // Mensagem única para e-mail inexistente e senha errada: não revelamos
   // quais e-mails existem. O compare roda mesmo sem usuário para manter o
   // tempo de resposta parecido.
@@ -32,6 +37,7 @@ export async function POST(req: Request) {
     sub: usuario.id,
     email: usuario.email,
     nome: usuario.nome,
+    perfil: usuario.perfil === 'ADMIN' ? 'ADMIN' : 'ANALISTA',
   });
 
   const res = NextResponse.json({ ok: true, nome: usuario.nome });

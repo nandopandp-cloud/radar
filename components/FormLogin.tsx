@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { LogoRadar } from '@/components/Logo';
 
 function Formulario() {
   const router = useRouter();
@@ -39,10 +40,10 @@ function Formulario() {
     <div className="login-tela">
       <div className="login-cartao">
         <div className="login-marca">
-          <div className="login-icone">📡</div>
+          <LogoRadar size={44} />
           <div>
-            <div className="login-nome">Radar MSA</div>
-            <div className="login-sub">Alerta de demandas postergadas</div>
+            <div className="marca-nome">Radar</div>
+            <div className="login-sub">Gestão de prazos da MSA</div>
           </div>
         </div>
 

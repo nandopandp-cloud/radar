@@ -4,6 +4,9 @@ export type Prioridade = (typeof PRIORIDADES)[number];
 export const STATUS = ['ABERTA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA'] as const;
 export type Status = (typeof STATUS)[number];
 
+export const PERFIS = ['ANALISTA', 'ADMIN'] as const;
+export type Perfil = (typeof PERFIS)[number];
+
 export const ORIGENS = ['MANUAL', 'TEAMS', 'GOOGLE_CHAT'] as const;
 export type Origem = (typeof ORIGENS)[number];
 
@@ -56,3 +59,58 @@ export function ehStatus(v: unknown): v is Status {
 export function ehOrigem(v: unknown): v is Origem {
   return typeof v === 'string' && (ORIGENS as readonly string[]).includes(v);
 }
+
+
+/// Categorias para agrupar demandas. Livre, mas com sugestões prontas.
+export const CATEGORIAS = [
+  'Financeiro',
+  'Comercial',
+  'Operações',
+  'Atendimento',
+  'Tecnologia',
+  'Jurídico',
+  'Outros',
+] as const;
+
+/**
+ * Situação de uma demanda no calendário, já considerando o prazo.
+ * É o que colore os pontos: atrasada, em andamento, pendente ou concluída.
+ */
+export type Situacao = 'ATRASADA' | 'EM_ANDAMENTO' | 'PENDENTE' | 'CONCLUIDA' | 'CANCELADA';
+
+export const COR_SITUACAO: Record<Situacao, string> = {
+  ATRASADA: '#ef4444',
+  PENDENTE: '#3b82f6',
+  EM_ANDAMENTO: '#f59e0b',
+  CONCLUIDA: '#22c55e',
+  CANCELADA: '#cbd5e1',
+};
+
+export const ROTULO_SITUACAO: Record<Situacao, string> = {
+  ATRASADA: 'Atrasada',
+  PENDENTE: 'Pendente',
+  EM_ANDAMENTO: 'Em andamento',
+  CONCLUIDA: 'Concluída',
+  CANCELADA: 'Cancelada',
+};
+
+/**
+ * Deriva a situação a partir do status e do prazo.
+ * `hoje` e `prazo` são dias no formato YYYY-MM-DD.
+ */
+export function situacaoDe(status: string, prazo: string, hoje: string): Situacao {
+  if (status === 'CONCLUIDA') return 'CONCLUIDA';
+  if (status === 'CANCELADA') return 'CANCELADA';
+  if (prazo < hoje) return 'ATRASADA';
+  if (status === 'EM_ANDAMENTO') return 'EM_ANDAMENTO';
+  return 'PENDENTE';
+}
+
+/** Ordem de gravidade, para ordenar listas e escolher a cor do dia. */
+export const PESO_SITUACAO: Record<Situacao, number> = {
+  ATRASADA: 0,
+  EM_ANDAMENTO: 1,
+  PENDENTE: 2,
+  CONCLUIDA: 3,
+  CANCELADA: 4,
+};

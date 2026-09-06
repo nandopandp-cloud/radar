@@ -9,70 +9,69 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-/// Usuário administrador que acessa o painel.
+/// Analista da MSA: faz login, lança suas demandas e recebe os alertas.
+/// Quem lança é quem é alertado — por isso login e destinatário são a mesma entidade.
 model Usuario {
   id        String   @id @default(cuid())
   email     String   @unique
   senhaHash String
   nome      String
-  criadoEm  DateTime @default(now())
-}
-
-/// Colaborador que recebe os alertas de demandas postergadas.
-model Colaborador {
-  id        String    @id @default(cuid())
-  nome      String
-  email     String    @unique
   equipe    String?
-  ativo     Boolean   @default(true)
-  criadoEm  DateTime  @default(now())
+  /// ANALISTA vê apenas as próprias demandas; ADMIN vê as de todo o time.
+  perfil    String   @default("ANALISTA") // ANALISTA | ADMIN
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
 
   demandas  Demanda[]
+  alertas   Alerta[]
 
   @@index([ativo])
 }
 
-/// Demanda alimentada manualmente (futuramente via Teams / Google Chat).
+/// Demanda lançada por um analista, com prazo de entrega.
 model Demanda {
-  id             String   @id @default(cuid())
-  titulo         String
-  descricao      String?
-  prioridade     String   @default("MEDIA") // BAIXA | MEDIA | ALTA | CRITICA
-  status         String   @default("ABERTA") // ABERTA | EM_ANDAMENTO | CONCLUIDA | CANCELADA
-  origem         String   @default("MANUAL") // MANUAL | TEAMS | GOOGLE_CHAT
-  solicitante    String?
+  id           String    @id @default(cuid())
+  titulo       String
+  descricao    String?
+  prioridade   String    @default("MEDIA")  // BAIXA | MEDIA | ALTA | CRITICA
+  status       String    @default("ABERTA") // ABERTA | EM_ANDAMENTO | CONCLUIDA | CANCELADA
+  origem       String    @default("MANUAL") // MANUAL | TEAMS | GOOGLE_CHAT
+  solicitante  String?
+  categoria    String?
 
-  /// Dia de trabalho para o qual a demanda estava prevista.
-  dataPrevista   DateTime
-  /// Quantas vezes já foi empurrada para o dia seguinte.
-  vezesAdiada    Int      @default(0)
-  concluidaEm    DateTime?
+  /// Prazo de entrega. Vencido este dia sem conclusão, dispara o alerta.
+  prazo        DateTime
+  concluidaEm  DateTime?
+  /// Quantos alertas de vencimento já foram enviados para esta demanda.
+  vezesAlertada Int      @default(0)
 
-  colaboradorId  String
-  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  /// Quem lançou a demanda — e quem recebe o alerta.
+  autorId      String
+  autor        Usuario  @relation(fields: [autorId], references: [id], onDelete: Cascade)
 
-  criadoEm       DateTime @default(now())
-  atualizadoEm   DateTime @updatedAt
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
 
-  @@index([status, dataPrevista])
-  @@index([colaboradorId])
+  @@index([status, prazo])
+  @@index([autorId, prazo])
 }
 
-/// Registro de cada disparo de alerta, para auditoria e para evitar envio duplicado.
+/// Registro de cada disparo, para auditoria e para evitar envio duplicado no mesmo dia.
 model Alerta {
   id             String   @id @default(cuid())
-  colaboradorId  String
+  usuarioId      String
+  usuario        Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   email          String
-  /// Dia de referência do alerta (as demandas postergadas PARA este dia).
+  /// Dia em que o alerta foi apurado.
   dataReferencia DateTime
   qtdDemandas    Int
   status         String   @default("ENVIADO") // ENVIADO | PREVIEW | ERRO
   detalhe        String?
-  /// HTML da mensagem gerada. Preenchido no modo preview para conferência.
+  /// HTML da mensagem. Preenchido no modo preview, para conferência.
   corpoHtml      String?
   assunto        String?
   enviadoEm      DateTime @default(now())
 
   @@index([dataReferencia])
-  @@unique([colaboradorId, dataReferencia])
+  @@unique([usuarioId, dataReferencia])
 }

@@ -1,122 +1,109 @@
-# 📡 Radar MSA
+# Radar
 
-Alerta por e-mail as demandas que **não foram trabalhadas em um dia** e, por isso,
-passaram a ser demanda do dia seguinte.
-
-Nesta primeira versão as demandas são inseridas por uma interface web. A alimentação
-automática via **Microsoft Teams** e **Google Chat/Workspace** está prevista e o modelo
-de dados já contempla a origem de cada demanda.
+Plataforma de prazos da MSA. O analista lança suas demandas num calendário, cada
+uma com um prazo de entrega. Quando o prazo vence sem a demanda ter sido concluída,
+**quem a lançou recebe um alerta por e-mail**.
 
 ---
 
-## Acesso
+## A regra central
 
-A aplicação exige login. As credenciais iniciais são:
+> Uma demanda com prazo em **10** precisa ser entregue **até o fim do dia 10**.
+> Se no dia 11 ela ainda estiver pendente, o autor é alertado.
 
-| E-mail | Senha |
-|---|---|
-| `admins@msa.com` | `12345` |
+O analista tem o dia inteiro do prazo. A cobrança começa no dia seguinte, e se
+repete a cada apuração enquanto a demanda continuar pendente — o contador
+`vezesAlertada` registra quantos avisos já saíram.
 
-> ⚠️ **Troque essa senha antes de compartilhar a URL com o time.** Ela foi definida
-> para os testes iniciais. Para alterar, rode o seed com outra senha:
-> ```bash
-> ADMIN_SENHA="uma-senha-forte" npm run db:seed-admin
-> ```
-> A senha nunca é armazenada em texto puro — o banco guarda um hash bcrypt.
+Está implementada em [`lib/vencidas.ts`](lib/vencidas.ts).
+
+---
+
+## Perfis
+
+| | Analista | Administrador |
+|---|---|---|
+| Ver demandas | só as próprias | de todo o time, com filtro por pessoa |
+| Criar demanda | para si | para si ou em nome de outro analista |
+| Editar / excluir | só as próprias | qualquer uma |
+| Gerenciar contas | não | criar, desativar, redefinir senha, excluir |
+| Disparar alertas | não | sim |
+
+O escopo é aplicado no servidor: um analista que force `?autorId=` de outra pessoa
+recebe a própria lista, e tentativas de editar demanda alheia retornam `403`.
+
+---
 
 ## Como rodar
 
 ```bash
 npm install
-cp .env.example .env      # preencha DATABASE_URL e AUTH_SECRET
-npx prisma migrate dev    # cria as tabelas
-npm run db:seed-admin     # cria o administrador
-npm run db:seed           # (opcional) dados de exemplo
-npm run dev               # http://localhost:3000
+cp .env.example .env       # preencha DATABASE_URL e AUTH_SECRET
+npx prisma migrate deploy  # cria as tabelas
+npm run db:seed-admin      # cria o administrador
+npm run db:seed            # (opcional) analistas e demandas de exemplo
+npm run dev                # http://localhost:3000
 ```
 
-`AUTH_SECRET` é obrigatório em produção — sem ele a aplicação recusa iniciar, porque
-um segredo previsível permitiria forjar sessões. Gere com `openssl rand -base64 48`.
+`AUTH_SECRET` é obrigatório em produção — sem ele a aplicação recusa iniciar,
+porque um segredo previsível permitiria forjar sessões. Gere com
+`openssl rand -base64 48`.
 
-Para o agendador automático, em outro terminal:
+### Acesso inicial
 
-```bash
-npm run scheduler                # respeita SCHEDULER_CRON
-npm run scheduler -- --agora     # dispara na hora, para testar
-```
+| E-mail | Senha |
+|---|---|
+| `admins@msa.com` | `12345` |
+
+> ⚠️ **Troque essa senha antes de abrir a plataforma para o time.**
+> ```bash
+> ADMIN_SENHA="uma-senha-forte" npm run db:seed-admin
+> ```
+> A senha nunca é gravada em texto puro — o banco guarda um hash bcrypt.
 
 ---
 
-## Como funciona
+## Telas
 
-### O conceito de "postergada"
+- **Calendário** — a tela principal. Cada dia mostra pontos coloridos por situação
+  (atrasada, pendente, em andamento, concluída). Clicar num dia abre a lista lateral
+  daquele dia e permite lançar uma demanda com o prazo já preenchido.
+- **Demandas** — a lista completa, com filtros por situação. O admin filtra por analista.
+- **Alertas** — quem será avisado hoje, com prévia do e-mail, disparo manual e o
+  histórico de envios.
+- **Equipe** — cadastro de analistas, perfis e senhas (só para administradores).
 
-Toda demanda tem uma **data prevista** e um **status**. No disparo, o Radar procura
-demandas que atendam às duas condições:
-
-- status ainda pendente (`Aberta` ou `Em andamento`), e
-- data prevista **anterior** ao dia de referência.
-
-Essas são as demandas postergadas. Elas são agrupadas por colaborador e cada pessoa
-recebe **um único e-mail** com a sua lista, ordenada por prioridade e depois por tempo
-de atraso.
-
-O **dia de referência** padrão é o próximo dia útil (sábado e domingo são pulados).
-
-### O que acontece no disparo
-
-1. Agrupa as demandas postergadas por colaborador ativo.
-2. Envia um e-mail para cada um (ou grava a prévia, no modo preview).
-3. Registra o envio na tabela `Alerta` — isso impede reenvio duplicado no mesmo dia.
-4. Se "Mover demandas" estiver marcado, atualiza a data prevista para o dia de
-   referência e incrementa `vezesAdiada`, que aparece como o selo "adiada 3×".
-
-O contador `vezesAdiada` é o sinal mais útil do produto: demanda adiada muitas vezes
-é demanda que precisa de decisão, não de mais um lembrete.
+Clicar em qualquer demanda abre uma gaveta lateral com o detalhe, o aviso de prazo
+vencido e as ações de editar, concluir e excluir.
 
 ---
 
-## Modo preview vs. envio real
+## E-mail
 
-Sem `SMTP_HOST` no `.env`, o Radar roda em **modo preview**: nenhum e-mail é enviado
-e o HTML de cada mensagem fica guardado no banco (`Alerta.corpoHtml`), acessível pelo
-histórico de disparos na aba Alertas. É o padrão, para você validar o conteúdo antes
-de mandar qualquer coisa para a equipe.
+Sem `SMTP_HOST` configurado, o Radar roda em **modo preview**: monta a mensagem e
+guarda no banco (`Alerta.corpoHtml`) para conferência pelo histórico, sem enviar nada.
+A interface deixa isso explícito com o rótulo "NÃO ENVIADO".
 
-> A prévia é guardada no banco, e não em disco, porque em ambientes serverless
-> (Vercel, Lambda) o filesystem é somente leitura.
-
-Para enviar de verdade, preencha no `.env`:
+Para enviar de verdade:
 
 ```env
-SMTP_HOST="smtp.office365.com"   # ou smtp.gmail.com
+SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
-SMTP_USER="radar@suaempresa.com"
-SMTP_PASS="sua-senha-de-aplicativo"
-MAIL_FROM="Radar MSA <radar@suaempresa.com>"
-MAIL_BCC=""                       # cópia oculta para gestores (opcional)
+SMTP_USER="conta@dominio.com"     # obrigatório: sem ele o Gmail responde 530
+SMTP_PASS="senha-de-aplicativo"   # espaços são removidos automaticamente
+MAIL_FROM="Radar <conta@dominio.com>"   # precisa ser o endereço autenticado
 ```
 
-A aba **Alertas** mostra o estado da conexão SMTP antes de você disparar qualquer coisa.
-
+> `MAIL_FROM` com domínio de terceiros faz a mensagem cair em spam ou ser recusada.
 > Gmail e Microsoft 365 com MFA exigem **senha de aplicativo**, não a senha da conta.
 
 ---
 
 ## Agendamento
 
-O `scripts/scheduler.ts` roda em processo separado e chama a API no horário configurado:
-
-```env
-SCHEDULER_CRON="0 8 * * 1-5"      # 08:00, de segunda a sexta
-SCHEDULER_TZ="America/Sao_Paulo"
-APP_URL="http://localhost:3000"
-CRON_SECRET=""                     # se preenchido, protege o endpoint de disparo
-```
-
-Em produção você pode dispensar esse processo e apontar um cron do sistema, o
-Cloud Scheduler ou o Vercel Cron para `POST /api/disparo`, enviando o header
-`Authorization: Bearer $CRON_SECRET`.
+`POST /api/disparo` com o header `Authorization: Bearer $CRON_SECRET` executa a
+apuração do dia. Em produção use o Vercel Cron ou um agendador externo — o processo
+`npm run scheduler` não roda em serverless.
 
 ---
 
@@ -124,102 +111,58 @@ Cloud Scheduler ou o Vercel Cron para `POST /api/disparo`, enviando o header
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/colaboradores` | Lista colaboradores |
-| `POST` | `/api/colaboradores` | Cadastra colaborador |
-| `PATCH` | `/api/colaboradores/:id` | Edita / ativa / desativa |
-| `DELETE` | `/api/colaboradores/:id` | Remove (e suas demandas) |
-| `GET` | `/api/demandas` | Lista demandas (`?status=`, `?colaboradorId=`) |
-| `POST` | `/api/demandas` | Cria demanda |
-| `PATCH` | `/api/demandas/:id` | Atualiza status, prioridade, responsável… |
-| `DELETE` | `/api/demandas/:id` | Remove demanda |
-| `GET` | `/api/disparo?dia=` | Prévia: quem receberia o quê, sem enviar |
-| `POST` | `/api/disparo` | Executa o disparo |
-| `GET` | `/api/preview?colaboradorId=` | Renderiza o e-mail no navegador |
-
-`POST /api/disparo` aceita no corpo:
-
-```jsonc
-{
-  "dia": "2026-09-08",   // opcional; padrão = próximo dia útil
-  "forcar": false,        // reenviar mesmo se já enviado hoje
-  "postergar": true       // mover as demandas para o dia de referência
-}
-```
+| `GET` | `/api/demandas?de=&ate=&autorId=` | Lista, respeitando o escopo do perfil |
+| `POST` | `/api/demandas` | Cria (vinculada a quem lançou) |
+| `PATCH` `DELETE` | `/api/demandas/:id` | Edita / remove |
+| `GET` `POST` | `/api/usuarios` | Lista / cria conta (POST só admin) |
+| `PATCH` `DELETE` | `/api/usuarios/:id` | Edita / remove |
+| `GET` | `/api/disparo?dia=` | Prévia: quem seria alertado |
+| `POST` | `/api/disparo` | Executa o disparo (admin ou cron) |
+| `GET` | `/api/preview?usuarioId=` ou `?alertaId=` | Renderiza o e-mail |
+| `GET` | `/api/alertas` | Histórico de envios |
 
 ---
-
-## Próximo passo: Teams e Google Chat
-
-O caminho mais curto para a integração é um webhook que traduza a mensagem do chat
-para `POST /api/demandas`. O campo `origem` já aceita `TEAMS` e `GOOGLE_CHAT`, e o
-`Colaborador` é identificado pelo e-mail — que é o mesmo nas duas plataformas.
-
-O que falta construir:
-
-- `app/api/webhooks/teams/route.ts` e `.../google-chat/route.ts` para receber os eventos;
-- validação da assinatura de cada plataforma;
-- interpretação do texto da mensagem em título/responsável/prioridade.
-
----
-
-## Autenticação
-
-Sessão em JWT assinado (HS256, biblioteca `jose`), guardada em cookie `httpOnly`,
-`Secure` e `SameSite=lax`, com validade de 12 horas.
-
-O `middleware.ts` protege **todas** as rotas. Páginas redirecionam para `/login`;
-APIs respondem `401`. A única exceção é `POST /api/disparo` quando vem com header de
-autorização — é o caminho do agendador externo, que tem sua própria proteção por
-`CRON_SECRET`.
-
-Login com e-mail inexistente e login com senha errada retornam a mesma mensagem, para
-não revelar quais e-mails estão cadastrados.
 
 ## Estrutura
 
 ```
 app/
-  page.tsx                 painel
-  api/                     rotas REST
+  page.tsx                  monta o App com a sessão
+  login/                    tela de acesso
+  api/                      rotas REST
 components/
-  Painel.tsx               casca, métricas e abas
-  FormDemanda.tsx          cadastro de demandas
-  ListaDemandas.tsx        tabela com filtros e ações
-  AbaAlertas.tsx           prévia e disparo
-  AbaColaboradores.tsx     cadastro da equipe
+  App.tsx                   estado central e orquestração
+  Casca.tsx                 sidebar e cabeçalho
+  Calendario.tsx            grade mensal com pontos por situação
+  TelaCalendario.tsx        calendário + demandas do dia + resumo
+  TelaDemandas.tsx          lista com filtros
+  TelaAlertas.tsx           prévia, disparo e histórico
+  TelaEquipe.tsx            gestão de analistas
+  GavetaDemanda.tsx         detalhe lateral
+  GavetaNova.tsx            criação
 lib/
-  postergacao.ts           REGRA CENTRAL: o que é uma demanda postergada
-  disparo.ts               orquestra envio, auditoria e postergação
-  email-template.ts        HTML do e-mail (tabelas + estilo inline)
-  mailer.ts                SMTP com fallback para preview
-  datas.ts                 dia de trabalho, dia útil, fuso
-  dominio.ts               prioridades, status, origens e rótulos
-middleware.ts              protege todas as rotas
-lib/auth.ts                sessão JWT em cookie
-app/login/                 tela de login
-prisma/schema.prisma       Usuario, Colaborador, Demanda, Alerta
-scripts/
-  seed.ts                  dados de exemplo
-  seed-admin.ts            cria o administrador
-  scheduler.ts             cron do disparo diário
+  vencidas.ts               REGRA CENTRAL: o que é um prazo vencido
+  disparo.ts                orquestra envio, auditoria e contagem de avisos
+  email-template.ts         HTML do e-mail
+  mailer.ts                 SMTP com fallback para preview
+  dominio.ts                situações, prioridades, categorias
+  auth.ts                   sessão JWT com perfil
+middleware.ts               protege todas as rotas
+prisma/schema.prisma        Usuario, Demanda, Alerta
 ```
 
 ---
 
 ## Produção
 
-Publicado na Vercel, com Postgres no Neon (região `sa-east-1`, São Paulo).
+Vercel (região `gru1`) com Postgres no Neon (`sa-east-1`). Variáveis definidas no
+painel: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `SMTP_*`, `MAIL_FROM`.
 
-Variáveis definidas no painel da Vercel: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`,
-`MAIL_FROM`, `SCHEDULER_TZ`.
+---
 
-Para configurar o envio real de e-mail depois, basta adicionar `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_USER` e `SMTP_PASS` em Settings → Environment Variables e refazer o deploy.
-Nenhuma mudança de código é necessária — `lib/mailer.ts` detecta o modo pela presença
-de `SMTP_HOST`.
+## Próximo passo: Teams e Google Chat
 
-### Agendamento em produção
-
-O processo `npm run scheduler` não roda na Vercel (funções são efêmeras). Use o
-Vercel Cron ou um agendador externo chamando `POST /api/disparo` com o header
-`Authorization: Bearer $CRON_SECRET`.
+O campo `origem` da demanda já aceita `TEAMS` e `GOOGLE_CHAT`, e o analista é
+identificado pelo e-mail — o mesmo nas duas plataformas. Falta criar as rotas de
+webhook, validar a assinatura de cada plataforma e interpretar o texto da mensagem
+em título, prazo e prioridade.

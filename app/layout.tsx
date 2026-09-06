@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Radar MSA · Demandas postergadas',
+  title: 'Radar · Gestão de prazos da MSA',
   description:
-    'Acompanhe as demandas que não foram trabalhadas no dia e alerte os responsáveis por e-mail.',
+    'Lance suas demandas no calendário e receba alertas por e-mail quando um prazo vencer.',
+  icons: { icon: '/icon.png', apple: '/apple-icon.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

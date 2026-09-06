@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sessaoAtual } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-/** Histórico de alertas disparados, do mais recente para o mais antigo. */
+/** Histórico de alertas. Analista vê os seus; admin vê os de todos. */
 export async function GET(req: Request) {
+  const sessao = await sessaoAtual();
+  if (!sessao) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const limite = Math.min(Number(searchParams.get('limite') || 25), 100);
 
   const alertas = await prisma.alerta.findMany({
+    where: sessao.perfil === 'ADMIN' ? {} : { usuarioId: sessao.sub },
     orderBy: { enviadoEm: 'desc' },
     take: limite,
     select: {
@@ -21,20 +26,15 @@ export async function GET(req: Request) {
       assunto: true,
       enviadoEm: true,
       // corpoHtml fica de fora: é grande e serve pela rota de preview.
-      colaboradorId: true,
+      usuarioId: true,
+      usuario: { select: { nome: true } },
     },
   });
-
-  const colaboradores = await prisma.colaborador.findMany({
-    where: { id: { in: [...new Set(alertas.map((a) => a.colaboradorId))] } },
-    select: { id: true, nome: true },
-  });
-  const nomePorId = new Map(colaboradores.map((c) => [c.id, c.nome]));
 
   return NextResponse.json(
     alertas.map((a) => ({
       ...a,
-      nome: nomePorId.get(a.colaboradorId) ?? a.email,
+      nome: a.usuario?.nome ?? a.email,
       temPrevia: a.status === 'PREVIEW',
     })),
   );
