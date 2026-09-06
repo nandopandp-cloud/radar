@@ -260,3 +260,39 @@ a { color: var(--marca); }
 .toast.erro { background: var(--erro); }
 .toast.ok { background: var(--ok); }
 @keyframes subir { from { opacity: 0; transform: translateY(10px); } }
+
+/* ── Login ────────────────────────────────────────────── */
+.login-tela {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px; padding: 24px;
+  background: linear-gradient(135deg, #0f2b6b 0%, #1f4ed8 100%);
+}
+
+.login-cartao {
+  width: 100%; max-width: 388px;
+  background: var(--superficie);
+  border-radius: 16px; padding: 30px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .28);
+}
+
+.login-marca { display: flex; align-items: center; gap: 13px; margin-bottom: 24px; }
+.login-icone {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: var(--marca-clara); display: grid; place-items: center; font-size: 23px;
+}
+.login-nome { font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+.login-sub { font-size: 12px; color: var(--tinta-suave); margin-top: 1px; }
+.login-rodape { font-size: 12px; color: rgba(255, 255, 255, .68); }
+
+/* ── Usuário no topo ──────────────────────────────────── */
+.topo-usuario { display: flex; align-items: center; gap: 10px; }
+.topo-email { font-size: 12px; color: #c7d7ff; }
+.btn-sair {
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .26);
+  color: #fff; padding: 6px 12px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; transition: background .15s;
+}
+.btn-sair:hover { background: rgba(255, 255, 255, .24); }

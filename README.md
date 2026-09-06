@@ -9,15 +9,34 @@ de dados já contempla a origem de cada demanda.
 
 ---
 
+## Acesso
+
+A aplicação exige login. As credenciais iniciais são:
+
+| E-mail | Senha |
+|---|---|
+| `admins@msa.com` | `12345` |
+
+> ⚠️ **Troque essa senha antes de compartilhar a URL com o time.** Ela foi definida
+> para os testes iniciais. Para alterar, rode o seed com outra senha:
+> ```bash
+> ADMIN_SENHA="uma-senha-forte" npm run db:seed-admin
+> ```
+> A senha nunca é armazenada em texto puro — o banco guarda um hash bcrypt.
+
 ## Como rodar
 
 ```bash
 npm install
-cp .env.example .env      # já vem pronto para o modo preview
-npx prisma migrate dev    # cria o banco SQLite
+cp .env.example .env      # preencha DATABASE_URL e AUTH_SECRET
+npx prisma migrate dev    # cria as tabelas
+npm run db:seed-admin     # cria o administrador
 npm run db:seed           # (opcional) dados de exemplo
 npm run dev               # http://localhost:3000
 ```
+
+`AUTH_SECRET` é obrigatório em produção — sem ele a aplicação recusa iniciar, porque
+um segredo previsível permitiria forjar sessões. Gere com `openssl rand -base64 48`.
 
 Para o agendador automático, em outro terminal:
 
@@ -139,6 +158,19 @@ O que falta construir:
 
 ---
 
+## Autenticação
+
+Sessão em JWT assinado (HS256, biblioteca `jose`), guardada em cookie `httpOnly`,
+`Secure` e `SameSite=lax`, com validade de 12 horas.
+
+O `middleware.ts` protege **todas** as rotas. Páginas redirecionam para `/login`;
+APIs respondem `401`. A única exceção é `POST /api/disparo` quando vem com header de
+autorização — é o caminho do agendador externo, que tem sua própria proteção por
+`CRON_SECRET`.
+
+Login com e-mail inexistente e login com senha errada retornam a mesma mensagem, para
+não revelar quais e-mails estão cadastrados.
+
 ## Estrutura
 
 ```
@@ -158,15 +190,32 @@ lib/
   mailer.ts                SMTP com fallback para preview
   datas.ts                 dia de trabalho, dia útil, fuso
   dominio.ts               prioridades, status, origens e rótulos
-prisma/schema.prisma       Colaborador, Demanda, Alerta
+middleware.ts              protege todas as rotas
+lib/auth.ts                sessão JWT em cookie
+app/login/                 tela de login
+prisma/schema.prisma       Usuario, Colaborador, Demanda, Alerta
 scripts/
   seed.ts                  dados de exemplo
+  seed-admin.ts            cria o administrador
   scheduler.ts             cron do disparo diário
 ```
 
 ---
 
-## Migrar para Postgres
+## Produção
 
-Troque o bloco `datasource` em `prisma/schema.prisma` para `provider = "postgresql"`,
-ajuste a `DATABASE_URL` e rode `npx prisma migrate dev`. Nenhuma query precisa mudar.
+Publicado na Vercel, com Postgres no Neon (região `sa-east-1`, São Paulo).
+
+Variáveis definidas no painel da Vercel: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`,
+`MAIL_FROM`, `SCHEDULER_TZ`.
+
+Para configurar o envio real de e-mail depois, basta adicionar `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USER` e `SMTP_PASS` em Settings → Environment Variables e refazer o deploy.
+Nenhuma mudança de código é necessária — `lib/mailer.ts` detecta o modo pela presença
+de `SMTP_HOST`.
+
+### Agendamento em produção
+
+O processo `npm run scheduler` não roda na Vercel (funções são efêmeras). Use o
+Vercel Cron ou um agendador externo chamando `POST /api/disparo` com o header
+`Authorization: Bearer $CRON_SECRET`.

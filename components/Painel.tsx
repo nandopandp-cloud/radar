@@ -41,7 +41,7 @@ const ABAS = [
 
 type AbaId = (typeof ABAS)[number]['id'];
 
-export function Painel() {
+export function Painel({ usuario }: { usuario: { nome: string; email: string } }) {
   const [aba, setAba] = useState<AbaId>('demandas');
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
@@ -114,11 +114,21 @@ export function Painel() {
               <div className="logo-sub">Alerta de demandas postergadas</div>
             </div>
           </div>
-          <div className="linha">
+          <div className="topo-usuario">
             <span className="selo-modo">
               <span className="ponto" />
               Hoje · {formatarDiaCurto(hoje)}
             </span>
+            <span className="topo-email">{usuario.email}</span>
+            <button
+              className="btn-sair"
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }}
+            >
+              Sair
+            </button>
           </div>
         </div>
       </header>

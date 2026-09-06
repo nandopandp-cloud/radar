@@ -4,8 +4,18 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Usuário administrador que acessa o painel.
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  senhaHash String
+  nome      String
+  criadoEm  DateTime @default(now())
 }
 
 /// Colaborador que recebe os alertas de demandas postergadas.
