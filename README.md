@@ -79,8 +79,12 @@ O contador `vezesAdiada` é o sinal mais útil do produto: demanda adiada muitas
 ## Modo preview vs. envio real
 
 Sem `SMTP_HOST` no `.env`, o Radar roda em **modo preview**: nenhum e-mail é enviado
-e o HTML de cada mensagem é gravado em `.preview-emails/`. É o padrão, para você
-validar o conteúdo antes de mandar qualquer coisa para a equipe.
+e o HTML de cada mensagem fica guardado no banco (`Alerta.corpoHtml`), acessível pelo
+histórico de disparos na aba Alertas. É o padrão, para você validar o conteúdo antes
+de mandar qualquer coisa para a equipe.
+
+> A prévia é guardada no banco, e não em disco, porque em ambientes serverless
+> (Vercel, Lambda) o filesystem é somente leitura.
 
 Para enviar de verdade, preencha no `.env`:
 

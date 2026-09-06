@@ -7,7 +7,6 @@
 .env.local
 .env.vercel
 .next/
-.preview-emails/
 .vercel
 build/
 next-env.d.ts

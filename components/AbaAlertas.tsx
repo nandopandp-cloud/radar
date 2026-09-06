@@ -143,10 +143,9 @@ export function AbaAlertas({
         <div className="cartao-corpo pilha">
           {previa?.modo === 'PREVIEW' ? (
             <Aviso tipo="info" icone="👁">
-              <strong>Modo preview ativo.</strong> Nenhum e-mail sai de verdade — o HTML de cada
-              mensagem é gravado em <span className="mono">.preview-emails/</span>. Configure as
-              variáveis <span className="mono">SMTP_*</span> no <span className="mono">.env</span>{' '}
-              para enviar de verdade.
+              <strong>Modo preview ativo.</strong> Nenhum e-mail sai de verdade — cada mensagem
+              gerada fica guardada e pode ser aberta no histórico de disparos, abaixo. Configure
+              as variáveis <span className="mono">SMTP_*</span> para enviar de verdade.
             </Aviso>
           ) : previa && !previa.smtp.ok ? (
             <Aviso tipo="erro">
