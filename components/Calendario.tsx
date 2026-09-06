@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { COR_SITUACAO, PESO_SITUACAO, situacaoDe, type Situacao } from '@/lib/dominio';
+import {
+  COR_SITUACAO, PESO_SITUACAO, ROTULO_SITUACAO, situacaoDe, type Situacao,
+} from '@/lib/dominio';
 import { diaParaDate, somarDias } from '@/lib/datas';
 import { IconeDireita, IconeEsquerda } from '@/components/icones';
 import type { Demanda } from '@/lib/tipos';
@@ -72,7 +74,7 @@ export function Calendario({
         <button className="cal-nav" onClick={() => navegar(-1)} aria-label="Mês anterior">
           <IconeEsquerda size={17} />
         </button>
-        <div className="cal-mes" style={{ textTransform: 'capitalize' }}>{rotuloMes}</div>
+        <div className="cal-mes">{rotuloMes}</div>
         <button className="cal-nav" onClick={() => navegar(1)} aria-label="Próximo mês">
           <IconeDireita size={17} />
         </button>
@@ -94,12 +96,6 @@ export function Calendario({
             const doMes = data.getUTCMonth() === mes;
             const lista = porDia.get(dia) ?? [];
 
-            // Um ponto por situação presente no dia, com a contagem.
-            const contagem = new Map<Situacao, number>();
-            for (const { situacao } of lista) {
-              contagem.set(situacao, (contagem.get(situacao) ?? 0) + 1);
-            }
-
             return (
               <button
                 key={dia}
@@ -112,27 +108,19 @@ export function Calendario({
                 </span>
 
                 {lista.length > 0 && (
-                  <>
-                    <div className="cal-marcas">
-                      {[...contagem.entries()].map(([situacao, n]) => (
-                        <span className="marca-ponto" key={situacao}>
-                          <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="cal-itens">
-                      {lista.slice(0, 2).map(({ d, situacao }) => (
-                        <span className="cal-item" key={d.id}>
-                          <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
-                          <span className="cal-item-texto">{d.titulo}</span>
-                        </span>
-                      ))}
-                      {lista.length > 2 && (
-                        <span className="cal-mais">+{lista.length - 2} demandas</span>
-                      )}
-                    </div>
-                  </>
+                  <div className="cal-itens">
+                    {lista.slice(0, 2).map(({ d, situacao }) => (
+                      <span className="cal-item" key={d.id}>
+                        <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                        <span className="cal-item-texto">{d.titulo}</span>
+                      </span>
+                    ))}
+                    {lista.length > 2 && (
+                      <span className="cal-mais">
+                        +{lista.length - 2} {lista.length - 2 === 1 ? 'demanda' : 'demandas'}
+                      </span>
+                    )}
+                  </div>
                 )}
               </button>
             );
@@ -140,13 +128,10 @@ export function Calendario({
         </div>
 
         <div className="legenda">
-          {(['ATRASADA', 'PENDENTE', 'EM_ANDAMENTO', 'CONCLUIDA'] as Situacao[]).map((s) => (
+          {(['ATRASADA', 'PENDENTE', 'CONCLUIDA', 'EM_ANDAMENTO'] as Situacao[]).map((s) => (
             <span className="legenda-item" key={s}>
               <span className="ponto" style={{ background: COR_SITUACAO[s] }} />
-              {s === 'ATRASADA' ? 'Atrasada'
-                : s === 'PENDENTE' ? 'Pendente'
-                : s === 'EM_ANDAMENTO' ? 'Em andamento'
-                : 'Concluída'}
+              {ROTULO_SITUACAO[s]}
             </span>
           ))}
         </div>

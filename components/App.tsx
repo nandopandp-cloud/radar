@@ -6,8 +6,10 @@ import { TelaCalendario } from '@/components/TelaCalendario';
 import { TelaDemandas } from '@/components/TelaDemandas';
 import { TelaAlertas } from '@/components/TelaAlertas';
 import { TelaEquipe } from '@/components/TelaEquipe';
+import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { GavetaNova } from '@/components/GavetaNova';
+import { ModalDia } from '@/components/ModalDia';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
@@ -28,6 +30,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
 
   const [detalhe, setDetalhe] = useState<Demanda | null>(null);
   const [novaEm, setNovaEm] = useState<string | null>(null);
+  const [diaAberto, setDiaAberto] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const notificar = useCallback((texto: string, tipo: Toast['tipo'] = 'info') => {
@@ -85,7 +88,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           mes={mes}
           diaSelecionado={diaSelecionado}
           aoMudarMes={(a, m) => { setAno(a); setMes(m); }}
-          aoSelecionarDia={setDiaSelecionado}
+          aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
         />
@@ -102,8 +105,22 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         />
       ) : aba === 'alertas' ? (
         <TelaAlertas sessao={sessao} notificar={notificar} aoDisparar={carregar} />
+      ) : aba === 'perfil' ? (
+        <TelaPerfil sessao={sessao} aoAtualizar={carregar} notificar={notificar} />
       ) : (
         <TelaEquipe sessao={sessao} equipe={equipe} aoAtualizar={carregar} notificar={notificar} />
+      )}
+
+      {diaAberto && (
+        <ModalDia
+          dia={diaAberto}
+          demandas={demandas}
+          hoje={hoje}
+          sessao={sessao}
+          aoFechar={() => setDiaAberto(null)}
+          aoAbrirDemanda={setDetalhe}
+          aoNovaDemanda={abrirNova}
+        />
       )}
 
       {detalhe && (

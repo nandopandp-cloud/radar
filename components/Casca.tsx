@@ -8,7 +8,7 @@ import {
 } from '@/components/icones';
 import type { SessaoUI } from '@/lib/tipos';
 
-export type Aba = 'calendario' | 'demandas' | 'alertas' | 'equipe';
+export type Aba = 'calendario' | 'demandas' | 'alertas' | 'equipe' | 'perfil';
 
 const ITENS: { id: Aba; rotulo: string; Icone: typeof IconeCalendario; soAdmin?: boolean }[] = [
   { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
@@ -69,15 +69,20 @@ export function Casca({
         </div>
 
         <div className="barra-rodape">
-          <div className="perfil-linha">
+          <button
+            className="perfil-linha"
+            aria-current={aba === 'perfil'}
+            onClick={() => { aoTrocarAba('perfil'); setMenuAberto(false); }}
+            title="Minha conta"
+          >
             <div className="avatar">{iniciais(sessao.nome)}</div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, textAlign: 'left' }}>
               <div className="perfil-nome">{sessao.nome}</div>
               <div className="perfil-cargo">
                 {sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA'}
               </div>
             </div>
-          </div>
+          </button>
           <button
             className="btn-sair-barra"
             onClick={async () => {
@@ -104,15 +109,19 @@ export function Casca({
             <IconeMenu size={21} />
           </button>
           <div className="cabecalho-acoes">
-            <div className="linha" style={{ gap: 10 }}>
+            <button
+              className="perfil-botao"
+              onClick={() => aoTrocarAba('perfil')}
+              title="Minha conta"
+            >
               <div className="avatar avatar-sm">{iniciais(sessao.nome)}</div>
-              <div style={{ lineHeight: 1.3 }}>
+              <div style={{ lineHeight: 1.3, textAlign: 'left' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{sessao.nome}</div>
                 <div style={{ fontSize: 12, color: 'var(--tinta-suave)' }}>
                   {sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA'}
                 </div>
               </div>
-            </div>
+            </button>
           </div>
         </header>
 
