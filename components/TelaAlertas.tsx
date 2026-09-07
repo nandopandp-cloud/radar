@@ -15,7 +15,7 @@ type Grupo = {
 
 type Previa = {
   diaReferencia: string;
-  modo: 'SMTP' | 'PREVIEW';
+  modo: 'SMTP' | 'RESEND' | 'PREVIEW';
   smtp: { ok: boolean; detalhe: string };
   totalAutores: number;
   totalDemandas: number;
@@ -59,7 +59,7 @@ export function TelaAlertas({
 
   async function disparar() {
     if (!previa?.totalAutores) return;
-    const acao = previa.modo === 'SMTP' ? 'enviar os e-mails' : 'gerar as prévias';
+    const acao = previa.modo !== 'PREVIEW' ? 'enviar os e-mails' : 'gerar as prévias';
     if (!confirm(`Confirmar ${acao} para ${previa.totalAutores} analista(s)?`)) return;
 
     setEnviando(true);
@@ -74,7 +74,7 @@ export function TelaAlertas({
       notificar(
         dados.erros > 0
           ? `Concluído com ${dados.erros} erro(s).`
-          : dados.modo === 'SMTP'
+          : dados.modo !== 'PREVIEW'
             ? `${dados.enviados} e-mail(s) enviado(s).`
             : `${dados.enviados} prévia(s) gerada(s) — nada foi enviado.`,
         dados.erros > 0 ? 'erro' : 'ok',
@@ -136,7 +136,7 @@ export function TelaAlertas({
                   onClick={disparar}
                 >
                   {enviando ? <><span className="girando">⏳</span> Processando…</>
-                    : previa?.modo === 'SMTP' ? 'Enviar alertas agora' : 'Gerar prévias agora'}
+                    : previa?.modo !== 'PREVIEW' ? 'Enviar alertas agora' : 'Gerar prévias agora'}
                 </button>
               </div>
             )}

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { diaParaDate } from '@/lib/datas';
 import { assuntoEmail, montarHtml, montarTexto } from '@/lib/email-template';
-import { enviarEmail, smtpConfigurado } from '@/lib/mailer';
+import { enviarEmail, resendConfigurado, smtpConfigurado } from '@/lib/mailer';
 import { buscarVencidas, diaReferenciaPadrao, registrarAlerta } from '@/lib/vencidas';
 
 export type ItemResultado = {
@@ -15,7 +15,7 @@ export type ItemResultado = {
 
 export type ResultadoDisparo = {
   diaReferencia: string;
-  modo: 'SMTP' | 'PREVIEW';
+  modo: 'SMTP' | 'RESEND' | 'PREVIEW';
   totalAutores: number;
   totalDemandas: number;
   enviados: number;
@@ -36,7 +36,11 @@ export async function dispararAlertas(opcoes: {
 } = {}): Promise<ResultadoDisparo> {
   const diaReferencia = opcoes.diaReferencia || diaReferenciaPadrao();
   const forcar = opcoes.forcar ?? false;
-  const modo: 'SMTP' | 'PREVIEW' = smtpConfigurado() ? 'SMTP' : 'PREVIEW';
+  const modo: 'SMTP' | 'RESEND' | 'PREVIEW' = resendConfigurado()
+    ? 'RESEND'
+    : smtpConfigurado()
+      ? 'SMTP'
+      : 'PREVIEW';
 
   const grupos = await buscarVencidas(diaReferencia);
   const dataRef = diaParaDate(diaReferencia);
@@ -73,7 +77,7 @@ export async function dispararAlertas(opcoes: {
     });
 
     const status: ItemResultado['status'] = resultado.ok
-      ? resultado.modo === 'SMTP'
+      ? resultado.modo !== 'PREVIEW'
         ? 'ENVIADO'
         : 'PREVIEW'
       : 'ERRO';

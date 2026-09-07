@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sessaoAtual } from '@/lib/auth';
 import { dispararAlertas } from '@/lib/disparo';
-import { smtpConfigurado, verificarSmtp } from '@/lib/mailer';
+import { resendConfigurado, smtpConfigurado, verificarSmtp } from '@/lib/mailer';
 import { buscarVencidas, diaReferenciaPadrao } from '@/lib/vencidas';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     diaReferencia: dia,
-    modo: smtpConfigurado() ? 'SMTP' : 'PREVIEW',
+    modo: resendConfigurado() ? 'RESEND' : smtpConfigurado() ? 'SMTP' : 'PREVIEW',
     smtp,
     totalAutores: grupos.length,
     totalDemandas: grupos.reduce((acc, g) => acc + g.demandas.length, 0),
