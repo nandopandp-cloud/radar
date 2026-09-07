@@ -3,8 +3,27 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { LogoRadar } from '@/components/Logo';
+import { MarcaRadar } from '@/components/Logo';
 import { CampoSenha } from '@/components/CampoSenha';
+import { LogoGoogle } from '@/components/icones';
+
+function IconeEnvelope() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+      <path d="M3.5 6.5 12 13l8.5-6.5" />
+    </svg>
+  );
+}
+
+function IconeEscudo() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.5 4 5.5v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10v-6L12 2.5Z" />
+      <path d="M9 12l2 2 4-4.5" />
+    </svg>
+  );
+}
 
 function Formulario() {
   const router = useRouter();
@@ -40,56 +59,76 @@ function Formulario() {
   return (
     <div className="login-tela">
       <div className="login-cartao">
-        <div className="login-marca">
-          <LogoRadar size={44} />
-          <div>
-            <div className="marca-nome">Radar</div>
-            <div className="login-sub">Gestão de prazos da MSA</div>
+        <div className="login-vitrine">
+          <div className="login-vitrine-marca">
+            <MarcaRadar size={40} />
           </div>
+          <p className="login-vitrine-slogan">Mais organização para o seu dia.</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/radar-simbolo.png" alt="" className="login-vitrine-radar" />
         </div>
 
-        <form onSubmit={entrar}>
-          <div className="campo">
-            <label className="rotulo" htmlFor="email">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              className="entrada"
-              placeholder="voce@msa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              autoFocus
-              required
-            />
-          </div>
+        <div className="login-formulario">
+          <h1 className="login-titulo">Bem-vindo ao Radar</h1>
+          <p className="login-sub">Acesse sua conta para continuar</p>
 
-          <div className="campo">
-            <label className="rotulo" htmlFor="senha">Senha</label>
-            <CampoSenha
-              id="senha"
-              placeholder="••••••"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
-          {erro && (
-            <div className="aviso aviso-erro" style={{ marginBottom: 14 }}>
-              <span className="aviso-icone">✕</span>
-              <div>{erro}</div>
+          <form onSubmit={entrar}>
+            <div className="campo login-campo-icone">
+              <span className="login-campo-icone-simbolo"><IconeEnvelope /></span>
+              <input
+                id="email"
+                type="email"
+                className="entrada"
+                placeholder="Seu e-mail corporativo"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                autoFocus
+                required
+              />
             </div>
-          )}
 
-          <button type="submit" className="btn btn-primario btn-bloco" disabled={entrando}>
-            {entrando ? <><span className="girando">⏳</span> Entrando…</> : 'Entrar'}
+            <div className="campo login-campo-icone">
+              <span className="login-campo-icone-simbolo"><IconeEscudo /></span>
+              <CampoSenha
+                id="senha"
+                placeholder="Sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            {erro && (
+              <div className="aviso aviso-erro" style={{ marginBottom: 14 }}>
+                <span className="aviso-icone">✕</span>
+                <div>{erro}</div>
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primario btn-bloco" disabled={entrando}>
+              {entrando ? <><span className="girando">⏳</span> Entrando…</> : <>Entrar →</>}
+            </button>
+          </form>
+
+          <div className="login-divisor">ou</div>
+
+          <button
+            type="button"
+            className="btn-google"
+            onClick={() => setErro('Login com Google ainda não está disponível.')}
+          >
+            <LogoGoogle size={18} />
+            Entrar com o Google
           </button>
-        </form>
-      </div>
 
-      <div className="login-rodape">Radar MSA · acesso restrito</div>
+          <div className="login-seguranca">
+            <IconeEscudo />
+            <div>Seus dados estão seguros com a gente.</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
