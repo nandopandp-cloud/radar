@@ -44,15 +44,6 @@ function obterTransporter(): Transporter {
   return transporterCache;
 }
 
-/** Extrai "nome <email>" ou apenas "email" do formato usado em MAIL_FROM. */
-function parseRemetente(bruto: string): { name?: string; email: string } {
-  const match = bruto.match(/^(.*)<(.+)>$/);
-  if (match) {
-    return { name: match[1].trim() || undefined, email: match[2].trim() };
-  }
-  return { email: bruto.trim() };
-}
-
 async function enviarViaResend(opcoes: {
   para: string;
   assunto: string;
