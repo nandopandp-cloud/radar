@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Casca, type Aba } from '@/components/Casca';
 import { TelaCalendario } from '@/components/TelaCalendario';
 import { TelaDemandas } from '@/components/TelaDemandas';
@@ -15,6 +16,7 @@ import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
 
 export function App({ sessao }: { sessao: SessaoUI }) {
+  const searchParams = useSearchParams();
   const hoje = paraDiaISO();
   const inicio = new Date(`${hoje}T00:00:00Z`);
 
@@ -39,7 +41,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200);
   }, []);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (): Promise<void> => {
     try {
       const params = new URLSearchParams();
       if (sessao.perfil === 'ADMIN' && autorFiltro !== 'TODOS') params.set('autorId', autorFiltro);
@@ -62,6 +64,19 @@ export function App({ sessao }: { sessao: SessaoUI }) {
   }, [notificar, autorFiltro, sessao.perfil]);
 
   useEffect(() => { void carregar(); }, [carregar]);
+
+  // Link do e-mail: ?demanda=<id> abre a demanda direto, sem precisar navegar.
+  const linkDemanda = searchParams.get('demanda');
+  const [linkAberto, setLinkAberto] = useState(false);
+  useEffect(() => {
+    if (!linkDemanda || linkAberto || demandas.length === 0) return;
+    const alvo = demandas.find((d) => d.id === linkDemanda);
+    if (alvo) {
+      setAba('demandas');
+      setDetalhe(alvo);
+    }
+    setLinkAberto(true);
+  }, [linkDemanda, linkAberto, demandas]);
 
   const atrasadas = useMemo(
     () =>
@@ -103,7 +118,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
         />
-      ) : aba === 'alertas' ? (
+      ) : aba === 'alertas' && sessao.perfil === 'ADMIN' ? (
         <TelaAlertas sessao={sessao} notificar={notificar} aoDisparar={carregar} />
       ) : aba === 'perfil' ? (
         <TelaPerfil sessao={sessao} aoAtualizar={carregar} notificar={notificar} />

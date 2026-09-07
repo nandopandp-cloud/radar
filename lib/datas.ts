@@ -61,3 +61,13 @@ export function formatarDiaCurto(dia: string): string {
     month: '2-digit',
   }).format(diaParaDate(dia));
 }
+
+/** Formata "YYYY-MM-DD" como "05/09/2026" (dia completo, sem o dia da semana). */
+export function formatarDiaCompleto(dia: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(diaParaDate(dia));
+}

@@ -10,7 +10,7 @@ type Grupo = {
   usuarioId: string;
   nome: string;
   email: string;
-  demandas: { id: string; titulo: string; prioridade: string; prazo: string; diasVencido: number }[];
+  demandas: { id: string; titulo: string; prioridade: string; prazo: string; atrasada: boolean; diasVencido: number }[];
 };
 
 type Previa = {
@@ -193,8 +193,13 @@ export function TelaAlertas({
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="celula-titulo">{d.titulo}</div>
                             <div className="celula-sub">
-                              Prazo era {formatarDiaCurto(d.prazo)} ·{' '}
-                              {d.diasVencido === 1 ? 'venceu ontem' : `vencida há ${d.diasVencido} dias`}
+                              Prazo {d.atrasada ? 'era' : 'é hoje,'} {formatarDiaCurto(d.prazo)}
+                              {d.atrasada && (
+                                <>
+                                  {' · '}
+                                  {d.diasVencido === 1 ? 'venceu ontem' : `vencida há ${d.diasVencido} dias`}
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { IconeCheck, IconeUsuario } from '@/components/icones';
+import { CampoSenha } from '@/components/CampoSenha';
 import type { Notificar, SessaoUI } from '@/lib/tipos';
 
 function iniciais(nome: string) {
@@ -138,8 +139,8 @@ export function TelaPerfil({
           <div className="cartao-corpo">
             <div className="campo">
               <label className="rotulo" htmlFor="s-atual">Senha atual</label>
-              <input
-                id="s-atual" type="password" className="entrada" required
+              <CampoSenha
+                id="s-atual" required
                 autoComplete="current-password" placeholder="••••••"
                 value={senhas.atual}
                 onChange={(e) => setSenhas({ ...senhas, atual: e.target.value })}
@@ -147,8 +148,8 @@ export function TelaPerfil({
             </div>
             <div className="campo">
               <label className="rotulo" htmlFor="s-nova">Nova senha</label>
-              <input
-                id="s-nova" type="password" className="entrada" required minLength={6}
+              <CampoSenha
+                id="s-nova" required minLength={6}
                 autoComplete="new-password" placeholder="Mínimo 6 caracteres"
                 value={senhas.nova}
                 onChange={(e) => setSenhas({ ...senhas, nova: e.target.value })}
@@ -156,8 +157,8 @@ export function TelaPerfil({
             </div>
             <div className="campo">
               <label className="rotulo" htmlFor="s-conf">Confirmar nova senha</label>
-              <input
-                id="s-conf" type="password" className="entrada" required
+              <CampoSenha
+                id="s-conf" required
                 autoComplete="new-password" placeholder="Repita a nova senha"
                 value={senhas.confirma}
                 onChange={(e) => setSenhas({ ...senhas, confirma: e.target.value })}

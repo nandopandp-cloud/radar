@@ -61,7 +61,7 @@ export async function dispararAlertas(opcoes: {
       }
     }
 
-    const assunto = assuntoEmail(grupo, diaReferencia);
+    const assunto = assuntoEmail(grupo);
     const html = montarHtml(grupo, diaReferencia);
 
     const resultado = await enviarEmail({
@@ -102,9 +102,10 @@ export async function dispararAlertas(opcoes: {
       },
     });
 
-    // Só contamos o aviso quando ele de fato saiu.
+    // Só contamos o aviso quando ele de fato saiu, e só para o que já está
+    // atrasado — o lembrete das que vencem hoje não é uma cobrança.
     if (status === 'ENVIADO' || status === 'PREVIEW') {
-      await registrarAlerta(grupo.demandas.map((d) => d.id));
+      await registrarAlerta(grupo.demandas.filter((d) => d.atrasada).map((d) => d.id));
     }
 
     itens.push({

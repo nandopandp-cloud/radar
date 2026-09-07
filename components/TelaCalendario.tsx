@@ -61,7 +61,7 @@ export function TelaCalendario({
         </button>
       </div>
 
-      <div className="pilha">
+      <div className="grade-calendario">
         <Calendario
           ano={ano}
           mes={mes}
@@ -73,35 +73,35 @@ export function TelaCalendario({
         />
 
         <div className="cartao">
-            <div className="cartao-cabecalho">
-              <div className="cartao-titulo">Resumo do mês</div>
-              <span className="texto-suave primeira-maiuscula">
-                {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-                  .format(new Date(Date.UTC(ano, mes, 1)))}
-              </span>
+          <div className="cartao-cabecalho">
+            <div className="cartao-titulo">Resumo do mês</div>
+            <span className="texto-suave primeira-maiuscula">
+              {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+                .format(new Date(Date.UTC(ano, mes, 1)))}
+            </span>
+          </div>
+          <div className="resumo-grade resumo-grade-coluna">
+            <div className="resumo-caixa azul">
+              <div className="resumo-valor" style={{ color: 'var(--pendente)' }}>{resumo.pendentes}</div>
+              <div className="resumo-rotulo">Demandas pendentes</div>
+              <span className="resumo-icone" style={{ color: 'var(--pendente)' }}><IconeRelogio size={19} /></span>
             </div>
-            <div className="resumo-grade">
-              <div className="resumo-caixa azul">
-                <div className="resumo-valor" style={{ color: 'var(--pendente)' }}>{resumo.pendentes}</div>
-                <div className="resumo-rotulo">Demandas pendentes</div>
-                <span className="resumo-icone" style={{ color: 'var(--pendente)' }}><IconeRelogio size={19} /></span>
-              </div>
-              <div className="resumo-caixa vermelho">
-                <div className="resumo-valor" style={{ color: 'var(--atrasada)' }}>{resumo.atrasadas}</div>
-                <div className="resumo-rotulo">Demandas atrasadas</div>
-                <span className="resumo-icone" style={{ color: 'var(--atrasada)' }}><IconeAlerta size={19} /></span>
-              </div>
-              <div className="resumo-caixa verde">
-                <div className="resumo-valor" style={{ color: 'var(--concluida)' }}>{resumo.concluidas}</div>
-                <div className="resumo-rotulo">Demandas concluídas</div>
-                <span className="resumo-icone" style={{ color: 'var(--concluida)' }}><IconeCheckCirculo size={19} /></span>
-              </div>
-              <div className="resumo-caixa cinza">
-                <div className="resumo-valor">{resumo.total}</div>
-                <div className="resumo-rotulo">Total no mês</div>
-                <span className="resumo-icone" style={{ color: 'var(--tinta-tenue)' }}><IconeDocumento size={19} /></span>
-              </div>
+            <div className="resumo-caixa vermelho">
+              <div className="resumo-valor" style={{ color: 'var(--atrasada)' }}>{resumo.atrasadas}</div>
+              <div className="resumo-rotulo">Demandas atrasadas</div>
+              <span className="resumo-icone" style={{ color: 'var(--atrasada)' }}><IconeAlerta size={19} /></span>
             </div>
+            <div className="resumo-caixa verde">
+              <div className="resumo-valor" style={{ color: 'var(--concluida)' }}>{resumo.concluidas}</div>
+              <div className="resumo-rotulo">Demandas concluídas</div>
+              <span className="resumo-icone" style={{ color: 'var(--concluida)' }}><IconeCheckCirculo size={19} /></span>
+            </div>
+            <div className="resumo-caixa cinza">
+              <div className="resumo-valor">{resumo.total}</div>
+              <div className="resumo-rotulo">Total no mês</div>
+              <span className="resumo-icone" style={{ color: 'var(--tinta-tenue)' }}><IconeDocumento size={19} /></span>
+            </div>
+          </div>
         </div>
       </div>
     </>

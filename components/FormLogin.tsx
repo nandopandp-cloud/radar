@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { LogoRadar } from '@/components/Logo';
+import { CampoSenha } from '@/components/CampoSenha';
 
 function Formulario() {
   const router = useRouter();
@@ -65,10 +66,8 @@ function Formulario() {
 
           <div className="campo">
             <label className="rotulo" htmlFor="senha">Senha</label>
-            <input
+            <CampoSenha
               id="senha"
-              type="password"
-              className="entrada"
               placeholder="••••••"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}

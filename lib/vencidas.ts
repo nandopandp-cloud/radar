@@ -9,8 +9,10 @@ export type DemandaVencida = {
   prioridade: string;
   status: string;
   categoria: string | null;
-  /// Prazo de entrega que já venceu.
+  /// Prazo de entrega: já vencido ou vencendo hoje, conforme `atrasada`.
   prazo: string;
+  /// true = já passou do prazo; false = o prazo é hoje (ainda dentro do dia).
+  atrasada: boolean;
   diasVencido: number;
   vezesAlertada: number;
 };
@@ -24,18 +26,23 @@ export type GrupoAutor = {
 };
 
 /**
- * Demandas cujo prazo já venceu e que continuam pendentes, agrupadas por autor.
+ * Demandas pendentes que já venceram ou vencem hoje, agrupadas por autor —
+ * é o resumo diário enviado por e-mail.
  *
- * A regra do produto: o prazo é o último dia válido para entregar. Uma demanda
- * com prazo em 10 só é cobrada a partir do dia 11.
+ * Regra do produto: o prazo é o último dia válido para entregar. Uma demanda
+ * com prazo em 10 aparece como "vence hoje" no dia 10 e como "atrasada" a
+ * partir do dia 11. Só demandas atrasadas contam para `vezesAlertada` — o
+ * lembrete do próprio dia do prazo não é considerado uma cobrança.
  */
 export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[]> {
   const limite = diaParaDate(diaReferencia);
+  const amanha = diaParaDate(diaReferencia);
+  amanha.setUTCDate(amanha.getUTCDate() + 1);
 
   const demandas = await prisma.demanda.findMany({
     where: {
       status: { in: STATUS_PENDENTES },
-      prazo: { lt: limite },
+      prazo: { lt: amanha },
     },
     include: { autor: true },
     orderBy: { prazo: 'asc' },
@@ -47,6 +54,7 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
     if (!d.autor.ativo) continue;
 
     const prazo = d.prazo.toISOString().slice(0, 10);
+    const atrasada = d.prazo.getTime() < limite.getTime();
     const diasVencido = Math.round((limite.getTime() - d.prazo.getTime()) / 86_400_000);
 
     const grupo = porAutor.get(d.autorId) ?? {
@@ -65,6 +73,7 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
       status: d.status,
       categoria: d.categoria,
       prazo,
+      atrasada,
       diasVencido,
       vezesAlertada: d.vezesAlertada,
     });
@@ -72,9 +81,10 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
     porAutor.set(d.autorId, grupo);
   }
 
-  // Mais grave primeiro: prioridade alta, depois vencida há mais tempo.
+  // Mais grave primeiro: atrasada antes de hoje, depois prioridade, depois mais antiga.
   for (const grupo of porAutor.values()) {
     grupo.demandas.sort((a, b) => {
+      if (a.atrasada !== b.atrasada) return a.atrasada ? -1 : 1;
       const pa = PESO_PRIORIDADE[a.prioridade as Prioridade] ?? 9;
       const pb = PESO_PRIORIDADE[b.prioridade as Prioridade] ?? 9;
       if (pa !== pb) return pa - pb;
@@ -85,7 +95,10 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
   return [...porAutor.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }
 
-/** Marca as demandas como alertadas, para o e-mail poder dizer "3º aviso". */
+/**
+ * Marca como alertadas as demandas já atrasadas (exclui as que só vencem
+ * hoje — o lembrete do dia do prazo não conta como cobrança).
+ */
 export async function registrarAlerta(ids: string[]): Promise<number> {
   if (ids.length === 0) return 0;
   const r = await prisma.demanda.updateMany({
@@ -95,7 +108,7 @@ export async function registrarAlerta(ids: string[]): Promise<number> {
   return r.count;
 }
 
-/** O alerta de hoje cobra tudo que venceu até ontem. */
+/** O alerta de hoje cobre o que venceu até ontem e o que vence hoje. */
 export function diaReferenciaPadrao(): string {
   return paraDiaISO();
 }

@@ -13,7 +13,7 @@ export type Aba = 'calendario' | 'demandas' | 'alertas' | 'equipe' | 'perfil';
 const ITENS: { id: Aba; rotulo: string; Icone: typeof IconeCalendario; soAdmin?: boolean }[] = [
   { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
   { id: 'demandas', rotulo: 'Minhas demandas', Icone: IconeLista },
-  { id: 'alertas', rotulo: 'Alertas', Icone: IconeSino },
+  { id: 'alertas', rotulo: 'Alertas', Icone: IconeSino, soAdmin: true },
   { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe },
 ];
 

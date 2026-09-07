@@ -141,6 +141,14 @@ export const IconeOlho = ({ size = 19, className }: P) => (
   </svg>
 );
 
+export const IconeOlhoFechado = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 3l18 18" />
+    <path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C4 8.3 2 12 2 12s3.6 7 10 7a10.2 10.2 0 0 0 4.2-.9" />
+    <path d="M9.9 10a3 3 0 0 0 4.2 4.2" />
+  </svg>
+);
+
 export const IconeEngrenagem = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
     <circle cx="12" cy="12" r="3" />
