@@ -71,3 +71,16 @@ export function formatarDiaCompleto(dia: string): string {
     year: 'numeric',
   }).format(diaParaDate(dia));
 }
+
+/** Primeiro dia do mês a que "YYYY-MM-DD" pertence. */
+export function inicioDoMes(dia: string): string {
+  return `${dia.slice(0, 7)}-01`;
+}
+
+/** Último dia do mês a que "YYYY-MM-DD" pertence. */
+export function fimDoMes(dia: string): string {
+  const d = diaParaDate(dia);
+  // Dia 0 do mês seguinte é o último dia do mês atual.
+  const ultimo = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+  return ultimo.toISOString().slice(0, 10);
+}
