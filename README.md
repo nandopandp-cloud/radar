@@ -101,9 +101,37 @@ MAIL_FROM="Radar <conta@dominio.com>"   # precisa ser o endereço autenticado
 
 ## Agendamento
 
-`POST /api/disparo` com o header `Authorization: Bearer $CRON_SECRET` executa a
-apuração do dia. Em produção use o Vercel Cron ou um agendador externo — o processo
-`npm run scheduler` não roda em serverless.
+O envio automático roda pelo **Vercel Cron**, configurado em `vercel.json`:
+
+```json
+"crons": [{ "path": "/api/cron/disparo", "schedule": "0 9 * * 1-5" }]
+```
+
+O Vercel Cron executa em **UTC**, então `9:00 UTC` equivale a **6h de Brasília**
+(UTC-3), de segunda a sexta. Se o Brasil voltar a adotar horário de verão, esta
+expressão precisa ser revista.
+
+A rota exige `CRON_SECRET` — o Vercel Cron envia esse header automaticamente
+quando a variável existe no projeto. Sem ela, a rota responde 503 e nada é
+enviado, em vez de ficar aberta na internet.
+
+> No plano Hobby da Vercel o horário é aproximado (a execução acontece dentro
+> da hora agendada, não no minuto exato) e há limite de um disparo por dia.
+> O plano Pro executa no horário exato.
+
+### Testar o disparo sem acionar o time
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://SEU-DOMINIO/api/cron/disparo?apenasUsuarioId=<id>&forcar=true"
+```
+
+Parâmetros aceitos: `apenasUsuarioId` (restringe o destinatário), `dia`
+(muda a data de apuração) e `forcar` (reenvia mesmo se já houve alerta hoje).
+O agendamento em si nunca envia parâmetros — dispara para todos os analistas.
+
+O script `scripts/scheduler.ts` só serve para rodar fora da Vercel, numa máquina
+com processo contínuo; em serverless ele não funciona.
 
 ---
 
