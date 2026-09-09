@@ -29,10 +29,13 @@ export type ResultadoDisparo = {
  *
  * @param diaReferencia dia "YYYY-MM-DD" da apuração. Padrão: hoje.
  * @param forcar reenvia mesmo que já exista alerta registrado para o dia.
+ * @param apenasUsuarioId restringe o envio a um único analista — útil para
+ *   testar o disparo sem acionar a caixa de entrada do time inteiro.
  */
 export async function dispararAlertas(opcoes: {
   diaReferencia?: string;
   forcar?: boolean;
+  apenasUsuarioId?: string;
 } = {}): Promise<ResultadoDisparo> {
   const diaReferencia = opcoes.diaReferencia || diaReferenciaPadrao();
   const forcar = opcoes.forcar ?? false;
@@ -42,7 +45,10 @@ export async function dispararAlertas(opcoes: {
       ? 'SMTP'
       : 'PREVIEW';
 
-  const grupos = await buscarVencidas(diaReferencia);
+  const todos = await buscarVencidas(diaReferencia);
+  const grupos = opcoes.apenasUsuarioId
+    ? todos.filter((g) => g.usuarioId === opcoes.apenasUsuarioId)
+    : todos;
   const dataRef = diaParaDate(diaReferencia);
   const itens: ItemResultado[] = [];
 

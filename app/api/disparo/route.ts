@@ -55,6 +55,11 @@ export async function POST(req: Request) {
     diaReferencia:
       typeof corpo?.dia === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(corpo.dia) ? corpo.dia : undefined,
     forcar: corpo?.forcar === true,
+    // Permite ao admin reenviar para uma pessoa só, sem acionar o time todo.
+    apenasUsuarioId:
+      typeof corpo?.apenasUsuarioId === 'string' && corpo.apenasUsuarioId
+        ? corpo.apenasUsuarioId
+        : undefined,
   });
 
   return NextResponse.json(resultado);
