@@ -16,8 +16,19 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // O agendador autentica por CRON_SECRET dentro da própria rota.
-  if (pathname === '/api/disparo' && req.method === 'POST') {
+  /*
+   * Rotas do agendador: chegam sem cookie de sessão e se autenticam sozinhas
+   * por CRON_SECRET. O middleware só confere que veio algum segredo — a
+   * validação real acontece dentro da rota, que compara com a variável.
+   *
+   * /api/cron/disparo é chamada pelo Vercel Cron (sempre GET);
+   * /api/disparo aceita POST de agendadores externos.
+   */
+  const rotaDeAgendador =
+    pathname === '/api/cron/disparo' ||
+    (pathname === '/api/disparo' && req.method === 'POST');
+
+  if (rotaDeAgendador) {
     const temSegredo =
       req.headers.get('authorization') || req.headers.get('x-cron-secret');
     if (temSegredo) return NextResponse.next();
