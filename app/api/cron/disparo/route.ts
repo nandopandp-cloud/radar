@@ -34,7 +34,21 @@ export async function GET(req: Request) {
     return NextResponse.json({ erro: 'Não autorizado.' }, { status: 401 });
   }
 
-  const resultado = await dispararAlertas();
+  /*
+   * Parâmetros de teste, para validar o agendamento sem acionar o time todo.
+   * O Vercel Cron nunca os envia — ele chama a rota limpa, disparando para
+   * todos os analistas, que é o comportamento de produção.
+   */
+  const { searchParams } = new URL(req.url);
+  const apenasUsuarioId = searchParams.get('apenasUsuarioId') || undefined;
+  const dia = searchParams.get('dia');
+  const diaReferencia = dia && /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : undefined;
+
+  const resultado = await dispararAlertas({
+    apenasUsuarioId,
+    diaReferencia,
+    forcar: searchParams.get('forcar') === 'true',
+  });
 
   console.log(
     `[cron] ${resultado.diaReferencia} · modo ${resultado.modo} · ` +
