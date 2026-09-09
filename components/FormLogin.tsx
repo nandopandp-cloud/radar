@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { MarcaRadar } from '@/components/Logo';
 import { CampoSenha } from '@/components/CampoSenha';
-import { LogoGoogle } from '@/components/icones';
 
 function IconeEnvelope() {
   return (
@@ -79,7 +78,7 @@ function Formulario() {
                 id="email"
                 type="email"
                 className="entrada"
-                placeholder="Seu e-mail corporativo"
+                placeholder="voce@msaconsultoriacontabil.com.br"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
@@ -111,17 +110,6 @@ function Formulario() {
               {entrando ? <><span className="girando">⏳</span> Entrando…</> : <>Entrar →</>}
             </button>
           </form>
-
-          <div className="login-divisor">ou</div>
-
-          <button
-            type="button"
-            className="btn-google"
-            onClick={() => setErro('Login com Google ainda não está disponível.')}
-          >
-            <LogoGoogle size={18} />
-            Entrar com o Google
-          </button>
 
           <div className="login-seguranca">
             <IconeEscudo />

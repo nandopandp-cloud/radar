@@ -45,14 +45,17 @@ export function App({ sessao }: { sessao: SessaoUI }) {
     try {
       const params = new URLSearchParams();
       if (sessao.perfil === 'ADMIN' && autorFiltro !== 'TODOS') params.set('autorId', autorFiltro);
+
+      // A lista da equipe é restrita a administradores — nem pedimos como analista.
+      const ehAdmin = sessao.perfil === 'ADMIN';
       const [rd, re] = await Promise.all([
         fetch(`/api/demandas?${params}`),
-        fetch('/api/usuarios'),
+        ehAdmin ? fetch('/api/usuarios') : Promise.resolve(null),
       ]);
       if (!rd.ok) throw new Error('Falha ao carregar as demandas.');
       const lista: Demanda[] = await rd.json();
       setDemandas(lista);
-      if (re.ok) setEquipe(await re.json());
+      if (re?.ok) setEquipe(await re.json());
 
       // Mantém a gaveta em sincronia após uma edição.
       setDetalhe((atual) => (atual ? lista.find((d) => d.id === atual.id) ?? null : null));
@@ -122,8 +125,26 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <TelaAlertas sessao={sessao} notificar={notificar} aoDisparar={carregar} />
       ) : aba === 'perfil' ? (
         <TelaPerfil sessao={sessao} aoAtualizar={carregar} notificar={notificar} />
-      ) : (
+      ) : aba === 'equipe' && sessao.perfil === 'ADMIN' ? (
         <TelaEquipe sessao={sessao} equipe={equipe} aoAtualizar={carregar} notificar={notificar} />
+      ) : (
+        /*
+         * Aba restrita alcançada por um analista (estado antigo, link direto).
+         * Cai no calendário em vez de mostrar tela alheia — antes o fallback
+         * era a própria TelaEquipe, que vazaria a lista do time.
+         */
+        <TelaCalendario
+          sessao={sessao}
+          demandas={demandas}
+          hoje={hoje}
+          ano={ano}
+          mes={mes}
+          diaSelecionado={diaSelecionado}
+          aoMudarMes={(a, m) => { setAno(a); setMes(m); }}
+          aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
+          aoAbrirDemanda={setDetalhe}
+          aoNovaDemanda={abrirNova}
+        />
       )}
 
       {diaAberto && (

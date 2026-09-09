@@ -5,10 +5,19 @@ import { sessaoAtual } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-/** A equipe. Analista vê a lista (para saber quem existe); só o admin gerencia. */
+/**
+ * A equipe — exclusivo de administradores.
+ *
+ * A lista expõe e-mails, perfis e a carga de cada pessoa; um analista não
+ * precisa disso e não deve enxergar o time. A interface já esconde a aba
+ * Equipe dele, e esta rota fecha o caminho por trás.
+ */
 export async function GET() {
   const sessao = await sessaoAtual();
   if (!sessao) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });
+  if (sessao.perfil !== 'ADMIN') {
+    return NextResponse.json({ erro: 'Apenas administradores veem a equipe.' }, { status: 403 });
+  }
 
   const usuarios = await prisma.usuario.findMany({
     orderBy: { nome: 'asc' },

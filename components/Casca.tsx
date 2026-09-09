@@ -14,7 +14,7 @@ const ITENS: { id: Aba; rotulo: string; Icone: typeof IconeCalendario; soAdmin?:
   { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
   { id: 'demandas', rotulo: 'Minhas demandas', Icone: IconeLista },
   { id: 'alertas', rotulo: 'Alertas', Icone: IconeSino, soAdmin: true },
-  { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe },
+  { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe, soAdmin: true },
 ];
 
 function iniciais(nome: string) {
