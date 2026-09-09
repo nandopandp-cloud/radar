@@ -20,6 +20,9 @@ model Usuario {
   /// ANALISTA vê apenas as próprias demandas; ADMIN vê as de todo o time.
   perfil    String   @default("ANALISTA") // ANALISTA | ADMIN
   ativo     Boolean  @default(true)
+  /// Foto de perfil como data URI (data:image/...;base64,...), redimensionada
+  /// no navegador antes do envio. Nulo = avatar de iniciais.
+  avatar    String?
   criadoEm  DateTime @default(now())
 
   demandas  Demanda[]

@@ -8,6 +8,7 @@ export type UsuarioResumo = {
 export type Usuario = UsuarioResumo & {
   perfil: string;
   ativo: boolean;
+  avatar?: string | null;
   criadoEm?: string;
   _count?: { demandas: number };
 };
@@ -34,6 +35,7 @@ export type SessaoUI = {
   nome: string;
   email: string;
   perfil: 'ANALISTA' | 'ADMIN';
+  avatar?: string | null;
 };
 
 export type Toast = { id: number; texto: string; tipo: 'ok' | 'erro' | 'info' };

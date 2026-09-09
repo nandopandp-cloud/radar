@@ -39,7 +39,7 @@ export function TelaAlertas({
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
+  const [enviando, setEnviando] = useState<string | null>(null);
   const [forcar, setForcar] = useState(false);
 
   const carregar = useCallback(async () => {
@@ -57,17 +57,23 @@ export function TelaAlertas({
 
   useEffect(() => { void carregar(); }, [carregar]);
 
-  async function disparar() {
+  /**
+   * Dispara o alerta. Sem `alvo`, envia para todos os analistas com pendência;
+   * com `alvo`, envia só para aquela pessoa.
+   */
+  async function disparar(alvo?: { id: string; nome: string }) {
     if (!previa?.totalAutores) return;
-    const acao = previa.modo !== 'PREVIEW' ? 'enviar os e-mails' : 'gerar as prévias';
-    if (!confirm(`Confirmar ${acao} para ${previa.totalAutores} analista(s)?`)) return;
 
-    setEnviando(true);
+    const acao = previa.modo !== 'PREVIEW' ? 'enviar o e-mail' : 'gerar a prévia';
+    const destino = alvo ? `para ${alvo.nome}` : `para ${previa.totalAutores} analista(s)`;
+    if (!confirm(`Confirmar ${acao} ${destino}?`)) return;
+
+    setEnviando(alvo?.id ?? 'TODOS');
     try {
       const res = await fetch('/api/disparo', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ forcar }),
+        body: JSON.stringify({ forcar, apenasUsuarioId: alvo?.id }),
       });
       const dados = await res.json();
       if (!res.ok) throw new Error(dados.erro ?? 'Falha no disparo.');
@@ -83,7 +89,7 @@ export function TelaAlertas({
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro.', 'erro');
     } finally {
-      setEnviando(false);
+      setEnviando(null);
     }
   }
 
@@ -132,11 +138,11 @@ export function TelaAlertas({
                 </label>
                 <button
                   className="btn btn-primario"
-                  disabled={enviando || carregando || !previa?.totalAutores}
-                  onClick={disparar}
+                  disabled={enviando !== null || carregando || !previa?.totalAutores}
+                  onClick={() => disparar()}
                 >
-                  {enviando ? <><span className="girando">⏳</span> Processando…</>
-                    : previa?.modo !== 'PREVIEW' ? 'Enviar alertas agora' : 'Gerar prévias agora'}
+                  {enviando === 'TODOS' ? <><span className="girando">⏳</span> Processando…</>
+                    : previa?.modo !== 'PREVIEW' ? 'Enviar para todos' : 'Gerar todas as prévias'}
                 </button>
               </div>
             )}
@@ -175,6 +181,18 @@ export function TelaAlertas({
                         >
                           <IconeOlho size={15} /> Ver e-mail
                         </a>
+                        {sessao.perfil === 'ADMIN' && (
+                          <button
+                            className="btn btn-mini btn-primario"
+                            disabled={enviando !== null}
+                            onClick={() => disparar({ id: g.usuarioId, nome: g.nome })}
+                            title={`Enviar o alerta apenas para ${g.nome}`}
+                          >
+                            {enviando === g.usuarioId
+                              ? <><span className="girando">⏳</span> Enviando…</>
+                              : 'Enviar só para este'}
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div style={{ padding: '4px 20px 16px' }}>

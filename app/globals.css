@@ -140,6 +140,10 @@ a { color: var(--marca); text-decoration: none; }
   display: grid; place-items: center; font-weight: 700; flex-shrink: 0;
   width: 36px; height: 36px; font-size: 13px;
 }
+.avatar-imagem { object-fit: cover; padding: 0; }
+
+.perfil-foto { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+.perfil-foto-acoes { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .avatar-sm { width: 28px; height: 28px; font-size: 11px; }
 .avatar-lg { width: 44px; height: 44px; font-size: 15px; }
 

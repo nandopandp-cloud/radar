@@ -2,11 +2,8 @@
 
 import { useState } from 'react';
 import { IconeMais } from '@/components/icones';
+import { Avatar } from '@/components/Avatar';
 import type { Notificar, SessaoUI, Usuario } from '@/lib/tipos';
-
-function iniciais(nome: string) {
-  return nome.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
-}
 
 export function TelaEquipe({
   sessao,
@@ -128,7 +125,7 @@ export function TelaEquipe({
                   <tr key={u.id} style={ocupado === u.id ? { opacity: 0.5 } : undefined}>
                     <td>
                       <div className="linha" style={{ gap: 11, flexWrap: 'nowrap' }}>
-                        <div className="avatar avatar-sm">{iniciais(u.nome)}</div>
+                        <Avatar nome={u.nome} avatar={u.avatar} tamanho="sm" />
                         <div>
                           <div className="celula-titulo">
                             {u.nome}

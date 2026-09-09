@@ -6,6 +6,7 @@ import {
   IconeCalendario, IconeEquipe, IconeLampada, IconeLista,
   IconeMenu, IconeSair, IconeSino,
 } from '@/components/icones';
+import { Avatar } from '@/components/Avatar';
 import type { SessaoUI } from '@/lib/tipos';
 
 export type Aba = 'calendario' | 'demandas' | 'alertas' | 'equipe' | 'perfil';
@@ -16,10 +17,6 @@ const ITENS: { id: Aba; rotulo: string; Icone: typeof IconeCalendario; soAdmin?:
   { id: 'alertas', rotulo: 'Alertas', Icone: IconeSino, soAdmin: true },
   { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe, soAdmin: true },
 ];
-
-function iniciais(nome: string) {
-  return nome.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
-}
 
 export function Casca({
   sessao,
@@ -75,7 +72,7 @@ export function Casca({
             onClick={() => { aoTrocarAba('perfil'); setMenuAberto(false); }}
             title="Minha conta"
           >
-            <div className="avatar">{iniciais(sessao.nome)}</div>
+            <Avatar nome={sessao.nome} avatar={sessao.avatar} />
             <div style={{ minWidth: 0, textAlign: 'left' }}>
               <div className="perfil-nome">{sessao.nome}</div>
               <div className="perfil-cargo">
@@ -114,7 +111,7 @@ export function Casca({
               onClick={() => aoTrocarAba('perfil')}
               title="Minha conta"
             >
-              <div className="avatar avatar-sm">{iniciais(sessao.nome)}</div>
+              <Avatar nome={sessao.nome} avatar={sessao.avatar} tamanho="sm" />
               <div style={{ lineHeight: 1.3, textAlign: 'left' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{sessao.nome}</div>
                 <div style={{ fontSize: 12, color: 'var(--tinta-suave)' }}>

@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { IconeCheck, IconeUsuario } from '@/components/icones';
 import { CampoSenha } from '@/components/CampoSenha';
+import { Avatar } from '@/components/Avatar';
+import { prepararAvatar } from '@/lib/imagem';
 import type { Notificar, SessaoUI } from '@/lib/tipos';
-
-function iniciais(nome: string) {
-  return nome.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
-}
 
 export function TelaPerfil({
   sessao,
@@ -21,8 +19,49 @@ export function TelaPerfil({
   const [nome, setNome] = useState(sessao.nome);
   const [salvandoNome, setSalvandoNome] = useState(false);
 
+  const [avatar, setAvatar] = useState<string | null>(sessao.avatar ?? null);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const inputFoto = useRef<HTMLInputElement>(null);
+
   const [senhas, setSenhas] = useState({ atual: '', nova: '', confirma: '' });
   const [trocando, setTrocando] = useState(false);
+
+  async function gravarAvatar(valor: string | null, mensagem: string) {
+    setEnviandoFoto(true);
+    try {
+      const res = await fetch(`/api/usuarios/${sessao.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ avatar: valor }),
+      });
+      const corpo = await res.json();
+      if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível salvar a foto.');
+      setAvatar(valor);
+      notificar(mensagem, 'ok');
+      await aoAtualizar();
+    } catch (erro) {
+      notificar(erro instanceof Error ? erro.message : 'Erro.', 'erro');
+    } finally {
+      setEnviandoFoto(false);
+    }
+  }
+
+  async function escolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    // Limpa o input para permitir reenviar o mesmo arquivo depois de um erro.
+    e.target.value = '';
+    if (!arquivo) return;
+
+    setEnviandoFoto(true);
+    try {
+      const pronto = await prepararAvatar(arquivo);
+      setEnviandoFoto(false);
+      await gravarAvatar(pronto, 'Foto atualizada.');
+    } catch (erro) {
+      setEnviandoFoto(false);
+      notificar(erro instanceof Error ? erro.message : 'Erro ao processar a imagem.', 'erro');
+    }
+  }
 
   async function salvarNome(e: React.FormEvent) {
     e.preventDefault();
@@ -91,14 +130,44 @@ export function TelaPerfil({
               </div>
             </div>
             <div className="cartao-corpo">
-              <div className="linha" style={{ gap: 14, marginBottom: 20 }}>
-                <div className="avatar avatar-lg">{iniciais(sessao.nome)}</div>
-                <div>
+              <div className="perfil-foto">
+                <Avatar nome={sessao.nome} avatar={avatar} tamanho="lg" />
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 700 }}>{sessao.nome}</div>
                   <div className="texto-suave">
                     {sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA'}
                   </div>
+                  <div className="perfil-foto-acoes">
+                    <button
+                      type="button"
+                      className="btn btn-mini btn-secundario"
+                      disabled={enviandoFoto}
+                      onClick={() => inputFoto.current?.click()}
+                    >
+                      {enviandoFoto ? 'Processando…' : avatar ? 'Trocar foto' : 'Enviar foto'}
+                    </button>
+                    {avatar && (
+                      <button
+                        type="button"
+                        className="btn btn-mini btn-perigo"
+                        disabled={enviandoFoto}
+                        onClick={() => gravarAvatar(null, 'Foto removida.')}
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                  <div className="texto-suave" style={{ fontSize: 12, marginTop: 6 }}>
+                    JPG, PNG ou GIF.
+                  </div>
                 </div>
+                <input
+                  ref={inputFoto}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={escolherFoto}
+                  hidden
+                />
               </div>
 
               <div className="campo">

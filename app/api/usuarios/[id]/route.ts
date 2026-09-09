@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { sessaoAtual } from '@/lib/auth';
+import { validarAvatar } from '@/lib/avatar';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const dados: Record<string, unknown> = {};
   if (typeof corpo.nome === 'string' && corpo.nome.trim()) dados.nome = corpo.nome.trim();
   if (typeof corpo.equipe === 'string') dados.equipe = corpo.equipe.trim() || null;
+  // avatar: string vazia ou null remove a foto; qualquer outro valor é validado.
+  if ('avatar' in corpo) {
+    if (corpo.avatar === null || corpo.avatar === '') {
+      dados.avatar = null;
+    } else {
+      const check = validarAvatar(corpo.avatar);
+      if (!check.ok) return NextResponse.json({ erro: check.erro }, { status: 400 });
+      dados.avatar = check.valor;
+    }
+  }
+
   if (typeof corpo.senha === 'string' && corpo.senha) {
     if (corpo.senha.length < 5) {
       return NextResponse.json({ erro: 'A senha precisa de ao menos 5 caracteres.' }, { status: 400 });
@@ -47,7 +59,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const usuario = await prisma.usuario.update({
       where: { id },
       data: dados,
-      select: { id: true, nome: true, email: true, equipe: true, perfil: true, ativo: true },
+      select: { id: true, nome: true, email: true, equipe: true, perfil: true, ativo: true, avatar: true },
     });
     return NextResponse.json(usuario);
   } catch {

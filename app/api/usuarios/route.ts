@@ -28,6 +28,7 @@ export async function GET() {
       equipe: true,
       perfil: true,
       ativo: true,
+      avatar: true,
       criadoEm: true,
       _count: { select: { demandas: true } },
     },
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       equipe: String(corpo.equipe ?? '').trim() || null,
       perfil: corpo.perfil === 'ADMIN' ? 'ADMIN' : 'ANALISTA',
     },
-    select: { id: true, nome: true, email: true, equipe: true, perfil: true, ativo: true },
+    select: { id: true, nome: true, email: true, equipe: true, perfil: true, ativo: true, avatar: true },
   });
 
   return NextResponse.json(usuario, { status: 201 });
