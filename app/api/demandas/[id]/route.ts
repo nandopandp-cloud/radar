@@ -13,13 +13,16 @@ async function permitido(id: string) {
   const sessao = await sessaoAtual();
   if (!sessao) return { erro: 'Não autenticado.', codigo: 401 as const };
 
-  const demanda = await prisma.demanda.findUnique({ where: { id }, select: { autorId: true } });
+  const demanda = await prisma.demanda.findUnique({
+    where: { id },
+    select: { autorId: true, inicio: true, prazo: true },
+  });
   if (!demanda) return { erro: 'Demanda não encontrada.', codigo: 404 as const };
 
   if (sessao.perfil !== 'ADMIN' && demanda.autorId !== sessao.sub) {
     return { erro: 'Esta demanda não é sua.', codigo: 403 as const };
   }
-  return { ok: true as const };
+  return { ok: true as const, demanda };
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
@@ -39,9 +42,28 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (typeof corpo.prazo === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(corpo.prazo)) {
     dados.prazo = diaParaDate(corpo.prazo);
   }
+  // String vazia limpa a data de início; uma data válida a substitui.
+  if (typeof corpo.inicio === 'string') {
+    if (!corpo.inicio.trim()) {
+      dados.inicio = null;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(corpo.inicio)) {
+      dados.inicio = diaParaDate(corpo.inicio);
+    } else {
+      return NextResponse.json({ erro: 'Informe uma data de início válida.' }, { status: 400 });
+    }
+  }
   if (ehStatus(corpo.status)) {
     dados.status = corpo.status;
     dados.concluidaEm = corpo.status === 'CONCLUIDA' ? new Date() : null;
+  }
+  // Compara o par final — início e prazo podem vir em edições separadas.
+  const inicioFinal = 'inicio' in dados ? (dados.inicio as Date | null) : check.demanda.inicio;
+  const prazoFinal = 'prazo' in dados ? (dados.prazo as Date) : check.demanda.prazo;
+  if (inicioFinal && inicioFinal > prazoFinal) {
+    return NextResponse.json(
+      { erro: 'A data de início não pode ser depois da data de entrega.' },
+      { status: 400 },
+    );
   }
 
   const demanda = await prisma.demanda.update({

@@ -252,7 +252,8 @@ export function TelaDemandas({
                   {sessao.perfil === 'ADMIN' && <th>Responsável</th>}
                   <th className="col-estreita">Categoria</th>
                   <th className="col-estreita">Prioridade</th>
-                  <th className="col-estreita">Prazo</th>
+                  <th className="col-estreita">Início</th>
+                  <th className="col-estreita">Entrega</th>
                   <th className="col-estreita">Situação</th>
                 </tr>
               </thead>
@@ -286,6 +287,13 @@ export function TelaDemandas({
                       <span className={`selo selo-${d.prioridade}`}>
                         {ROTULO_PRIORIDADE[d.prioridade as Prioridade] ?? d.prioridade}
                       </span>
+                    </td>
+                    <td className="col-estreita">
+                      {d.inicio ? (
+                        formatarDiaCurto(d.inicio.slice(0, 10))
+                      ) : (
+                        <span className="texto-suave">—</span>
+                      )}
                     </td>
                     <td className="col-estreita">{formatarDiaCurto(d.prazo.slice(0, 10))}</td>
                     <td className="col-estreita">

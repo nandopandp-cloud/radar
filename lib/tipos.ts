@@ -22,6 +22,7 @@ export type Demanda = {
   origem: string;
   solicitante: string | null;
   categoria: string | null;
+  inicio: string | null;
   prazo: string;
   concluidaEm: string | null;
   vezesAlertada: number;

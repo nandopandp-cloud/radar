@@ -31,7 +31,7 @@ model Usuario {
   @@index([ativo])
 }
 
-/// Demanda lançada por um analista, com prazo de entrega.
+/// Demanda lançada por um analista, com data de início e prazo de entrega.
 model Demanda {
   id           String    @id @default(cuid())
   titulo       String
@@ -42,6 +42,8 @@ model Demanda {
   solicitante  String?
   categoria    String?
 
+  /// Data de início prevista da entrega. Opcional: demandas antigas não a têm.
+  inicio       DateTime?
   /// Prazo de entrega. Vencido este dia sem conclusão, dispara o alerta.
   prazo        DateTime
   concluidaEm  DateTime?

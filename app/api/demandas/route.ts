@@ -57,6 +57,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ erro: 'Informe um prazo válido.' }, { status: 400 });
   }
 
+  // Início é opcional; quando vem, não pode ser depois da entrega.
+  const inicio = String(corpo.inicio ?? '').trim();
+  if (inicio && !/^\d{4}-\d{2}-\d{2}$/.test(inicio)) {
+    return NextResponse.json({ erro: 'Informe uma data de início válida.' }, { status: 400 });
+  }
+  if (inicio && inicio > prazo) {
+    return NextResponse.json(
+      { erro: 'A data de início não pode ser depois da data de entrega.' },
+      { status: 400 },
+    );
+  }
+
   // Um admin pode lançar em nome de outro analista; o analista, só para si.
   const autorId =
     sessao.perfil === 'ADMIN' && typeof corpo.autorId === 'string' && corpo.autorId
@@ -72,6 +84,7 @@ export async function POST(req: Request) {
       prioridade: ehPrioridade(corpo.prioridade) ? corpo.prioridade : 'MEDIA',
       status: ehStatus(corpo.status) ? corpo.status : 'ABERTA',
       origem: ehOrigem(corpo.origem) ? corpo.origem : 'MANUAL',
+      inicio: inicio ? diaParaDate(inicio) : null,
       prazo: diaParaDate(prazo),
       autorId,
     },

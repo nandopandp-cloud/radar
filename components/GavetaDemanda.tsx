@@ -33,6 +33,7 @@ export function GavetaDemanda({
   const [form, setForm] = useState({
     titulo: demanda.titulo,
     descricao: demanda.descricao ?? '',
+    inicio: demanda.inicio?.slice(0, 10) ?? '',
     prazo: demanda.prazo.slice(0, 10),
     prioridade: demanda.prioridade,
     status: demanda.status,
@@ -47,6 +48,7 @@ export function GavetaDemanda({
   }, [aoFechar]);
 
   const prazo = demanda.prazo.slice(0, 10);
+  const inicio = demanda.inicio?.slice(0, 10) ?? null;
   const situacao = situacaoDe(demanda.status, prazo, hoje);
   const diasVencido = Math.round(
     (Date.parse(`${hoje}T00:00:00Z`) - Date.parse(`${prazo}T00:00:00Z`)) / 86_400_000,
@@ -156,22 +158,39 @@ export function GavetaDemanda({
               </div>
               <div className="campo linha-campos">
                 <div>
-                  <label className="rotulo">Prazo de entrega</label>
+                  <label className="rotulo">Data de início</label>
                   <input
-                    type="date" className="entrada" value={form.prazo}
-                    onChange={(e) => setForm({ ...form, prazo: e.target.value })}
+                    type="date" className="entrada" value={form.inicio}
+                    max={form.prazo || undefined}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      // Empurra a entrega junto se o início passar dela.
+                      setForm((f) => ({
+                        ...f,
+                        inicio: valor,
+                        prazo: valor && valor > f.prazo ? valor : f.prazo,
+                      }));
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="rotulo">Categoria</label>
-                  <select
-                    className="selecao" value={form.categoria}
-                    onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                  >
-                    <option value="">Sem categoria</option>
-                    {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <label className="rotulo">Data de entrega</label>
+                  <input
+                    type="date" className="entrada" value={form.prazo}
+                    min={form.inicio || undefined}
+                    onChange={(e) => setForm({ ...form, prazo: e.target.value })}
+                  />
                 </div>
+              </div>
+              <div className="campo">
+                <label className="rotulo">Categoria</label>
+                <select
+                  className="selecao" value={form.categoria}
+                  onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                >
+                  <option value="">Sem categoria</option>
+                  {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div className="campo linha-campos">
                 <div>
@@ -197,9 +216,16 @@ export function GavetaDemanda({
           ) : (
             <>
               <div className="propriedades">
+                {inicio && (
+                  <div className="propriedade">
+                    <span className="propriedade-icone"><IconeCalendario size={18} /></span>
+                    <span className="propriedade-rotulo">Data de início</span>
+                    <span className="propriedade-valor">{formatarDiaExtenso(inicio)}</span>
+                  </div>
+                )}
                 <div className="propriedade">
                   <span className="propriedade-icone"><IconeCalendario size={18} /></span>
-                  <span className="propriedade-rotulo">Prazo de entrega</span>
+                  <span className="propriedade-rotulo">Data de entrega</span>
                   <span
                     className="propriedade-valor"
                     style={{ color: situacao === 'ATRASADA' ? 'var(--atrasada)' : undefined }}
@@ -266,7 +292,12 @@ export function GavetaDemanda({
                   className="btn btn-primario"
                   style={{ flex: 1 }}
                   disabled={salvando}
-                  onClick={() => salvar(form, 'Demanda atualizada.')}
+                  onClick={() => {
+                    if (form.inicio && form.inicio > form.prazo) {
+                      return notificar('A data de início não pode ser depois da data de entrega.', 'erro');
+                    }
+                    salvar(form, 'Demanda atualizada.');
+                  }}
                 >
                   <IconeCheck size={17} /> Salvar
                 </button>

@@ -25,6 +25,7 @@ export function GavetaNova({
   const [form, setForm] = useState({
     titulo: '',
     descricao: '',
+    inicio: prazoInicial,
     prazo: prazoInicial,
     prioridade: 'MEDIA',
     categoria: '',
@@ -42,6 +43,9 @@ export function GavetaNova({
     e.preventDefault();
     if (salvando) return;
     if (!form.titulo.trim()) return notificar('Informe o título da demanda.', 'erro');
+    if (form.inicio && form.inicio > form.prazo) {
+      return notificar('A data de início não pode ser depois da data de entrega.', 'erro');
+    }
 
     setSalvando(true);
     try {
@@ -72,7 +76,7 @@ export function GavetaNova({
             </button>
             <div className="gaveta-titulo">Nova demanda</div>
             <div className="gaveta-meta">
-              Prazo em {formatarDiaExtenso(form.prazo)} · você será alertado se não concluir até lá
+              Entrega em {formatarDiaExtenso(form.prazo)} · você será alertado se não concluir até lá
             </div>
           </div>
 
@@ -101,13 +105,32 @@ export function GavetaNova({
 
             <div className="campo linha-campos">
               <div>
-                <label className="rotulo" htmlFor="n-prazo">Prazo de entrega</label>
+                <label className="rotulo" htmlFor="n-inicio">Data de início</label>
                 <input
-                  id="n-prazo" type="date" className="entrada" required
+                  id="n-inicio" type="date" className="entrada" max={form.prazo || undefined}
+                  value={form.inicio}
+                  onChange={(e) => {
+                    const inicio = e.target.value;
+                    // Empurra a entrega junto se o início passar dela.
+                    setForm((f) => ({
+                      ...f,
+                      inicio,
+                      prazo: inicio && inicio > f.prazo ? inicio : f.prazo,
+                    }));
+                  }}
+                />
+              </div>
+              <div>
+                <label className="rotulo" htmlFor="n-prazo">Data de entrega</label>
+                <input
+                  id="n-prazo" type="date" className="entrada" required min={form.inicio || undefined}
                   value={form.prazo}
                   onChange={(e) => setForm({ ...form, prazo: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="campo linha-campos">
               <div>
                 <label className="rotulo" htmlFor="n-prio">Prioridade</label>
                 <select
@@ -117,9 +140,6 @@ export function GavetaNova({
                   {PRIORIDADES.map((p) => <option key={p} value={p}>{ROTULO_PRIORIDADE[p]}</option>)}
                 </select>
               </div>
-            </div>
-
-            <div className="campo linha-campos">
               <div>
                 <label className="rotulo" htmlFor="n-cat">
                   Categoria <span className="opcional">(opcional)</span>
@@ -132,16 +152,17 @@ export function GavetaNova({
                   {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="rotulo" htmlFor="n-sol">
-                  Solicitante <span className="opcional">(opcional)</span>
-                </label>
-                <input
-                  id="n-sol" className="entrada" maxLength={120} placeholder="Quem pediu"
-                  value={form.solicitante}
-                  onChange={(e) => setForm({ ...form, solicitante: e.target.value })}
-                />
-              </div>
+            </div>
+
+            <div className="campo">
+              <label className="rotulo" htmlFor="n-sol">
+                Solicitante <span className="opcional">(opcional)</span>
+              </label>
+              <input
+                id="n-sol" className="entrada" maxLength={120} placeholder="Quem pediu"
+                value={form.solicitante}
+                onChange={(e) => setForm({ ...form, solicitante: e.target.value })}
+              />
             </div>
 
             {sessao.perfil === 'ADMIN' && equipe.length > 1 && (
