@@ -1,8 +1,8 @@
 # Radar
 
 Plataforma de prazos da MSA. O analista lança suas demandas num calendário, cada
-uma com um prazo de entrega. Quando o prazo vence sem a demanda ter sido concluída,
-**quem a lançou recebe um alerta por e-mail**.
+uma com uma data de início e uma data de entrega. Quando a entrega vence sem a
+demanda ter sido concluída, **quem a lançou recebe um alerta por e-mail**.
 
 ---
 
@@ -14,6 +14,10 @@ uma com um prazo de entrega. Quando o prazo vence sem a demanda ter sido conclu�
 O analista tem o dia inteiro do prazo. A cobrança começa no dia seguinte, e se
 repete a cada apuração enquanto a demanda continuar pendente — o contador
 `vezesAlertada` registra quantos avisos já saíram.
+
+A **data de início** é informativa: registra quando o trabalho começa, aparece ao
+lado da entrega e não influencia o alerta. É opcional — demandas criadas antes do
+campo existir simplesmente não a têm.
 
 Está implementada em [`lib/vencidas.ts`](lib/vencidas.ts).
 
@@ -67,7 +71,7 @@ porque um segredo previsível permitiria forjar sessões. Gere com
 
 - **Calendário** — a tela principal. Cada dia mostra pontos coloridos por situação
   (atrasada, pendente, em andamento, concluída). Clicar num dia abre a lista lateral
-  daquele dia e permite lançar uma demanda com o prazo já preenchido.
+  daquele dia e permite lançar uma demanda com as datas já preenchidas.
 - **Demandas** — a lista completa, com filtros por situação. O admin filtra por analista.
 - **Alertas** — quem será avisado hoje, com prévia do e-mail, disparo manual e o
   histórico de envios.
