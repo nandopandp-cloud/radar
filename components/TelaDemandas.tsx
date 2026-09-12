@@ -93,9 +93,14 @@ export function TelaDemandas({
   function trocarVisao(nova: Visao) {
     setVisao(nova);
     localStorage.setItem(CHAVE_VISAO, nova);
-    // No quadro as colunas já separam a situação; o filtro de situação atrapalharia.
-    if (nova === 'QUADRO') setFiltro('TODAS');
   }
+
+  /*
+   * No quadro as colunas já separam a situação, então ele sempre parte de
+   * todas as demandas. Isso é regra do modo, não consequência do clique no
+   * alternador: derivar aqui evita o quadro abrir filtrado em 'ATRASADAS'.
+   */
+  const filtroAtivo: Filtro = visao === 'QUADRO' ? 'TODAS' : filtro;
 
   const intervalo = useMemo(
     () => intervaloDoPeriodo(periodo, hoje, de, ate),
@@ -113,16 +118,18 @@ export function TelaDemandas({
         const prazo = d.prazo.slice(0, 10);
         if (prazo < intervalo.de || prazo > intervalo.ate) return false;
       }
-      if (filtro === 'ATRASADAS') return situacao === 'ATRASADA';
-      if (filtro === 'ABERTAS') return ['PENDENTE', 'EM_ANDAMENTO', 'ATRASADA'].includes(situacao);
-      if (filtro === 'CONCLUIDAS') return situacao === 'CONCLUIDA';
+      if (filtroAtivo === 'ATRASADAS') return situacao === 'ATRASADA';
+      if (filtroAtivo === 'ABERTAS') {
+        return ['PENDENTE', 'EM_ANDAMENTO', 'ATRASADA'].includes(situacao);
+      }
+      if (filtroAtivo === 'CONCLUIDAS') return situacao === 'CONCLUIDA';
       return true;
     });
     return lista.sort((a, b) => {
       const p = PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao];
       return p !== 0 ? p : a.d.prazo.localeCompare(b.d.prazo);
     });
-  }, [demandas, filtro, hoje, intervalo]);
+  }, [demandas, filtroAtivo, hoje, intervalo]);
 
   /** Descrição do recorte ativo, para o cabeçalho e o estado vazio. */
   const rotuloIntervalo = useMemo(() => {
@@ -272,19 +279,19 @@ export function TelaDemandas({
         {visiveis.length === 0 ? (
           <div className="vazio">
             <div className="vazio-icone">
-              {intervalo ? '🔍' : filtro === 'ATRASADAS' ? '🎉' : '📋'}
+              {intervalo ? '🔍' : filtroAtivo === 'ATRASADAS' ? '🎉' : '📋'}
             </div>
             <div className="vazio-titulo">
               {intervalo
                 ? 'Nada neste período'
-                : filtro === 'ATRASADAS'
+                : filtroAtivo === 'ATRASADAS'
                   ? 'Nada atrasado'
                   : 'Nenhuma demanda aqui'}
             </div>
             <p className="vazio-texto">
               {intervalo
                 ? `Nenhuma demanda com prazo em ${rotuloIntervalo}. Ajuste o período ou o filtro de situação.`
-                : filtro === 'ATRASADAS'
+                : filtroAtivo === 'ATRASADAS'
                   ? 'Todos os prazos estão em dia. Nenhum alerta será enviado.'
                   : 'Crie uma demanda pelo calendário ou pelo botão acima.'}
             </p>
