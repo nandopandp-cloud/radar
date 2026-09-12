@@ -14,6 +14,14 @@
   --borda: #e2e8f0;
   --borda-forte: #cbd5e1;
 
+  /*
+   * Tons exclusivos da grade do calendário. Bem mais leves que --borda: ali as
+   * linhas se repetem 40 vezes e, no tom normal, o miolo fica pesado.
+   */
+  --grade-linha: #eaeff5;
+  --grade-fundo: #fdfdfd;
+  --grade-item: #eff5fe;
+
   --atrasada: #ef4444;
   --atrasada-fundo: #fef2f2;
   --atrasada-borda: #fecaca;
@@ -154,7 +162,7 @@ a { color: var(--marca); text-decoration: none; }
 .avatar-sm { width: 28px; height: 28px; font-size: 11px; }
 .avatar-lg { width: 44px; height: 44px; font-size: 15px; }
 
-.conteudo { flex: 1; padding: 26px 30px 60px; }
+.conteudo { flex: 1; padding: 26px 22px 60px; }
 .conteudo-largo { max-width: 1640px; margin: 0 auto; }
 
 .saudacao { font-size: 27px; font-weight: 800; letter-spacing: -.03em; }
@@ -222,7 +230,8 @@ a { color: var(--marca); text-decoration: none; }
 }
 .cal-chip.ativo .cal-chip-conta { background: #dbeafe; color: var(--marca-escura); }
 
-.cal-grade { padding: 0 24px 24px; }
+/* A grade sangra até as laterais do cartão, sem moldura própria. */
+.cal-grade { padding: 0; }
 
 .cal-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-dia-nome {
@@ -233,13 +242,13 @@ a { color: var(--marca); text-decoration: none; }
 
 .cal-corpo {
   display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
-  border: 1px solid var(--borda); border-radius: var(--raio);
-  overflow: hidden;
+  border-top: 1px solid var(--grade-linha);
+  border-bottom: 1px solid var(--grade-linha);
 }
 .cal-celula {
-  min-height: 138px; padding: 10px 9px; min-width: 0; overflow: hidden;
-  border-right: 1px solid var(--borda); border-bottom: 1px solid var(--borda);
-  background: var(--superficie); text-align: left;
+  min-height: 124px; padding: 10px 9px; min-width: 0; overflow: hidden;
+  border-right: 1px solid var(--grade-linha); border-bottom: 1px solid var(--grade-linha);
+  background: var(--grade-fundo); text-align: left;
   display: flex; flex-direction: column; gap: 7px;
   position: relative; transition: background .14s;
 }
@@ -247,14 +256,14 @@ a { color: var(--marca); text-decoration: none; }
 .cal-celula:nth-child(7n) { border-right: none; }
 .cal-celula:nth-last-child(-n+7) { border-bottom: none; }
 
-.cal-celula:hover { background: #f8fafc; }
-.cal-celula.fora { background: #fcfdfe; }
+.cal-celula:hover { background: #f7f9fc; }
+/* Fora do mês não muda de fundo: só o número apaga, como na referência. */
 .cal-celula.fora .cal-numero { color: #cbd5e1; }
 .cal-celula.fora .cal-item { opacity: .55; }
-/* Anel por dentro, para não empurrar as células vizinhas. */
+/* Anel fino por dentro, para não empurrar as células vizinhas. */
 .cal-celula.selecionada {
-  background: var(--marca-clara);
-  box-shadow: inset 0 0 0 2px var(--marca);
+  background: #f0f6fe;
+  box-shadow: inset 0 0 0 1px var(--marca);
   border-radius: var(--raio-sm); z-index: 1;
 }
 
@@ -274,11 +283,11 @@ a { color: var(--marca); text-decoration: none; }
 /* Cada demanda é uma pílula clara, como na referência. */
 .cal-item {
   display: flex; align-items: center; gap: 6px; min-width: 0;
-  font-size: 12px; color: var(--tinta-media); line-height: 1.3;
-  background: #f1f5f9; border-radius: 7px; padding: 5px 7px;
+  font-size: 12px; color: var(--tinta); line-height: 1.3;
+  background: var(--grade-item); border-radius: 6px; padding: 5px 7px;
 }
 .cal-item .ponto { width: 7px; height: 7px; }
-.cal-celula.selecionada .cal-item { background: rgba(255, 255, 255, .78); }
+.cal-celula.selecionada .cal-item { background: #fff; }
 .cal-item-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cal-mais {
   font-size: 12px; color: var(--tinta-suave); font-weight: 600;
