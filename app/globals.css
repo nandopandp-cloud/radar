@@ -247,6 +247,11 @@ a { color: var(--marca); text-decoration: none; }
 }
 .cal-celula {
   min-height: 124px; padding: 10px 9px; min-width: 0; overflow: hidden;
+  /*
+   * A célula é um <button>: sem zerar a borda, o navegador desenha a dele
+   * (2px outset) em cima e à esquerda, engrossando e escurecendo a grade.
+   */
+  border: none;
   border-right: 1px solid var(--grade-linha); border-bottom: 1px solid var(--grade-linha);
   background: var(--grade-fundo); text-align: left;
   display: flex; flex-direction: column; gap: 7px;
