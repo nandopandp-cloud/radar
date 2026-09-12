@@ -49,6 +49,17 @@ export type Anexo = {
   criadoEm: string;
 };
 
+/**
+ * Arquivo escolhido numa demanda que ainda não existe. Fica em memória até a
+ * criação, quando vira Anexo de verdade — antes disso não há id para vinculá-lo.
+ */
+export type AnexoPendente = {
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  conteudo: string;
+};
+
 export type Comentario = {
   id: string;
   texto: string;

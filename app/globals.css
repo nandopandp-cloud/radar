@@ -523,6 +523,8 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .campo:last-child { margin-bottom: 0; }
 .rotulo { display: block; font-size: 13px; font-weight: 600; color: var(--tinta-media); margin-bottom: 6px; }
 .rotulo .opcional { color: var(--tinta-tenue); font-weight: 400; }
+/* Rótulo com ícone: alinha o traço do SVG com a linha de base do texto. */
+.rotulo:has(svg) { display: flex; align-items: center; gap: 6px; }
 
 .entrada, .selecao, .area {
   width: 100%; padding: 10px 12px;

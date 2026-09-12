@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { IconeMais, IconeX } from '@/components/icones';
+import { IconeClipe, IconeMais, IconeX } from '@/components/icones';
+import { AnexosPendentes } from '@/components/AnexosDemanda';
+import { dividirEmLotes } from '@/lib/anexos';
 import { CATEGORIAS, PRIORIDADES, ROTULO_PRIORIDADE } from '@/lib/dominio';
 import { formatarDiaExtenso } from '@/lib/datas';
-import type { Notificar, SessaoUI, Usuario } from '@/lib/tipos';
+import type { AnexoPendente, Notificar, SessaoUI, Usuario } from '@/lib/tipos';
 
 export function GavetaNova({
   prazoInicial,
@@ -22,6 +24,7 @@ export function GavetaNova({
   notificar: Notificar;
 }) {
   const [salvando, setSalvando] = useState(false);
+  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
   const [form, setForm] = useState({
     titulo: '',
     descricao: '',
@@ -56,7 +59,32 @@ export function GavetaNova({
       });
       const corpo = await res.json();
       if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível salvar.');
-      notificar('Demanda registrada.', 'ok');
+
+      /*
+       * Os anexos só sobem agora, que a demanda tem id. Se esta segunda etapa
+       * falhar, a demanda já está salva — então avisamos o que aconteceu em vez
+       * de dizer que deu tudo certo, e deixamos o usuário reanexar pela gaveta.
+       */
+      let anexosFalharam = false;
+      // Em lotes: vários arquivos de 1MB em base64 estouram o corpo da requisição.
+      for (const lote of dividirEmLotes(anexos)) {
+        try {
+          const resAnexos = await fetch(`/api/demandas/${corpo.id}/anexos`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ anexos: lote }),
+          });
+          if (!resAnexos.ok) anexosFalharam = true;
+        } catch {
+          anexosFalharam = true;
+        }
+      }
+
+      if (anexosFalharam) {
+        notificar('Demanda criada, mas os anexos não subiram. Tente anexá-los na demanda.', 'erro');
+      } else {
+        notificar('Demanda registrada.', 'ok');
+      }
       await aoCriar();
       aoFechar();
     } catch (erro) {
@@ -163,6 +191,13 @@ export function GavetaNova({
                 value={form.solicitante}
                 onChange={(e) => setForm({ ...form, solicitante: e.target.value })}
               />
+            </div>
+
+            <div className="campo">
+              <label className="rotulo">
+                <IconeClipe size={15} /> Anexos <span className="opcional">(opcional)</span>
+              </label>
+              <AnexosPendentes anexos={anexos} aoMudar={setAnexos} notificar={notificar} />
             </div>
 
             {sessao.perfil === 'ADMIN' && equipe.length > 1 && (

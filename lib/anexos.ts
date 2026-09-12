@@ -5,6 +5,37 @@ export const TAMANHO_MAXIMO = 1_048_576;
 export const MAXIMO_POR_DEMANDA = 20;
 
 /**
+ * Teto de conteúdo por requisição, em bytes já codificados. A Vercel corta o
+ * corpo em 4,5MB e base64 infla cerca de 1/3, então mandar vários arquivos de
+ * 1MB de uma vez estouraria: o cliente divide o envio em lotes abaixo disto.
+ */
+export const LOTE_MAXIMO = 3_000_000;
+
+/**
+ * Divide os anexos em lotes que cabem numa requisição. Um arquivo sozinho
+ * sempre forma um lote, mesmo grande — o limite de 1MB por arquivo já garante
+ * que ele cabe.
+ */
+export function dividirEmLotes<T extends { conteudo: string }>(anexos: T[]): T[][] {
+  const lotes: T[][] = [];
+  let atual: T[] = [];
+  let soma = 0;
+
+  for (const a of anexos) {
+    const tamanho = a.conteudo.length;
+    if (atual.length > 0 && soma + tamanho > LOTE_MAXIMO) {
+      lotes.push(atual);
+      atual = [];
+      soma = 0;
+    }
+    atual.push(a);
+    soma += tamanho;
+  }
+  if (atual.length > 0) lotes.push(atual);
+  return lotes;
+}
+
+/**
  * Tipos que o navegador executaria se abertos na própria origem. Qualquer
  * formato é aceito como anexo, mas estes são servidos como download forçado e
  * com o tipo trocado por octet-stream — sem isso, um .html ou .svg anexado
