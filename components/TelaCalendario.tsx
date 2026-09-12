@@ -1,10 +1,26 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Calendario } from '@/components/Calendario';
-import { IconeAlerta, IconeCheckCirculo, IconeDocumento, IconeMais, IconeRelogio } from '@/components/icones';
-import { situacaoDe } from '@/lib/dominio';
+import { MiniCalendario } from '@/components/MiniCalendario';
+import {
+  IconeAlerta, IconeCheckCirculo, IconeCirculo, IconeDocumento,
+  IconeMais, IconeRelogio,
+} from '@/components/icones';
+import {
+  COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
+  situacaoDe, type Situacao,
+} from '@/lib/dominio';
+import { diaParaDate } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
+
+/** Linhas do resumo do mês, na ordem em que aparecem no painel. */
+const LINHAS_RESUMO: { situacao: Situacao; rotulo: string; tom: string; Icone: typeof IconeRelogio }[] = [
+  { situacao: 'ATRASADA', rotulo: 'Atrasadas', tom: 'vermelho', Icone: IconeAlerta },
+  { situacao: 'PENDENTE', rotulo: 'Em aberto', tom: 'azul', Icone: IconeRelogio },
+  { situacao: 'CONCLUIDA', rotulo: 'Concluídas', tom: 'verde', Icone: IconeCheckCirculo },
+  { situacao: 'EM_ANDAMENTO', rotulo: 'Em andamento', tom: 'ambar', Icone: IconeCirculo },
+];
 
 export function TelaCalendario({
   sessao,
@@ -29,23 +45,45 @@ export function TelaCalendario({
   aoAbrirDemanda: (d: Demanda) => void;
   aoNovaDemanda: (prazo: string) => void;
 }) {
+  /** Situação em foco na grade; `null` mostra todas. */
+  const [filtro, setFiltro] = useState<Situacao | null>(null);
+
   // Resumo considera apenas o mês exibido.
-  const resumo = useMemo(() => {
+  const contagem = useMemo(() => {
     const doMes = demandas.filter((d) => {
-      const p = d.prazo.slice(0, 10);
-      const dt = new Date(`${p}T00:00:00Z`);
+      const dt = diaParaDate(d.prazo.slice(0, 10));
       return dt.getUTCFullYear() === ano && dt.getUTCMonth() === mes;
     });
-    const sit = (d: Demanda) => situacaoDe(d.status, d.prazo.slice(0, 10), hoje);
-    return {
-      pendentes: doMes.filter((d) => ['PENDENTE', 'EM_ANDAMENTO'].includes(sit(d))).length,
-      atrasadas: doMes.filter((d) => sit(d) === 'ATRASADA').length,
-      concluidas: doMes.filter((d) => sit(d) === 'CONCLUIDA').length,
-      total: doMes.length,
+    const zerado: Record<Situacao, number> = {
+      ATRASADA: 0, PENDENTE: 0, EM_ANDAMENTO: 0, CONCLUIDA: 0, CANCELADA: 0,
     };
+    for (const d of doMes) {
+      zerado[situacaoDe(d.status, d.prazo.slice(0, 10), hoje)] += 1;
+    }
+    return { ...zerado, total: doMes.length };
   }, [demandas, ano, mes, hoje]);
 
+  /** Demandas do dia selecionado — a agenda do painel lateral. */
+  const doDia = useMemo(
+    () =>
+      demandas
+        .filter((d) => d.prazo.slice(0, 10) === diaSelecionado)
+        .map((d) => ({ d, situacao: situacaoDe(d.status, diaSelecionado, hoje) }))
+        .sort((a, b) => PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao]),
+    [demandas, diaSelecionado, hoje],
+  );
+
   const primeiroNome = sessao.nome.trim().split(/\s+/)[0];
+
+  const rotuloDiaSelecionado = new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric', month: 'long', timeZone: 'UTC',
+  }).format(diaParaDate(diaSelecionado));
+
+  function irParaHoje() {
+    const d = diaParaDate(hoje);
+    aoMudarMes(d.getUTCFullYear(), d.getUTCMonth());
+    aoSelecionarDia(hoje);
+  }
 
   return (
     <>
@@ -68,41 +106,91 @@ export function TelaCalendario({
           hoje={hoje}
           diaSelecionado={diaSelecionado}
           demandas={demandas}
+          filtro={filtro}
+          contagem={contagem}
+          aoFiltrar={setFiltro}
           aoSelecionar={aoSelecionarDia}
           aoMudarMes={aoMudarMes}
         />
 
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div className="cartao-titulo">Resumo do mês</div>
-            <span className="texto-suave primeira-maiuscula">
-              {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-                .format(new Date(Date.UTC(ano, mes, 1)))}
-            </span>
+        <aside className="painel-lateral">
+          <MiniCalendario
+            ano={ano}
+            mes={mes}
+            hoje={hoje}
+            diaSelecionado={diaSelecionado}
+            demandas={demandas}
+            aoSelecionar={aoSelecionarDia}
+            aoIrParaHoje={irParaHoje}
+          />
+
+          <div className="cartao">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Resumo do mês</div>
+            </div>
+            <div className="resumo-linhas">
+              <div className="resumo-linha neutro">
+                <span className="resumo-linha-icone"><IconeDocumento size={18} /></span>
+                <div>
+                  <div className="resumo-linha-valor">{contagem.total}</div>
+                  <div className="resumo-linha-rotulo">Demandas no mês</div>
+                </div>
+              </div>
+              {LINHAS_RESUMO.map(({ situacao, rotulo, tom, Icone }) => (
+                <button
+                  key={situacao}
+                  className={`resumo-linha ${tom}${filtro === situacao ? ' ativo' : ''}`}
+                  aria-pressed={filtro === situacao}
+                  onClick={() => setFiltro(filtro === situacao ? null : situacao)}
+                  title={`Ver apenas ${rotulo.toLowerCase()} no calendário`}
+                >
+                  <span className="resumo-linha-icone" style={{ color: COR_SITUACAO[situacao] }}>
+                    <Icone size={18} />
+                  </span>
+                  <div>
+                    <div className="resumo-linha-valor" style={{ color: COR_SITUACAO[situacao] }}>
+                      {contagem[situacao]}
+                    </div>
+                    <div className="resumo-linha-rotulo">{rotulo}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="resumo-grade resumo-grade-coluna">
-            <div className="resumo-caixa azul">
-              <div className="resumo-valor" style={{ color: 'var(--pendente)' }}>{resumo.pendentes}</div>
-              <div className="resumo-rotulo">Demandas pendentes</div>
-              <span className="resumo-icone" style={{ color: 'var(--pendente)' }}><IconeRelogio size={19} /></span>
+
+          <div className="cartao">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Demandas do dia</div>
+              <span className="texto-suave">{rotuloDiaSelecionado}</span>
             </div>
-            <div className="resumo-caixa vermelho">
-              <div className="resumo-valor" style={{ color: 'var(--atrasada)' }}>{resumo.atrasadas}</div>
-              <div className="resumo-rotulo">Demandas atrasadas</div>
-              <span className="resumo-icone" style={{ color: 'var(--atrasada)' }}><IconeAlerta size={19} /></span>
-            </div>
-            <div className="resumo-caixa verde">
-              <div className="resumo-valor" style={{ color: 'var(--concluida)' }}>{resumo.concluidas}</div>
-              <div className="resumo-rotulo">Demandas concluídas</div>
-              <span className="resumo-icone" style={{ color: 'var(--concluida)' }}><IconeCheckCirculo size={19} /></span>
-            </div>
-            <div className="resumo-caixa cinza">
-              <div className="resumo-valor">{resumo.total}</div>
-              <div className="resumo-rotulo">Total no mês</div>
-              <span className="resumo-icone" style={{ color: 'var(--tinta-tenue)' }}><IconeDocumento size={19} /></span>
-            </div>
+
+
+            {doDia.length === 0 ? (
+              <div className="agenda-vazia">
+                <p>Nenhuma demanda com prazo neste dia.</p>
+                <button className="btn-adicionar-dia" onClick={() => aoNovaDemanda(diaSelecionado)}>
+                  <IconeMais size={16} /> Criar demanda
+                </button>
+              </div>
+            ) : (
+              <div className="agenda">
+                {doDia.map(({ d, situacao }) => (
+                  <button key={d.id} className="agenda-item" onClick={() => aoAbrirDemanda(d)}>
+                    <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                    <span className="agenda-texto">
+                      <span className="agenda-titulo">{d.titulo}</span>
+                      <span className="agenda-sub">
+                        {ROTULO_SITUACAO[situacao]}
+                        <span className="agenda-separador">•</span>
+                        {ROTULO_PRIORIDADE[d.prioridade as keyof typeof ROTULO_PRIORIDADE] ?? d.prioridade}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        </aside>
       </div>
     </>
   );

@@ -5,16 +5,33 @@ import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_SITUACAO, situacaoDe, type Situacao,
 } from '@/lib/dominio';
 import { diaParaDate, somarDias } from '@/lib/datas';
-import { IconeDireita, IconeEsquerda } from '@/components/icones';
+import { IconeCalendarioHoje, IconeDireita, IconeEsquerda } from '@/components/icones';
 import type { Demanda } from '@/lib/tipos';
 
 const NOMES_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-/** Todas as células da grade: 6 semanas a partir do domingo anterior ao dia 1. */
+/** Situações oferecidas como filtro, na ordem em que aparecem nos chips. */
+const FILTROS: Situacao[] = ['PENDENTE', 'ATRASADA', 'CONCLUIDA', 'EM_ANDAMENTO'];
+
+/** Nos chips o rótulo vai no plural, porque acompanha uma contagem. */
+const ROTULO_CHIP: Record<Situacao, string> = {
+  PENDENTE: 'Em aberto',
+  ATRASADA: 'Atrasadas',
+  CONCLUIDA: 'Concluídas',
+  EM_ANDAMENTO: 'Em andamento',
+  CANCELADA: 'Canceladas',
+};
+
+/**
+ * Células da grade, a partir do domingo anterior ao dia 1. Usa só as semanas
+ * que o mês ocupa (5 ou 6), para não sobrar uma linha inteira vazia no fim.
+ */
 function gerarGrade(ano: number, mes: number): string[] {
   const primeiro = new Date(Date.UTC(ano, mes, 1));
   const inicio = somarDias(primeiro.toISOString().slice(0, 10), -primeiro.getUTCDay());
-  return Array.from({ length: 42 }, (_, i) => somarDias(inicio, i));
+  const ultimo = new Date(Date.UTC(ano, mes + 1, 0));
+  const semanas = Math.ceil((primeiro.getUTCDay() + ultimo.getUTCDate()) / 7);
+  return Array.from({ length: semanas * 7 }, (_, i) => somarDias(inicio, i));
 }
 
 export function Calendario({
@@ -23,6 +40,9 @@ export function Calendario({
   hoje,
   diaSelecionado,
   demandas,
+  filtro,
+  contagem,
+  aoFiltrar,
   aoSelecionar,
   aoMudarMes,
 }: {
@@ -31,6 +51,11 @@ export function Calendario({
   hoje: string;
   diaSelecionado: string;
   demandas: Demanda[];
+  /** Situação em foco; `null` mostra todas. */
+  filtro: Situacao | null;
+  /** Quantas demandas do mês há em cada situação, mais o total. */
+  contagem: Record<Situacao, number> & { total: number };
+  aoFiltrar: (s: Situacao | null) => void;
   aoSelecionar: (dia: string) => void;
   aoMudarMes: (ano: number, mes: number) => void;
 }) {
@@ -41,15 +66,17 @@ export function Calendario({
     const mapa = new Map<string, { d: Demanda; situacao: Situacao }[]>();
     for (const d of demandas) {
       const dia = d.prazo.slice(0, 10);
+      const situacao = situacaoDe(d.status, dia, hoje);
+      if (filtro && situacao !== filtro) continue;
       const lista = mapa.get(dia) ?? [];
-      lista.push({ d, situacao: situacaoDe(d.status, dia, hoje) });
+      lista.push({ d, situacao });
       mapa.set(dia, lista);
     }
     for (const lista of mapa.values()) {
       lista.sort((a, b) => PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao]);
     }
     return mapa;
-  }, [demandas, hoje]);
+  }, [demandas, hoje, filtro]);
 
   const rotuloMes = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -69,18 +96,43 @@ export function Calendario({
   }
 
   return (
-    <div className="cartao">
+    <div className="cartao cal-cartao">
       <div className="cal-topo">
-        <button className="cal-nav" onClick={() => navegar(-1)} aria-label="Mês anterior">
-          <IconeEsquerda size={17} />
+        <h2 className="cal-mes">{rotuloMes}</h2>
+        <div className="cal-setas">
+          <button className="cal-nav" onClick={() => navegar(-1)} aria-label="Mês anterior">
+            <IconeEsquerda size={17} />
+          </button>
+          <button className="cal-nav" onClick={() => navegar(1)} aria-label="Próximo mês">
+            <IconeDireita size={17} />
+          </button>
+        </div>
+        <button className="btn btn-secundario btn-hoje" onClick={irParaHoje}>
+          <IconeCalendarioHoje size={17} /> Hoje
         </button>
-        <div className="cal-mes">{rotuloMes}</div>
-        <button className="cal-nav" onClick={() => navegar(1)} aria-label="Próximo mês">
-          <IconeDireita size={17} />
+      </div>
+
+      {/* Chips de situação: filtram a grade e mostram o tamanho de cada fatia. */}
+      <div className="cal-chips" role="group" aria-label="Filtrar por situação">
+        <button
+          className={`cal-chip${filtro === null ? ' ativo' : ''}`}
+          aria-pressed={filtro === null}
+          onClick={() => aoFiltrar(null)}
+        >
+          Todas <span className="cal-chip-conta">{contagem.total}</span>
         </button>
-        <button className="btn btn-secundario btn-hoje" style={{ marginLeft: 'auto' }} onClick={irParaHoje}>
-          Hoje
-        </button>
+        {FILTROS.map((s) => (
+          <button
+            key={s}
+            className={`cal-chip${filtro === s ? ' ativo' : ''}`}
+            aria-pressed={filtro === s}
+            onClick={() => aoFiltrar(filtro === s ? null : s)}
+          >
+            <span className="ponto" style={{ background: COR_SITUACAO[s] }} />
+            {ROTULO_CHIP[s]}
+            <span className="cal-chip-conta">{contagem[s]}</span>
+          </button>
+        ))}
       </div>
 
       <div className="cal-grade">
@@ -110,15 +162,13 @@ export function Calendario({
                 {lista.length > 0 && (
                   <div className="cal-itens">
                     {lista.slice(0, 2).map(({ d, situacao }) => (
-                      <span className="cal-item" key={d.id}>
+                      <span className="cal-item" key={d.id} title={d.titulo}>
                         <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
                         <span className="cal-item-texto">{d.titulo}</span>
                       </span>
                     ))}
                     {lista.length > 2 && (
-                      <span className="cal-mais">
-                        +{lista.length - 2} {lista.length - 2 === 1 ? 'demanda' : 'demandas'}
-                      </span>
+                      <span className="cal-mais">+{lista.length - 2} mais</span>
                     )}
                   </div>
                 )}

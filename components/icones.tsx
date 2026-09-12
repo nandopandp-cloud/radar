@@ -19,6 +19,15 @@ export const IconeCalendario = ({ size = 19, className }: P) => (
   </svg>
 );
 
+/** Calendário com o dia de hoje marcado — usado no botão "Hoje". */
+export const IconeCalendarioHoje = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    <rect x="7" y="12.5" width="4.5" height="4" rx="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const IconeLista = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
     <rect x="4" y="3" width="16" height="18" rx="2.5" />
