@@ -27,6 +27,8 @@ model Usuario {
 
   demandas  Demanda[]
   alertas   Alerta[]
+  anexos    Anexo[]
+  comentarios Comentario[]
 
   @@index([ativo])
 }
@@ -57,8 +59,58 @@ model Demanda {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
+  anexos       Anexo[]
+  comentarios  Comentario[]
+
   @@index([status, prazo])
   @@index([autorId, prazo])
+}
+
+/// Arquivo anexado a uma demanda (até 1MB), guardado no banco como data URI —
+/// mesmo caminho já usado pelo avatar, que dispensa serviço de storage externo.
+model Anexo {
+  id        String   @id @default(cuid())
+  demandaId String
+  demanda   Demanda  @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+
+  nome      String
+  /// Tipo declarado pelo navegador; usado só para escolher o ícone e o download.
+  tipo      String
+  /// Tamanho em bytes do arquivo original, para exibir na lista.
+  tamanho   Int
+  /// Conteúdo completo em data URI (data:<tipo>;base64,...).
+  conteudo  String
+
+  /// Quem anexou. Removida a conta, o anexo fica e `autorId` vira nulo —
+  /// `autorNome` é quem preserva a autoria. (Se a conta removida for a do dono
+  /// da demanda, a demanda inteira já cai por cascade e leva os anexos junto.)
+  autorId   String?
+  autor     Usuario? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+  autorNome String
+
+  criadoEm  DateTime @default(now())
+
+  @@index([demandaId, criadoEm])
+}
+
+/// Comentário deixado numa demanda por quem tem acesso a ela.
+model Comentario {
+  id        String   @id @default(cuid())
+  demandaId String
+  demanda   Demanda  @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+
+  texto     String
+
+  /// Mesmo critério do anexo: removida a conta de quem comentou, o texto fica
+  /// e `autorId` vira nulo.
+  autorId   String?
+  autor     Usuario? @relation(fields: [autorId], references: [id], onDelete: SetNull)
+  /// Nome capturado no momento do comentário, para o histórico não se perder.
+  autorNome String
+
+  criadoEm  DateTime @default(now())
+
+  @@index([demandaId, criadoEm])
 }
 
 /// Registro de cada disparo, para auditoria e para evitar envio duplicado no mesmo dia.

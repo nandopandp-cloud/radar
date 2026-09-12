@@ -66,6 +66,34 @@ export const IconeDireita = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}><path d="M9 18l6-6-6-6" /></svg>
 );
 
+/** Clipe de papel — anexos. */
+export const IconeClipe = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M21 11.5l-8.8 8.8a5 5 0 0 1-7.1-7.1l8.8-8.8a3.3 3.3 0 0 1 4.7 4.7l-8.8 8.8a1.7 1.7 0 0 1-2.4-2.4l8.1-8.1" />
+  </svg>
+);
+
+/** Balão de conversa — comentários. */
+export const IconeBalao = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M21 11.5a8 8 0 0 1-11.6 7.2L3 20.5l1.8-6.4A8 8 0 1 1 21 11.5z" />
+  </svg>
+);
+
+/** Seta para baixo com base — baixar arquivo. */
+export const IconeBaixar = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 18.5V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5" />
+  </svg>
+);
+
+/** Seta para cima com base — enviar arquivo. */
+export const IconeEnviar = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 21V9m0 0L7.5 13.5M12 9l4.5 4.5M4 5.5V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v1.5" />
+  </svg>
+);
+
 /** Seta dupla — recolhe e expande a barra lateral. */
 export const IconeDuploEsquerda = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>

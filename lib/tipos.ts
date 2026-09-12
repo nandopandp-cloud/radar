@@ -39,5 +39,24 @@ export type SessaoUI = {
   avatar?: string | null;
 };
 
+/** Metadados de um anexo. O conteúdo fica em /api/anexos/<id>. */
+export type Anexo = {
+  id: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  autorNome: string;
+  criadoEm: string;
+};
+
+export type Comentario = {
+  id: string;
+  texto: string;
+  autorId: string | null;
+  autorNome: string;
+  criadoEm: string;
+  autor?: { avatar?: string | null } | null;
+};
+
 export type Toast = { id: number; texto: string; tipo: 'ok' | 'erro' | 'info' };
 export type Notificar = (texto: string, tipo?: Toast['tipo']) => void;

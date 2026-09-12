@@ -195,6 +195,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <GavetaDemanda
           demanda={detalhe}
           hoje={hoje}
+          sessao={sessao}
           podeEditar={sessao.perfil === 'ADMIN' || detalhe.autorId === sessao.id}
           aoFechar={() => setDetalhe(null)}
           aoAtualizar={carregar}

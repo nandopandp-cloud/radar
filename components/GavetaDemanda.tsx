@@ -1,21 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  IconeAlerta, IconeBandeira, IconeCalendario, IconeCheck, IconeCheckCirculo,
-  IconeCirculo, IconeDocumento, IconeEtiqueta, IconeLapis, IconeLixeira,
+  IconeAlerta, IconeBalao, IconeBandeira, IconeCalendario, IconeCheck, IconeCheckCirculo,
+  IconeCirculo, IconeClipe, IconeDocumento, IconeEtiqueta, IconeLapis, IconeLixeira,
   IconeUsuario, IconeX,
 } from '@/components/icones';
+import { AnexosDemanda } from '@/components/AnexosDemanda';
+import { ComentariosDemanda } from '@/components/ComentariosDemanda';
 import {
   CATEGORIAS, PRIORIDADES, ROTULO_PRIORIDADE, ROTULO_SITUACAO, STATUS,
   ROTULO_STATUS, situacaoDe, type Prioridade, type Status,
 } from '@/lib/dominio';
 import { formatarDiaExtenso } from '@/lib/datas';
-import type { Demanda, Notificar } from '@/lib/tipos';
+import type { Anexo, Comentario, Demanda, Notificar, SessaoUI } from '@/lib/tipos';
 
 export function GavetaDemanda({
   demanda,
   hoje,
+  sessao,
   podeEditar,
   aoFechar,
   aoAtualizar,
@@ -23,6 +26,7 @@ export function GavetaDemanda({
 }: {
   demanda: Demanda;
   hoje: string;
+  sessao: SessaoUI;
   podeEditar: boolean;
   aoFechar: () => void;
   aoAtualizar: () => Promise<void> | void;
@@ -30,6 +34,9 @@ export function GavetaDemanda({
 }) {
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [aba, setAba] = useState<'detalhes' | 'anexos' | 'comentarios'>('detalhes');
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [form, setForm] = useState({
     titulo: demanda.titulo,
     descricao: demanda.descricao ?? '',
@@ -46,6 +53,26 @@ export function GavetaDemanda({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [aoFechar]);
+
+  /*
+   * Anexos e comentários vêm juntos ao abrir, para as abas já mostrarem a
+   * contagem. Se a busca falhar, as listas ficam vazias e a gaveta continua
+   * utilizável — o detalhe da demanda não depende delas.
+   */
+  const carregarExtras = useCallback(async () => {
+    try {
+      const [ra, rc] = await Promise.all([
+        fetch(`/api/demandas/${demanda.id}/anexos`),
+        fetch(`/api/demandas/${demanda.id}/comentarios`),
+      ]);
+      if (ra.ok) setAnexos(await ra.json());
+      if (rc.ok) setComentarios(await rc.json());
+    } catch {
+      // Silencioso de propósito: um aviso aqui atrapalharia mais que ajudaria.
+    }
+  }, [demanda.id]);
+
+  useEffect(() => { carregarExtras(); }, [carregarExtras]);
 
   const prazo = demanda.prazo.slice(0, 10);
   const inicio = demanda.inicio?.slice(0, 10) ?? null;
@@ -131,9 +158,62 @@ export function GavetaDemanda({
             {demanda.vezesAlertada > 0 &&
               ` · ${demanda.vezesAlertada} ${demanda.vezesAlertada === 1 ? 'aviso enviado' : 'avisos enviados'}`}
           </div>
+
+          {/* Editar ocupa a gaveta inteira; as abas só fazem sentido fora dele. */}
+          {!editando && (
+            <div className="gaveta-abas" role="tablist">
+              <button
+                role="tab" aria-selected={aba === 'detalhes'}
+                className={`gaveta-aba${aba === 'detalhes' ? ' ativa' : ''}`}
+                onClick={() => setAba('detalhes')}
+              >
+                <IconeDocumento size={16} /> Detalhes
+              </button>
+              <button
+                role="tab" aria-selected={aba === 'anexos'}
+                className={`gaveta-aba${aba === 'anexos' ? ' ativa' : ''}`}
+                onClick={() => setAba('anexos')}
+              >
+                <IconeClipe size={16} /> Anexos
+                {anexos.length > 0 && <span className="gaveta-aba-conta">{anexos.length}</span>}
+              </button>
+              <button
+                role="tab" aria-selected={aba === 'comentarios'}
+                className={`gaveta-aba${aba === 'comentarios' ? ' ativa' : ''}`}
+                onClick={() => setAba('comentarios')}
+              >
+                <IconeBalao size={16} /> Comentários
+                {comentarios.length > 0 && (
+                  <span className="gaveta-aba-conta">{comentarios.length}</span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="gaveta-corpo">
+          {aba === 'anexos' && !editando && (
+            <AnexosDemanda
+              demandaId={demanda.id}
+              anexos={anexos}
+              podeMexer={podeEditar}
+              aoMudar={setAnexos}
+              notificar={notificar}
+            />
+          )}
+
+          {aba === 'comentarios' && !editando && (
+            <ComentariosDemanda
+              demandaId={demanda.id}
+              comentarios={comentarios}
+              sessao={sessao}
+              aoMudar={setComentarios}
+              notificar={notificar}
+            />
+          )}
+
+          {(aba === 'detalhes' || editando) && (
+          <>
           <div className={`faixa-prazo${faixa.classe}`}>
             <span className="aviso-icone">
               {situacao === 'ATRASADA' ? <IconeAlerta size={20} />
@@ -282,9 +362,11 @@ export function GavetaDemanda({
               )}
             </>
           )}
+          </>
+          )}
         </div>
 
-        {podeEditar && (
+        {podeEditar && (aba === 'detalhes' || editando) && (
           <div className="gaveta-rodape">
             {editando ? (
               <>

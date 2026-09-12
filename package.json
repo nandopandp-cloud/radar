@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
     "db:seed": "node --experimental-strip-types scripts/seed.ts",
     "db:studio": "prisma studio",
     "scheduler": "node --experimental-strip-types scripts/scheduler.ts",
