@@ -159,3 +159,10 @@ export const IconeEngrenagem = ({ size = 19, className }: P) => (
 export const IconeMenu = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}><path d="M4 7h16M4 12h16M4 17h16" /></svg>
 );
+
+export const IconeQuadro = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="3.5" width="7" height="17" rx="2" />
+    <rect x="14" y="3.5" width="7" height="11" rx="2" />
+  </svg>
+);

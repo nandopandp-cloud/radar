@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { IconeMais } from '@/components/icones';
+import { useEffect, useMemo, useState } from 'react';
+import { IconeLista, IconeMais, IconeQuadro } from '@/components/icones';
+import { QuadroDemandas } from '@/components/QuadroDemandas';
 import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
   situacaoDe, type Prioridade, type Situacao,
@@ -10,6 +11,12 @@ import { fimDoMes, formatarDiaCompleto, formatarDiaCurto, inicioDoMes, somarDias
 import type { Demanda, SessaoUI, Usuario } from '@/lib/tipos';
 
 type Filtro = 'ATRASADAS' | 'ABERTAS' | 'CONCLUIDAS' | 'TODAS';
+
+/** Como as demandas são exibidas: quadro de cartões ou tabela. */
+type Visao = 'QUADRO' | 'LISTA';
+
+/** Guardamos a escolha para que a tela volte do jeito que o usuário deixou. */
+const CHAVE_VISAO = 'radar:visao-demandas';
 
 const FILTROS: { id: Filtro; rotulo: string }[] = [
   { id: 'ATRASADAS', rotulo: 'Atrasadas' },
@@ -59,6 +66,7 @@ export function TelaDemandas({
   aoMudarAutor,
   aoAbrirDemanda,
   aoNovaDemanda,
+  aoMoverDemanda,
 }: {
   sessao: SessaoUI;
   demandas: Demanda[];
@@ -68,11 +76,26 @@ export function TelaDemandas({
   aoMudarAutor: (id: string) => void;
   aoAbrirDemanda: (d: Demanda) => void;
   aoNovaDemanda: (prazo: string) => void;
+  aoMoverDemanda: (d: Demanda, status: string) => void;
 }) {
+  const [visao, setVisao] = useState<Visao>('QUADRO');
   const [filtro, setFiltro] = useState<Filtro>('ATRASADAS');
   const [periodo, setPeriodo] = useState<Periodo>('SEMPRE');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
+
+  // A preferência vem do navegador, então só pode ser lida depois da hidratação.
+  useEffect(() => {
+    const salva = localStorage.getItem(CHAVE_VISAO);
+    if (salva === 'QUADRO' || salva === 'LISTA') setVisao(salva);
+  }, []);
+
+  function trocarVisao(nova: Visao) {
+    setVisao(nova);
+    localStorage.setItem(CHAVE_VISAO, nova);
+    // No quadro as colunas já separam a situação; o filtro de situação atrapalharia.
+    if (nova === 'QUADRO') setFiltro('TODAS');
+  }
 
   const intervalo = useMemo(
     () => intervaloDoPeriodo(periodo, hoje, de, ate),
@@ -133,17 +156,40 @@ export function TelaDemandas({
       <div className="cartao">
         <div className="cartao-cabecalho com-linha">
           <div className="linha">
-            {FILTROS.map((f) => (
-              <button
-                key={f.id}
-                className={`btn btn-mini ${filtro === f.id ? 'btn-primario' : 'btn-secundario'}`}
-                onClick={() => setFiltro(f.id)}
-              >
-                {f.rotulo}
-              </button>
-            ))}
+            {visao === 'LISTA' ? (
+              FILTROS.map((f) => (
+                <button
+                  key={f.id}
+                  className={`btn btn-mini ${filtro === f.id ? 'btn-primario' : 'btn-secundario'}`}
+                  onClick={() => setFiltro(f.id)}
+                >
+                  {f.rotulo}
+                </button>
+              ))
+            ) : (
+              <span className="texto-suave">
+                {visiveis.length} {visiveis.length === 1 ? 'demanda' : 'demandas'} no quadro
+                {sessao.perfil === 'ADMIN' ? '' : ' — arraste os cartões para mudar a situação'}
+              </span>
+            )}
           </div>
           <div className="linha">
+            <div className="alternador" role="group" aria-label="Modo de visualização">
+              <button
+                className="alternador-opcao"
+                aria-pressed={visao === 'QUADRO'}
+                onClick={() => trocarVisao('QUADRO')}
+              >
+                <IconeQuadro size={16} /> Kanban
+              </button>
+              <button
+                className="alternador-opcao"
+                aria-pressed={visao === 'LISTA'}
+                onClick={() => trocarVisao('LISTA')}
+              >
+                <IconeLista size={16} /> Lista
+              </button>
+            </div>
             <select
               className="selecao"
               style={{ width: 'auto', minWidth: 160 }}
@@ -243,6 +289,15 @@ export function TelaDemandas({
                   : 'Crie uma demanda pelo calendário ou pelo botão acima.'}
             </p>
           </div>
+        ) : visao === 'QUADRO' ? (
+          <QuadroDemandas
+            sessao={sessao}
+            itens={visiveis}
+            hoje={hoje}
+            aoAbrirDemanda={aoAbrirDemanda}
+            aoNovaDemanda={aoNovaDemanda}
+            aoMoverDemanda={aoMoverDemanda}
+          />
         ) : (
           <div className="tabela-envolvente">
             <table className="tabela">

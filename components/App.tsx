@@ -91,6 +91,37 @@ export function App({ sessao }: { sessao: SessaoUI }) {
     setNovaEm(prazo);
   }
 
+  /**
+   * Move uma demanda de coluna no quadro. A tela muda na hora e só depois
+   * confirmamos no servidor — se falhar, voltamos ao estado anterior.
+   */
+  const moverDemanda = useCallback(
+    async (demanda: Demanda, status: string) => {
+      if (demanda.status === status) return;
+      const anterior = demandas;
+      setDemandas((lista) =>
+        lista.map((d) => (d.id === demanda.id ? { ...d, status } : d)),
+      );
+      try {
+        const r = await fetch(`/api/demandas/${demanda.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        if (!r.ok) {
+          const corpo = await r.json().catch(() => null);
+          throw new Error(corpo?.erro ?? 'Não foi possível mover a demanda.');
+        }
+        await carregar();
+        notificar(`"${demanda.titulo}" foi movida.`, 'ok');
+      } catch (e) {
+        setDemandas(anterior);
+        notificar(e instanceof Error ? e.message : 'Não foi possível mover a demanda.', 'erro');
+      }
+    },
+    [demandas, carregar, notificar],
+  );
+
   return (
     <Casca sessao={sessao} aba={aba} aoTrocarAba={setAba} atrasadas={atrasadas}>
       {carregando ? (
@@ -120,6 +151,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoMudarAutor={setAutorFiltro}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
+          aoMoverDemanda={moverDemanda}
         />
       ) : aba === 'alertas' && sessao.perfil === 'ADMIN' ? (
         <TelaAlertas sessao={sessao} notificar={notificar} aoDisparar={carregar} />
