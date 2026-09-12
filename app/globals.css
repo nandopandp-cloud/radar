@@ -640,7 +640,7 @@ a { color: var(--marca); text-decoration: none; }
 
 .quadro {
   display: grid; grid-auto-flow: column;
-  grid-auto-columns: minmax(272px, 1fr);
+  grid-auto-columns: minmax(296px, 1fr);
   gap: 16px; padding: 18px 22px 22px;
   overflow-x: auto; align-items: start;
 }
@@ -677,19 +677,21 @@ a { color: var(--marca); text-decoration: none; }
 .quadro-coluna.sit-CONCLUIDA    .quadro-coluna-icone { background: var(--concluida); }
 
 .quadro-coluna-corpo {
-  padding: 13px; display: flex; flex-direction: column; gap: 11px;
+  padding: 13px; display: flex; flex-direction: column; gap: 12px;
   max-height: calc(100vh - 310px); overflow-y: auto;
 }
 
 .quadro-cartao {
-  position: relative; padding: 14px 15px 14px 17px;
+  position: relative; padding: 15px 16px 15px 18px;
   background: var(--superficie); border: 1px solid var(--borda);
   border-radius: var(--raio); box-shadow: var(--sombra-sm);
-  overflow: hidden; cursor: pointer;
+  cursor: pointer;
   transition: box-shadow .16s, transform .16s, border-color .16s;
 }
 .quadro-cartao::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  /* Acompanha o arredondamento do cartão sem precisar recortá-lo. */
+  border-radius: var(--raio) 0 0 var(--raio);
 }
 .quadro-cartao.sit-ATRASADA::before     { background: var(--atrasada); }
 .quadro-cartao.sit-PENDENTE::before     { background: var(--pendente); }
@@ -706,14 +708,26 @@ a { color: var(--marca); text-decoration: none; }
 .quadro-cartao[draggable='true'] { cursor: grab; }
 .quadro-cartao.arrastando { opacity: .45; transform: rotate(-1.2deg); cursor: grabbing; }
 
-.quadro-cartao-topo { display: flex; align-items: flex-start; gap: 9px; }
+/*
+ * Título e categoria empilham, não competem pela mesma linha: muitos títulos
+ * vêm digitados em CAIXA ALTA e longos, e lado a lado o selo os esmagava.
+ */
+.quadro-cartao-topo { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .quadro-cartao-titulo {
-  font-size: 14px; font-weight: 650; line-height: 1.35; letter-spacing: -.01em;
-  flex: 1; min-width: 0;
+  font-size: 14px; font-weight: 650; line-height: 1.45; letter-spacing: -.01em;
+  width: 100%; min-width: 0;
+  /* Até três linhas, com reticências — antes o texto era cortado no meio. */
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere;
+  /* CAIXA ALTA cansa a leitura em bloco; exibimos como foi escrito, porém menor. */
+  text-transform: none;
 }
-.quadro-cartao-categoria { flex-shrink: 0; }
+.quadro-cartao-categoria { flex-shrink: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
-.quadro-cartao-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.quadro-cartao-meta {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px 10px; margin-top: 11px;
+}
 
 .quadro-cartao-desc {
   font-size: 12.5px; color: var(--tinta-suave); line-height: 1.5; margin-top: 9px;
@@ -723,8 +737,9 @@ a { color: var(--marca); text-decoration: none; }
 }
 
 .quadro-cartao-prazo {
-  display: flex; align-items: center; gap: 7px; margin-top: 11px;
+  display: inline-flex; align-items: center; gap: 6px;
   font-size: 12.5px; font-weight: 500; color: var(--tinta-suave);
+  white-space: nowrap;
 }
 .quadro-cartao-prazo.vencido { color: var(--atrasada); font-weight: 600; }
 

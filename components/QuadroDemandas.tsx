@@ -84,17 +84,16 @@ function Cartao({
         )}
       </div>
 
-      <div className="quadro-cartao-selos">
+      {demanda.descricao && <p className="quadro-cartao-desc">{demanda.descricao}</p>}
+
+      {/* Prioridade e prazo dividem a mesma linha: juntos ocupam pouco e
+          garantem que nenhum cartão fique reduzido só ao título. */}
+      <div className="quadro-cartao-meta">
         <span className={`selo selo-${demanda.prioridade}`}>
           {ROTULO_PRIORIDADE[demanda.prioridade as Prioridade] ?? demanda.prioridade}
         </span>
-      </div>
-
-      {demanda.descricao && <p className="quadro-cartao-desc">{demanda.descricao}</p>}
-
-      <div className={`quadro-cartao-prazo${atrasada ? ' vencido' : ''}`}>
-        <IconeCalendarioMini />
-        <span>
+        <span className={`quadro-cartao-prazo${atrasada ? ' vencido' : ''}`}>
+          <IconeCalendarioMini />
           {atrasada ? `Venceu em ${formatarDiaCurto(prazo)}` : formatarDiaCurto(prazo)}
         </span>
       </div>
