@@ -1594,3 +1594,82 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   line-height: 1.2; margin: 3px 0 6px; white-space: nowrap;
 }
 .indicador-rodape { font-size: 11.5px; color: var(--tinta-tenue); margin-top: 5px; }
+
+/* ══ Ofensiva Radar ═════════════════════════════════════ */
+.cabecalho-acoes-tela { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.ofensiva { position: relative; }
+.ofensiva-selo {
+  display: inline-flex; align-items: center; gap: 11px;
+  padding: 8px 13px 8px 10px; border-radius: 14px;
+  border: 1px solid #dbe6fb;
+  background: linear-gradient(135deg, #eef4ff 0%, #e8f0fe 100%);
+  text-align: left; transition: border-color .14s, box-shadow .14s, transform .14s;
+}
+.ofensiva-selo:hover { border-color: var(--marca-borda); box-shadow: var(--sombra-sm); }
+.ofensiva-selo.aberto { border-color: var(--marca); }
+/* Sem sequência, o selo fica discreto — é um convite, não uma conquista. */
+.ofensiva-selo.apagada { background: #f8fafc; border-color: var(--borda); }
+.ofensiva-selo.apagada svg { opacity: .65; }
+
+.ofensiva-texto { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ofensiva-titulo {
+  font-size: 14px; font-weight: 800; letter-spacing: -.01em; color: var(--tinta);
+  white-space: nowrap;
+}
+.ofensiva-sub { font-size: 12.5px; font-weight: 700; color: var(--tinta-suave); white-space: nowrap; }
+.ofensiva-seta { color: var(--tinta-tenue); flex-shrink: 0; }
+
+/* Painel de detalhe */
+.ofensiva-painel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
+  width: min(320px, calc(100vw - 32px)); padding: 16px;
+  background: var(--superficie); border: 1px solid var(--borda);
+  border-radius: var(--raio-lg); box-shadow: var(--sombra-lg);
+  animation: dica-entra .13s ease-out;
+}
+.ofensiva-painel-topo {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin-bottom: 14px;
+}
+.ofensiva-painel-titulo { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; }
+.ofensiva-painel-sub { font-size: 12px; color: var(--tinta-suave); margin-top: 2px; line-height: 1.4; }
+
+.ofensiva-numeros {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
+}
+.ofensiva-numero {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px; border-radius: var(--raio); background: #f8fafc;
+}
+.ofensiva-numero-icone { color: var(--marca); display: grid; place-items: center; flex-shrink: 0; }
+.ofensiva-numero-valor {
+  font-size: 19px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--tinta);
+}
+.ofensiva-numero-rotulo { font-size: 11px; color: var(--tinta-suave); margin-top: 3px; line-height: 1.3; }
+
+/* Tira dos últimos dias úteis */
+.ofensiva-tira { display: flex; gap: 6px; margin-bottom: 12px; }
+.ofensiva-dia {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 7px 0; border-radius: var(--raio-sm);
+  background: #f1f5f9; border: 1px solid transparent;
+}
+.ofensiva-dia.ativo {
+  background: var(--marca-clara); border-color: var(--marca-borda);
+}
+.ofensiva-dia-letra { font-size: 10.5px; font-weight: 700; color: var(--tinta-tenue); }
+.ofensiva-dia.ativo .ofensiva-dia-letra { color: var(--marca); }
+.ofensiva-dia-marca { font-size: 12px; font-weight: 800; color: var(--marca); line-height: 1; min-height: 12px; }
+
+.ofensiva-nota {
+  font-size: 12.5px; line-height: 1.5; color: var(--tinta-media);
+  padding: 10px 12px; border-radius: var(--raio);
+  background: var(--marca-clara); border: 1px solid var(--marca-borda);
+}
+
+@media (max-width: 620px) {
+  .ofensiva-titulo { font-size: 13px; }
+  .ofensiva-sub { font-size: 11.5px; }
+  .ofensiva-painel { right: auto; left: 0; }
+}

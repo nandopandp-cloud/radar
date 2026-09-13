@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate } from '@/lib/datas';
 import { ehPrioridade, ehStatus } from '@/lib/dominio';
+import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ async function permitido(id: string) {
   if (sessao.perfil !== 'ADMIN' && demanda.autorId !== sessao.sub) {
     return { erro: 'Esta demanda não é sua.', codigo: 403 as const };
   }
-  return { ok: true as const, demanda };
+  return { ok: true as const, demanda, sessao };
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
@@ -74,6 +75,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
     },
   });
+  await registrarAtividade(check.sessao.sub);
   return NextResponse.json(demanda);
 }
 

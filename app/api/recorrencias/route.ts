@@ -5,6 +5,7 @@ import { diaParaDate } from '@/lib/datas';
 import { ehPrioridade } from '@/lib/dominio';
 import { ehFrequencia, proximasDatas, validarRegra, type Regra } from '@/lib/recorrencia';
 import { MAXIMO_POR_DEMANDA, validarAnexo } from '@/lib/anexos';
+import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,5 +144,6 @@ export async function POST(req: Request) {
     });
   }
 
+  await registrarAtividade(sessao.sub);
   return NextResponse.json(recorrencia, { status: 201 });
 }

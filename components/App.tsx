@@ -12,6 +12,7 @@ import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
 import { ModalDia } from '@/components/ModalDia';
+import type { Ofensiva } from '@/lib/ofensiva';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
@@ -36,6 +37,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
   const [novaEm, setNovaEm] = useState<string | null>(null);
   const [diaAberto, setDiaAberto] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [ofensiva, setOfensiva] = useState<Ofensiva | null>(null);
 
   const notificar = useCallback((texto: string, tipo: Toast['tipo'] = 'info') => {
     const id = Date.now() + Math.random();
@@ -50,14 +52,16 @@ export function App({ sessao }: { sessao: SessaoUI }) {
 
       // A lista da equipe é restrita a administradores — nem pedimos como analista.
       const ehAdmin = sessao.perfil === 'ADMIN';
-      const [rd, re] = await Promise.all([
+      const [rd, re, ro] = await Promise.all([
         fetch(`/api/demandas?${params}`),
         ehAdmin ? fetch('/api/usuarios') : Promise.resolve(null),
+        fetch('/api/ofensiva'),
       ]);
       if (!rd.ok) throw new Error('Falha ao carregar as demandas.');
       const lista: Demanda[] = await rd.json();
       setDemandas(lista);
       if (re?.ok) setEquipe(await re.json());
+      if (ro.ok) setOfensiva(await ro.json());
 
       // Mantém a gaveta em sincronia após uma edição.
       setDetalhe((atual) => (atual ? lista.find((d) => d.id === atual.id) ?? null : null));
@@ -151,6 +155,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
+          ofensiva={ofensiva}
         />
       ) : aba === 'demandas' ? (
         <TelaDemandas
@@ -187,6 +192,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
+          ofensiva={ofensiva}
         />
       )}
 

@@ -30,8 +30,30 @@ model Usuario {
   anexos    Anexo[]
   comentarios Comentario[]
   recorrencias Recorrencia[]
+  diasAtivos DiaAtivo[]
 
   @@index([ativo])
+}
+
+/// Um dia em que a pessoa trabalhou no Radar — criou, editou, concluiu,
+/// comentou ou anexou algo. É o que alimenta a Ofensiva Radar.
+///
+/// Uma linha por pessoa por dia: a chave única deixa o registro ser idempotente,
+/// então marcar o mesmo dia várias vezes não duplica nada.
+model DiaAtivo {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// Dia no fuso do produto, à meia-noite UTC.
+  dia       DateTime
+  /// Quantas ações aconteceram no dia, só para leitura futura.
+  acoes     Int      @default(1)
+
+  criadoEm  DateTime @default(now())
+
+  @@unique([usuarioId, dia])
+  @@index([usuarioId, dia])
 }
 
 /// Demanda lançada por um analista, com data de início e prazo de entrega.

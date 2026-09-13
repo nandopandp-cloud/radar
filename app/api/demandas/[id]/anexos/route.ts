@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { acessoADemanda } from '@/lib/acesso';
 import { MAXIMO_POR_DEMANDA, validarAnexo } from '@/lib/anexos';
+import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,5 +72,6 @@ export async function POST(req: Request, { params }: Ctx) {
     select: { id: true, nome: true, tipo: true, tamanho: true, autorNome: true, criadoEm: true },
     orderBy: { criadoEm: 'asc' },
   });
+  await registrarAtividade(check.sessao.sub);
   return NextResponse.json(anexos, { status: 201 });
 }

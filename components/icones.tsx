@@ -101,6 +101,40 @@ export const IconeAjustes = ({ size = 19, className }: P) => (
   </svg>
 );
 
+/**
+ * Foguete da Ofensiva Radar. Preenchido e com gradiente, diferente dos ícones
+ * de traço do resto do app — é um selo, não um controle.
+ */
+export const IconeFoguete = ({ size = 28, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className}>
+    <defs>
+      <linearGradient id="og-corpo" x1="10" y1="4" x2="24" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#60a5fa" /><stop offset="1" stopColor="#2563eb" />
+      </linearGradient>
+      <linearGradient id="og-aba" x1="6" y1="14" x2="16" y2="26" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#4f46e5" /><stop offset="1" stopColor="#4338ca" />
+      </linearGradient>
+      <linearGradient id="og-chama" x1="6" y1="22" x2="12" y2="29" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#93c5fd" /><stop offset="1" stopColor="#60a5fa" />
+      </linearGradient>
+    </defs>
+    {/* Corpo apontando para o canto superior direito. */}
+    <path d="M26.6 5.4c.3 3.9-1 7.6-3.9 10.9l-4.2 4.7-6.5-6.5 4.7-4.2c3.3-2.9 7-4.2 10.9-3.9Z" fill="url(#og-corpo)" />
+    {/* Abas laterais. */}
+    <path d="M12 14.5 8.6 15c-1 .2-1.7 1.5-.9 2.4l2.3 2.3 2-5.2ZM17.5 20l.5 3.4c.2 1-.4 2-1.4 1.4l-2.6-2 3.5-2.8Z" fill="url(#og-aba)" />
+    {/* Rastro de propulsão. */}
+    <path d="M9.6 22.4c-1 1-1.6 3.4-1.9 5 1.6-.3 4-.9 5-1.9 1-1 1-2.2 0-3.1-.9-1-2.1-1-3.1 0Z" fill="url(#og-chama)" />
+    <circle cx="20.2" cy="11.8" r="2.3" fill="#fff" fillOpacity=".95" />
+  </svg>
+);
+
+/** Chama — dias de ofensiva no painel. */
+export const IconeChama = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 3s5 4.2 5 9a5 5 0 0 1-10 0c0-1.6.7-3 1.5-4 .2 1.3 1 2.2 2 2.2 1.4 0 1.8-1.6 1.5-3.2-.2-1.4-.6-2.7-1-4Z" />
+  </svg>
+);
+
 /** Linha em alta — taxa de cumprimento. */
 export const IconeTendencia = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>

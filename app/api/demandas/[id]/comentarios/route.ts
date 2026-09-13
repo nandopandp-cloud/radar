@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { acessoADemanda } from '@/lib/acesso';
+import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,5 +55,6 @@ export async function POST(req: Request, { params }: Ctx) {
       autor: { select: { avatar: true } },
     },
   });
+  await registrarAtividade(check.sessao.sub);
   return NextResponse.json(comentario, { status: 201 });
 }

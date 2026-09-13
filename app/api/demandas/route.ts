@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate, paraDiaISO } from '@/lib/datas';
 import { ehOrigem, ehPrioridade, ehStatus } from '@/lib/dominio';
+import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,5 +98,6 @@ export async function POST(req: Request) {
     },
   });
 
+  await registrarAtividade(sessao.sub);
   return NextResponse.json(demanda, { status: 201 });
 }

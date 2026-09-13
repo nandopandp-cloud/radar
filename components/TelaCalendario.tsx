@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Calendario } from '@/components/Calendario';
 import { MiniCalendario } from '@/components/MiniCalendario';
+import { OfensivaRadar } from '@/components/OfensivaRadar';
 import {
   IconeAlerta, IconeCheckCirculo, IconeCirculo, IconeDocumento,
   IconeMais, IconeRelogio,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/dominio';
 import { diaParaDate } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
+import type { Ofensiva } from '@/lib/ofensiva';
 
 /**
  * Quantas demandas o cartão do dia mostra antes de remeter ao modal, que
@@ -40,6 +42,7 @@ export function TelaCalendario({
   aoSelecionarDia,
   aoAbrirDemanda,
   aoNovaDemanda,
+  ofensiva,
 }: {
   sessao: SessaoUI;
   demandas: Demanda[];
@@ -51,6 +54,7 @@ export function TelaCalendario({
   aoSelecionarDia: (dia: string) => void;
   aoAbrirDemanda: (d: Demanda) => void;
   aoNovaDemanda: (prazo: string) => void;
+  ofensiva: Ofensiva | null;
 }) {
   /** Situação em foco na grade; `null` mostra todas. */
   const [filtro, setFiltro] = useState<Situacao | null>(null);
@@ -101,9 +105,12 @@ export function TelaCalendario({
             Organize suas demandas, acompanhe prazos e receba alertas automaticamente.
           </p>
         </div>
-        <button className="btn btn-primario" onClick={() => aoNovaDemanda(diaSelecionado)}>
-          <IconeMais size={18} /> Nova demanda
-        </button>
+        <div className="cabecalho-acoes-tela">
+          <OfensivaRadar ofensiva={ofensiva} />
+          <button className="btn btn-primario" onClick={() => aoNovaDemanda(diaSelecionado)}>
+            <IconeMais size={18} /> Nova demanda
+          </button>
+        </div>
       </div>
 
       <div className="grade-calendario">
