@@ -143,28 +143,18 @@ export function Casca({
       )}
 
       <div className="principal">
-        <header className="cabecalho">
-          <button
-            className="btn-icone abre-menu"
-            onClick={() => setMenuAberto(true)}
-            aria-label="Abrir menu"
-          >
-            <IconeMenu size={21} />
-          </button>
-          <div className="cabecalho-acoes">
-            <button
-              className="perfil-botao"
-              onClick={() => aoTrocarAba('perfil')}
-              title="Minha conta"
-            >
-              <Avatar nome={sessao.nome} avatar={sessao.avatar} tamanho="sm" />
-              <div style={{ lineHeight: 1.3, textAlign: 'left' }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{sessao.nome}</div>
-                <div style={{ fontSize: 12, color: 'var(--tinta-suave)' }}>{cargo}</div>
-              </div>
-            </button>
-          </div>
-        </header>
+        {/*
+          A barra de topo saiu: só repetia o perfil, que já está na sidebar, e
+          comia altura útil. No celular a sidebar é gaveta, então o botão de
+          menu continua — agora solto sobre o conteúdo.
+        */}
+        <button
+          className="btn-icone abre-menu"
+          onClick={() => setMenuAberto(true)}
+          aria-label="Abrir menu"
+        >
+          <IconeMenu size={21} />
+        </button>
 
         <main className="conteudo">
           <div className="conteudo-largo">{children}</div>
