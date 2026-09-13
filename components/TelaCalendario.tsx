@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Calendario } from '@/components/Calendario';
 import { MiniCalendario } from '@/components/MiniCalendario';
-import { OfensivaRadar } from '@/components/OfensivaRadar';
+import { SeloOfensiva } from '@/components/OfensivaRadar';
 import {
   IconeAlerta, IconeCheckCirculo, IconeCirculo, IconeDocumento,
   IconeMais, IconeRelogio,
@@ -43,6 +43,8 @@ export function TelaCalendario({
   aoAbrirDemanda,
   aoNovaDemanda,
   ofensiva,
+  aoAbrirOfensiva,
+  ofensivaPulsando,
 }: {
   sessao: SessaoUI;
   demandas: Demanda[];
@@ -55,6 +57,8 @@ export function TelaCalendario({
   aoAbrirDemanda: (d: Demanda) => void;
   aoNovaDemanda: (prazo: string) => void;
   ofensiva: Ofensiva | null;
+  aoAbrirOfensiva: () => void;
+  ofensivaPulsando: boolean;
 }) {
   /** Situação em foco na grade; `null` mostra todas. */
   const [filtro, setFiltro] = useState<Situacao | null>(null);
@@ -106,7 +110,7 @@ export function TelaCalendario({
           </p>
         </div>
         <div className="cabecalho-acoes-tela">
-          <OfensivaRadar ofensiva={ofensiva} />
+          <SeloOfensiva ofensiva={ofensiva} pulsando={ofensivaPulsando} aoAbrir={aoAbrirOfensiva} />
           <button className="btn btn-primario" onClick={() => aoNovaDemanda(diaSelecionado)}>
             <IconeMais size={18} /> Nova demanda
           </button>

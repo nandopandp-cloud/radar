@@ -30,7 +30,7 @@ export type Ofensiva = {
   /** Total de dias ativos no histórico. */
   totalDias: number;
   /** Últimos dias úteis e se houve atividade em cada — para a tira do painel. */
-  ultimos: { dia: string; ativo: boolean }[];
+  ultimos: { dia: string; ativo: boolean; ehHoje: boolean; futuro: boolean }[];
 };
 
 /**
@@ -43,7 +43,7 @@ export type Ofensiva = {
 export function apurarOfensiva(
   diasAtivos: string[],
   hoje = paraDiaISO(),
-  janela = 7,
+  janela = 6,
 ): Ofensiva {
   const conjunto = new Set(diasAtivos);
   const hojeConta = conjunto.has(hoje);
@@ -98,7 +98,17 @@ function maiorSequencia(conjunto: Set<string>): number {
   return maior;
 }
 
-/** Os últimos N dias úteis, do mais antigo ao mais recente. */
+/** Dia útil seguinte a este. */
+export function proximoDiaUtilDe(dia: string): string {
+  let proximo = somarDias(dia, 1);
+  while (!ehDiaUtil(proximo)) proximo = somarDias(proximo, 1);
+  return proximo;
+}
+
+/**
+ * A trilha do painel: os últimos dias úteis mais o próximo, que ainda está
+ * por cumprir. É o que mostra de onde a sequência vem e para onde vai.
+ */
 function tira(conjunto: Set<string>, hoje: string, quantos: number) {
   const dias: string[] = [];
   let cursor = ehDiaUtil(hoje) ? hoje : diaUtilAnterior(hoje);
@@ -106,7 +116,15 @@ function tira(conjunto: Set<string>, hoje: string, quantos: number) {
     dias.push(cursor);
     cursor = diaUtilAnterior(cursor);
   }
-  return dias.reverse().map((dia) => ({ dia, ativo: conjunto.has(dia) }));
+  const passados = dias.reverse().map((dia) => ({
+    dia,
+    ativo: conjunto.has(dia),
+    ehHoje: dia === hoje,
+    futuro: false,
+  }));
+  // O dia seguinte entra vazio, como convite.
+  const seguinte = proximoDiaUtilDe(passados[passados.length - 1].dia);
+  return [...passados, { dia: seguinte, ativo: false, ehHoje: false, futuro: true }];
 }
 
 /** Frase do widget: "12 dias no ritmo". */
@@ -116,9 +134,28 @@ export function rotuloOfensiva(o: Ofensiva): string {
 }
 
 /** Marcos que valem comemorar, para a mensagem do painel. */
+export const MARCOS = [3, 5, 10, 15, 21, 30, 50, 100] as const;
+
 export function proximoMarco(atual: number): number | null {
-  for (const marco of [3, 5, 10, 21, 30, 50, 100]) {
+  for (const marco of MARCOS) {
     if (atual < marco) return marco;
   }
   return null;
+}
+
+/**
+ * A meta corrente: o próximo marco a alcançar. Passados todos, a meta vira o
+ * múltiplo de 50 seguinte, para quem mantém o ritmo sempre ter o que perseguir.
+ */
+export function metaAtual(atual: number): number {
+  return proximoMarco(atual) ?? (Math.floor(atual / 50) + 1) * 50;
+}
+
+/** Leitura da consistência, para a faixa azul do topo do painel. */
+export function mensagemDeRitmo(atual: number): string {
+  if (atual === 0) return 'Registre uma ação hoje para começar sua ofensiva.';
+  if (atual === 1) return 'Bom começo! Volte amanhã para somar mais um dia.';
+  if (atual < 5) return 'Você está construindo consistência.';
+  if (atual < 15) return 'Você está usando o Radar de forma consistente!';
+  return 'Consistência exemplar — seu ritmo está muito acima da média.';
 }

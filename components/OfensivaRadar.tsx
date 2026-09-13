@@ -1,130 +1,187 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { IconeChama, IconeDireita, IconeFoguete, IconeX } from '@/components/icones';
-import { proximoMarco, rotuloOfensiva, type Ofensiva } from '@/lib/ofensiva';
+import { useEffect } from 'react';
+import {
+  IconeAlvo, IconeBarrinhas, IconeCheck, IconeDireita, IconeFoguete,
+  IconeTrofeu, IconeX,
+} from '@/components/icones';
+import {
+  mensagemDeRitmo, metaAtual, rotuloOfensiva, type Ofensiva,
+} from '@/lib/ofensiva';
 import { diaParaDate } from '@/lib/datas';
 
-/** Inicial do dia da semana, para a tira dos últimos dias. */
-function letraDoDia(dia: string): string {
-  return ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][diaParaDate(dia).getUTCDay()];
-}
-
-/**
- * Ofensiva Radar: dias úteis seguidos trabalhando no produto.
- *
- * Aparece ao lado do botão de nova demanda. Clicar abre o detalhe com a tira
- * da semana, o recorde e o próximo marco.
- */
-export function OfensivaRadar({ ofensiva }: { ofensiva: Ofensiva | null }) {
-  const [aberto, setAberto] = useState(false);
-  const caixa = useRef<HTMLDivElement>(null);
-
-  // Fecha ao clicar fora ou com Esc, como os outros menus do app.
-  useEffect(() => {
-    if (!aberto) return;
-    const noClique = (e: MouseEvent) => {
-      if (caixa.current && !caixa.current.contains(e.target as Node)) setAberto(false);
-    };
-    const naTecla = (e: KeyboardEvent) => e.key === 'Escape' && setAberto(false);
-    document.addEventListener('mousedown', noClique);
-    document.addEventListener('keydown', naTecla);
-    return () => {
-      document.removeEventListener('mousedown', noClique);
-      document.removeEventListener('keydown', naTecla);
-    };
-  }, [aberto]);
-
-  // Enquanto não carregou, não ocupa espaço nem pisca um valor errado.
+/** Selo ao lado de "Nova demanda". Clicar abre a gaveta com o detalhe. */
+export function SeloOfensiva({
+  ofensiva,
+  pulsando,
+  aoAbrir,
+}: {
+  ofensiva: Ofensiva | null;
+  /** Anima quando o dia acabou de entrar na contagem. */
+  pulsando: boolean;
+  aoAbrir: () => void;
+}) {
   if (!ofensiva) return null;
 
-  const marco = proximoMarco(ofensiva.atual);
-  const faltam = marco === null ? 0 : marco - ofensiva.atual;
+  return (
+    <button
+      type="button"
+      className={`ofensiva-selo${ofensiva.atual === 0 ? ' apagada' : ''}${pulsando ? ' comemorando' : ''}`}
+      onClick={aoAbrir}
+      aria-haspopup="dialog"
+    >
+      <span className="ofensiva-foguete"><IconeFoguete size={34} /></span>
+      <span className="ofensiva-texto">
+        <span className="ofensiva-titulo">Ofensiva Radar</span>
+        <span className="ofensiva-sub">{rotuloOfensiva(ofensiva)}</span>
+      </span>
+      <IconeDireita size={15} className="ofensiva-seta" />
+    </button>
+  );
+}
+
+/** Gaveta lateral com o detalhe da ofensiva. */
+export function GavetaOfensiva({
+  ofensiva,
+  aoFechar,
+}: {
+  ofensiva: Ofensiva;
+  aoFechar: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [aoFechar]);
+
+  const meta = metaAtual(ofensiva.atual);
+  const faltam = Math.max(0, meta - ofensiva.atual);
+  const progresso = Math.min(100, (ofensiva.atual / meta) * 100);
 
   return (
-    <div className="ofensiva" ref={caixa}>
-      <button
-        type="button"
-        className={`ofensiva-selo${aberto ? ' aberto' : ''}${ofensiva.atual === 0 ? ' apagada' : ''}`}
-        onClick={() => setAberto((v) => !v)}
-        aria-haspopup="dialog"
-        aria-expanded={aberto}
-      >
-        <IconeFoguete size={34} />
-        <span className="ofensiva-texto">
-          <span className="ofensiva-titulo">Ofensiva Radar</span>
-          <span className="ofensiva-sub">{rotuloOfensiva(ofensiva)}</span>
-        </span>
-        <IconeDireita size={15} className="ofensiva-seta" />
-      </button>
-
-      {aberto && (
-        <div className="ofensiva-painel" role="dialog" aria-label="Detalhe da Ofensiva Radar">
-          <div className="ofensiva-painel-topo">
+    <>
+      <div className="veu" onClick={aoFechar} />
+      <aside className="gaveta gaveta-ofensiva" role="dialog" aria-label="Ofensiva Radar">
+        <div className="of-topo">
+          <button className="btn-icone of-fechar" onClick={aoFechar} aria-label="Fechar">
+            <IconeX size={20} />
+          </button>
+          <div className="of-marca">
+            <IconeFoguete size={80} />
             <div>
-              <div className="ofensiva-painel-titulo">Ofensiva Radar</div>
-              <p className="ofensiva-painel-sub">
-                Dias úteis seguidos com trabalho no Radar.
-              </p>
+              <h2 className="of-titulo">Ofensiva Radar</h2>
+              <p className="of-sub">Disciplina hoje, grandes resultados amanhã.</p>
             </div>
-            <button
-              type="button" className="btn-icone"
-              onClick={() => setAberto(false)} aria-label="Fechar"
-            >
-              <IconeX size={17} />
-            </button>
           </div>
+        </div>
 
-          <div className="ofensiva-numeros">
-            <div className="ofensiva-numero">
-              <span className="ofensiva-numero-icone"><IconeChama size={18} /></span>
-              <div>
-                <div className="ofensiva-numero-valor">{ofensiva.atual}</div>
-                <div className="ofensiva-numero-rotulo">em sequência</div>
-              </div>
-            </div>
-            <div className="ofensiva-numero">
-              <div>
-                <div className="ofensiva-numero-valor">{ofensiva.recorde}</div>
-                <div className="ofensiva-numero-rotulo">seu recorde</div>
-              </div>
-            </div>
-            <div className="ofensiva-numero">
-              <div>
-                <div className="ofensiva-numero-valor">{ofensiva.totalDias}</div>
-                <div className="ofensiva-numero-rotulo">dias no total</div>
-              </div>
+        <div className="of-corpo">
+          <div className="of-faixa">
+            <span className="of-faixa-icone"><IconeBarrinhas size={20} /></span>
+            <div>
+              <div className="of-faixa-titulo">{rotuloOfensiva(ofensiva)}</div>
+              <p className="of-faixa-texto">{mensagemDeRitmo(ofensiva.atual)}</p>
             </div>
           </div>
 
-          {/* Tira dos últimos dias úteis: onde houve trabalho e onde faltou. */}
-          <div className="ofensiva-tira">
-            {ofensiva.ultimos.map((u) => (
-              <span
-                key={u.dia}
-                className={`ofensiva-dia${u.ativo ? ' ativo' : ''}`}
-                title={u.dia.split('-').reverse().join('/')}
-              >
-                <span className="ofensiva-dia-letra">{letraDoDia(u.dia)}</span>
-                <span className="ofensiva-dia-marca">{u.ativo ? '✓' : ''}</span>
-              </span>
+          {/* Trilha dos dias: de onde a sequência vem e o próximo a cumprir. */}
+          <div className="of-trilha">
+            {ofensiva.ultimos.map((u, i) => (
+              <div className="of-passo" key={u.dia}>
+                {i > 0 && <span className="of-linha" aria-hidden="true" />}
+                <span
+                  className={`of-bola${u.ativo ? ' feito' : ''}${u.ehHoje ? ' hoje' : ''}${u.futuro ? ' futuro' : ''}`}
+                >
+                  {u.ativo && <IconeCheck size={17} />}
+                </span>
+                <span className={`of-passo-rotulo${u.ehHoje ? ' hoje' : ''}`}>
+                  {u.ehHoje ? 'Hoje' : Number(u.dia.slice(8, 10))}
+                </span>
+              </div>
             ))}
           </div>
 
-          <p className="ofensiva-nota">
-            {ofensiva.hojeConta ? (
-              <>Hoje já conta. {marco !== null && (
-                <>Faltam <strong>{faltam}</strong> {faltam === 1 ? 'dia' : 'dias'} para {marco}.</>
-              )}</>
-            ) : ofensiva.atual > 0 ? (
-              <>Trabalhe hoje para manter a sequência de <strong>{ofensiva.atual}</strong>{' '}
-                {ofensiva.atual === 1 ? 'dia' : 'dias'}.</>
-            ) : (
-              <>Crie, edite ou comente uma demanda para começar sua ofensiva.</>
-            )}
+          <p className="of-nota-trilha">
+            Quanto mais você usa o Radar, maior a sua consistência na ofensiva!
           </p>
+
+          <div className="of-cartao">
+            <div className="of-cartao-topo">
+              <span className="of-cartao-icone"><IconeBarrinhas size={19} /></span>
+              <span className="of-cartao-titulo">Sua sequência</span>
+            </div>
+            <div className="of-numeros">
+              <div>
+                <div className="of-numero">{ofensiva.atual}</div>
+                <div className="of-numero-rotulo">dias no ritmo</div>
+              </div>
+              <div>
+                <div className="of-numero">{ofensiva.recorde}</div>
+                <div className="of-numero-rotulo">seu recorde</div>
+              </div>
+              <div>
+                <div className="of-numero">{meta}</div>
+                <div className="of-numero-rotulo">sua meta atual</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="of-cartao">
+            <div className="of-cartao-topo">
+              <span className="of-cartao-icone"><IconeAlvo size={19} /></span>
+              <div>
+                <div className="of-cartao-titulo">Meta da ofensiva</div>
+                <p className="of-cartao-desc">Usar o Radar por {meta} dias consecutivos.</p>
+              </div>
+            </div>
+
+            <div className="of-progresso">
+              <span className="of-progresso-trilho">
+                <span className="of-progresso-barra" style={{ width: `${progresso}%` }} />
+              </span>
+              <span className="of-progresso-valor">{ofensiva.atual}/{meta}</span>
+            </div>
+
+            <div className="of-aviso">
+              <IconeTrofeu size={18} />
+              <span>
+                {faltam === 0
+                  ? 'Meta batida! Uma nova já começou.'
+                  : `Faltam apenas ${faltam} ${faltam === 1 ? 'dia' : 'dias'} para você completar a meta!`}
+              </span>
+            </div>
+          </div>
         </div>
-      )}
+
+        <div className="of-rodape">
+          <IconeFoguete size={30} />
+          <div>
+            <div className="of-rodape-titulo">
+              {ofensiva.hojeConta ? 'Continue no ritmo!' : 'Sua vez hoje'}
+            </div>
+            <p className="of-rodape-texto">
+              {ofensiva.hojeConta
+                ? 'A consistência de hoje constrói o seu resultado de amanhã.'
+                : 'Crie, edite ou comente uma demanda para somar o dia de hoje.'}
+            </p>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/** Aviso que sobe quando o dia entra na contagem. */
+export function BrindeOfensiva({ dias }: { dias: number }) {
+  return (
+    <div className="of-brinde" role="status">
+      <span className="of-brinde-foguete"><IconeFoguete size={34} /></span>
+      <div>
+        <div className="of-brinde-titulo">Dia somado à ofensiva!</div>
+        <div className="of-brinde-texto">
+          {dias === 1 ? 'Primeiro dia no ritmo.' : `${dias} dias no ritmo.`}
+        </div>
+      </div>
     </div>
   );
 }

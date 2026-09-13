@@ -12,6 +12,7 @@ import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
 import { ModalDia } from '@/components/ModalDia';
+import { BrindeOfensiva, GavetaOfensiva } from '@/components/OfensivaRadar';
 import type { Ofensiva } from '@/lib/ofensiva';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
@@ -38,6 +39,10 @@ export function App({ sessao }: { sessao: SessaoUI }) {
   const [diaAberto, setDiaAberto] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [ofensiva, setOfensiva] = useState<Ofensiva | null>(null);
+  const [ofensivaAberta, setOfensivaAberta] = useState(false);
+  /** Comemoração quando o dia acabou de entrar na contagem. */
+  const [brinde, setBrinde] = useState<number | null>(null);
+  const [seloPulsando, setSeloPulsando] = useState(false);
 
   const notificar = useCallback((texto: string, tipo: Toast['tipo'] = 'info') => {
     const id = Date.now() + Math.random();
@@ -61,7 +66,23 @@ export function App({ sessao }: { sessao: SessaoUI }) {
       const lista: Demanda[] = await rd.json();
       setDemandas(lista);
       if (re?.ok) setEquipe(await re.json());
-      if (ro.ok) setOfensiva(await ro.json());
+      if (ro.ok) {
+        const nova: Ofensiva = await ro.json();
+        /*
+         * O dia virou "contado" agora: comemora. Compara com o estado anterior
+         * em vez de olhar só `hojeConta`, senão a festa repetiria a cada
+         * recarga do dia inteiro.
+         */
+        setOfensiva((antes) => {
+          if (antes && !antes.hojeConta && nova.hojeConta) {
+            setBrinde(nova.atual);
+            setSeloPulsando(true);
+            setTimeout(() => setBrinde(null), 4600);
+            setTimeout(() => setSeloPulsando(false), 1400);
+          }
+          return nova;
+        });
+      }
 
       // Mantém a gaveta em sincronia após uma edição.
       setDetalhe((atual) => (atual ? lista.find((d) => d.id === atual.id) ?? null : null));
@@ -156,6 +177,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
           ofensiva={ofensiva}
+          aoAbrirOfensiva={() => setOfensivaAberta(true)}
+          ofensivaPulsando={seloPulsando}
         />
       ) : aba === 'demandas' ? (
         <TelaDemandas
@@ -193,6 +216,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
           ofensiva={ofensiva}
+          aoAbrirOfensiva={() => setOfensivaAberta(true)}
+          ofensivaPulsando={seloPulsando}
         />
       )}
 
@@ -230,6 +255,12 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           notificar={notificar}
         />
       )}
+
+      {ofensivaAberta && ofensiva && (
+        <GavetaOfensiva ofensiva={ofensiva} aoFechar={() => setOfensivaAberta(false)} />
+      )}
+
+      {brinde !== null && <BrindeOfensiva dias={brinde} />}
 
       <div className="toast-area">
         {toasts.map((t) => (

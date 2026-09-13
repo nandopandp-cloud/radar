@@ -1620,56 +1620,150 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .ofensiva-sub { font-size: 12.5px; font-weight: 700; color: var(--tinta-suave); white-space: nowrap; }
 .ofensiva-seta { color: var(--tinta-tenue); flex-shrink: 0; }
 
-/* Painel de detalhe */
-.ofensiva-painel {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
-  width: min(320px, calc(100vw - 32px)); padding: 16px;
-  background: var(--superficie); border: 1px solid var(--borda);
-  border-radius: var(--raio-lg); box-shadow: var(--sombra-lg);
-  animation: dica-entra .13s ease-out;
-}
-.ofensiva-painel-topo {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 10px; margin-bottom: 14px;
-}
-.ofensiva-painel-titulo { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; }
-.ofensiva-painel-sub { font-size: 12px; color: var(--tinta-suave); margin-top: 2px; line-height: 1.4; }
-
-.ofensiva-numeros {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
-}
-.ofensiva-numero {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px; border-radius: var(--raio); background: #f8fafc;
-}
-.ofensiva-numero-icone { color: var(--marca); display: grid; place-items: center; flex-shrink: 0; }
-.ofensiva-numero-valor {
-  font-size: 19px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--tinta);
-}
-.ofensiva-numero-rotulo { font-size: 11px; color: var(--tinta-suave); margin-top: 3px; line-height: 1.3; }
-
-/* Tira dos últimos dias úteis */
-.ofensiva-tira { display: flex; gap: 6px; margin-bottom: 12px; }
-.ofensiva-dia {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 7px 0; border-radius: var(--raio-sm);
-  background: #f1f5f9; border: 1px solid transparent;
-}
-.ofensiva-dia.ativo {
-  background: var(--marca-clara); border-color: var(--marca-borda);
-}
-.ofensiva-dia-letra { font-size: 10.5px; font-weight: 700; color: var(--tinta-tenue); }
-.ofensiva-dia.ativo .ofensiva-dia-letra { color: var(--marca); }
-.ofensiva-dia-marca { font-size: 12px; font-weight: 800; color: var(--marca); line-height: 1; min-height: 12px; }
-
-.ofensiva-nota {
-  font-size: 12.5px; line-height: 1.5; color: var(--tinta-media);
-  padding: 10px 12px; border-radius: var(--raio);
-  background: var(--marca-clara); border: 1px solid var(--marca-borda);
-}
-
 @media (max-width: 620px) {
   .ofensiva-titulo { font-size: 13px; }
   .ofensiva-sub { font-size: 11.5px; }
-  .ofensiva-painel { right: auto; left: 0; }
+}
+
+/* ══ Ofensiva: selo animado ═════════════════════════════ */
+.ofensiva-foguete { display: grid; place-items: center; flex-shrink: 0; }
+
+/*
+ * Comemoração do dia somado: o selo dá um salto e o foguete decola um pouco.
+ * Curto de propósito — é um aceno, não um bloqueio.
+ */
+.ofensiva-selo.comemorando {
+  animation: of-salto .55s cubic-bezier(.34, 1.56, .64, 1) 2;
+  border-color: var(--marca); box-shadow: 0 0 0 4px rgba(37, 99, 235, .14);
+}
+.ofensiva-selo.comemorando .ofensiva-foguete { animation: of-decolar .55s ease-out 2; }
+@keyframes of-salto {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-4px) scale(1.035); }
+}
+@keyframes of-decolar {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  40% { transform: translate(3px, -5px) rotate(-8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ofensiva-selo.comemorando,
+  .ofensiva-selo.comemorando .ofensiva-foguete { animation: none; }
+}
+
+/* ══ Ofensiva: brinde ═══════════════════════════════════ */
+.of-brinde {
+  position: fixed; right: 22px; bottom: 22px; z-index: 62;
+  display: flex; align-items: center; gap: 13px;
+  padding: 14px 18px 14px 15px; border-radius: var(--raio-lg);
+  background: var(--superficie); border: 1px solid var(--marca-borda);
+  box-shadow: var(--sombra-lg); max-width: 340px;
+  animation: of-entrar .4s cubic-bezier(.34, 1.56, .64, 1);
+}
+.of-brinde-foguete { display: grid; place-items: center; flex-shrink: 0; }
+.of-brinde-titulo { font-size: 14px; font-weight: 800; letter-spacing: -.01em; color: var(--tinta); }
+.of-brinde-texto { font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
+@keyframes of-entrar {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+}
+@media (prefers-reduced-motion: reduce) { .of-brinde { animation: none; } }
+
+/* ══ Ofensiva: gaveta ═══════════════════════════════════ */
+.gaveta-ofensiva { width: min(470px, 100vw); }
+
+.of-topo { padding: 26px 26px 0; position: relative; }
+.of-fechar { position: absolute; top: 18px; right: 20px; }
+.of-marca { display: flex; align-items: center; gap: 14px; padding-right: 40px; }
+.of-titulo { font-size: 25px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; }
+.of-sub { font-size: 13px; color: var(--tinta-suave); margin-top: 4px; line-height: 1.45; }
+
+.of-corpo { flex: 1; overflow-y: auto; padding: 22px 26px 26px; }
+
+/* Faixa azul com a leitura do ritmo */
+.of-faixa {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 15px 16px; border-radius: var(--raio);
+  background: var(--marca-clara); border: 1px solid var(--marca-borda);
+  margin-bottom: 22px;
+}
+.of-faixa-icone { color: var(--marca); flex-shrink: 0; display: grid; place-items: center; }
+.of-faixa-titulo { font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: var(--marca-escura); }
+.of-faixa-texto { font-size: 12.5px; color: var(--tinta-media); margin-top: 3px; line-height: 1.45; }
+
+/* Trilha dos dias */
+.of-trilha { display: flex; margin-bottom: 12px; }
+.of-passo {
+  flex: 1; position: relative; display: flex; flex-direction: column;
+  align-items: center; gap: 8px; min-width: 0;
+}
+/* A linha liga cada bola à anterior, passando por trás. */
+.of-linha {
+  position: absolute; top: 19px; right: 50%; width: 100%; height: 2px;
+  background: var(--borda); z-index: 0;
+}
+.of-bola {
+  position: relative; z-index: 1;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: var(--superficie); border: 2px solid var(--borda); color: #fff;
+}
+.of-bola.feito { background: var(--marca); border-color: var(--marca); }
+/* O dia de hoje ganha um anel, para saltar da sequência. */
+.of-bola.hoje { box-shadow: 0 0 0 4px rgba(37, 99, 235, .16); }
+.of-bola.futuro { background: var(--superficie); border-color: var(--borda); }
+.of-passo-rotulo { font-size: 12.5px; font-weight: 700; color: var(--tinta-media); }
+.of-passo-rotulo.hoje { color: var(--marca); }
+
+.of-nota-trilha {
+  font-size: 12.5px; color: var(--tinta-suave); text-align: center;
+  line-height: 1.45; margin-bottom: 20px;
+}
+
+/* Cartões de sequência e meta */
+.of-cartao {
+  border: 1px solid var(--borda); border-radius: var(--raio-lg);
+  padding: 16px; margin-bottom: 14px; background: var(--superficie);
+}
+.of-cartao-topo { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.of-cartao-icone { color: var(--marca); flex-shrink: 0; display: grid; place-items: center; }
+.of-cartao-titulo { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; color: var(--tinta); }
+.of-cartao-desc { font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; line-height: 1.4; }
+
+.of-numeros { display: grid; grid-template-columns: repeat(3, 1fr); }
+.of-numeros > div + div { border-left: 1px solid var(--borda); padding-left: 16px; }
+.of-numero { font-size: 23px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--tinta); }
+.of-numero-rotulo { font-size: 12px; color: var(--tinta-suave); margin-top: 5px; }
+
+.of-progresso { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.of-progresso-trilho {
+  flex: 1; height: 9px; border-radius: 999px; background: #eef2f7; overflow: hidden;
+}
+.of-progresso-barra {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--marca); transition: width .45s cubic-bezier(.32, .72, 0, 1);
+}
+.of-progresso-valor { font-size: 13.5px; font-weight: 800; color: var(--tinta); white-space: nowrap; }
+
+.of-aviso {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: var(--raio);
+  background: var(--marca-clara); color: var(--marca-escura);
+  font-size: 12.5px; font-weight: 600; line-height: 1.4;
+}
+.of-aviso svg { flex-shrink: 0; }
+
+.of-rodape {
+  display: flex; align-items: center; gap: 13px;
+  margin: 0 26px 26px; padding: 15px 16px;
+  border-radius: var(--raio); background: #f8fafc; border: 1px solid var(--borda);
+}
+.of-rodape-titulo { font-size: 13.5px; font-weight: 800; color: var(--tinta); }
+.of-rodape-texto { font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; line-height: 1.45; }
+
+@media (max-width: 620px) {
+  .of-brinde { right: 12px; left: 12px; bottom: 12px; max-width: none; }
+  .of-titulo { font-size: 21px; }
+  .of-topo, .of-corpo { padding-left: 18px; padding-right: 18px; }
+  .of-rodape { margin-left: 18px; margin-right: 18px; }
+  .of-bola { width: 32px; height: 32px; }
+  .of-linha { top: 16px; }
 }

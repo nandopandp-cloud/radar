@@ -128,6 +128,32 @@ export const IconeFoguete = ({ size = 28, className }: { size?: number; classNam
   </svg>
 );
 
+/** Alvo com flecha — meta da ofensiva. */
+export const IconeAlvo = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="11" cy="13" r="8" /><circle cx="11" cy="13" r="3.4" />
+    <path d="M15.5 8.5 21 3M17.5 3h3.5v3.5" />
+  </svg>
+);
+
+/** Troféu — aviso de marco próximo. */
+export const IconeTrofeu = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+    <path d="M7 6H4.5v1A3.5 3.5 0 0 0 7 10.4M17 6h2.5v1a3.5 3.5 0 0 1-2.5 3.4" />
+    <path d="M10 14v3h4v-3M8 20h8" />
+  </svg>
+);
+
+/** Barras curtas — bloco de sequência. */
+export const IconeBarrinhas = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <rect x="3" y="14" width="4.5" height="7" rx="1.4" />
+    <rect x="9.7" y="9" width="4.5" height="12" rx="1.4" />
+    <rect x="16.4" y="4" width="4.5" height="17" rx="1.4" />
+  </svg>
+);
+
 /** Chama — dias de ofensiva no painel. */
 export const IconeChama = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
