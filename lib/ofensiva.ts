@@ -134,7 +134,11 @@ export function rotuloOfensiva(o: Ofensiva): string {
 }
 
 /** Marcos que valem comemorar, para a mensagem do painel. */
-export const MARCOS = [3, 5, 10, 15, 21, 30, 50, 100] as const;
+/*
+ * Marcos da ofensiva. Começa em 15 porque metas curtas (3, 5) se batem antes
+ * de virarem hábito — o horizonte precisa valer a pena perseguir.
+ */
+export const MARCOS = [15, 30, 50, 100] as const;
 
 export function proximoMarco(atual: number): number | null {
   for (const marco of MARCOS) {

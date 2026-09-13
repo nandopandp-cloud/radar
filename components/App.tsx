@@ -12,8 +12,8 @@ import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
 import { ModalDia } from '@/components/ModalDia';
-import { BrindeOfensiva, GavetaOfensiva } from '@/components/OfensivaRadar';
-import type { Ofensiva } from '@/lib/ofensiva';
+import { GavetaOfensiva, ModalOfensiva } from '@/components/OfensivaRadar';
+import { metaAtual, type Ofensiva } from '@/lib/ofensiva';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
@@ -77,7 +77,6 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           if (antes && !antes.hojeConta && nova.hojeConta) {
             setBrinde(nova.atual);
             setSeloPulsando(true);
-            setTimeout(() => setBrinde(null), 4600);
             setTimeout(() => setSeloPulsando(false), 1400);
           }
           return nova;
@@ -260,7 +259,13 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <GavetaOfensiva ofensiva={ofensiva} aoFechar={() => setOfensivaAberta(false)} />
       )}
 
-      {brinde !== null && <BrindeOfensiva dias={brinde} />}
+      {brinde !== null && (
+        <ModalOfensiva
+          dias={brinde}
+          meta={metaAtual(brinde)}
+          aoFechar={() => setBrinde(null)}
+        />
+      )}
 
       <div className="toast-area">
         {toasts.map((t) => (

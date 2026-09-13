@@ -154,6 +154,38 @@ export const IconeBarrinhas = ({ size = 19, className }: P) => (
   </svg>
 );
 
+/**
+ * Foguete decolando, apontado para cima — usado no modal de comemoração.
+ * O do selo aponta na diagonal e fica pequeno demais nesse tamanho.
+ */
+export const IconeFogueteVertical = ({ size = 120, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 120 120" fill="none" className={className}>
+    <defs>
+      <linearGradient id="fv-corpo" x1="40" y1="14" x2="86" y2="84" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#fff" /><stop offset="1" stopColor="#dbeafe" />
+      </linearGradient>
+      <linearGradient id="fv-aba" x1="26" y1="60" x2="52" y2="94" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#60a5fa" /><stop offset="1" stopColor="#2563eb" />
+      </linearGradient>
+      <linearGradient id="fv-fogo" x1="60" y1="86" x2="60" y2="116" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#fbbf24" /><stop offset="1" stopColor="#f97316" />
+      </linearGradient>
+    </defs>
+    {/* Abas laterais, atrás do corpo. */}
+    <path d="M43 62c-9 5-14 13-15 24 7-1 13-4 17-8l-2-16ZM77 62c9 5 14 13 15 24-7-1-13-4-17-8l2-16Z" fill="url(#fv-aba)" />
+    {/* Corpo. */}
+    <path d="M60 10c11 10 18 25 18 42v28H42V52c0-17 7-32 18-42Z" fill="url(#fv-corpo)" />
+    {/* Contorno azul do bico. */}
+    <path d="M60 10c6 5 11 13 14 22H46c3-9 8-17 14-22Z" fill="#3b82f6" />
+    {/* Escotilha. */}
+    <circle cx="60" cy="48" r="11" fill="#1d4ed8" />
+    <circle cx="60" cy="48" r="7" fill="#93c5fd" />
+    {/* Base e propulsão. */}
+    <rect x="48" y="80" width="24" height="8" rx="3" fill="#2563eb" />
+    <path d="M60 116c-6-6-9-12-9-18 0-4 2-8 5-10 1 4 2 6 4 7 2-4 0-8 0-11 6 4 9 9 9 15 0 6-3 12-9 17Z" fill="url(#fv-fogo)" />
+  </svg>
+);
+
 /** Chama — dias de ofensiva no painel. */
 export const IconeChama = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
