@@ -66,6 +66,14 @@ export const IconeDireita = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}><path d="M9 18l6-6-6-6" /></svg>
 );
 
+/** Barras de gráfico — o painel. */
+export const IconeGrafico = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3.5 21h17" />
+    <path d="M6.5 21V11M11 21V4.5M15.5 21v-6M20 21v-9.5" />
+  </svg>
+);
+
 /** Clipe de papel — anexos. */
 export const IconeClipe = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>

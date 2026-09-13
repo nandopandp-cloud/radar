@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Casca, type Aba } from '@/components/Casca';
+import { TelaPainel } from '@/components/TelaPainel';
 import { TelaCalendario } from '@/components/TelaCalendario';
 import { TelaDemandas } from '@/components/TelaDemandas';
 import { TelaAlertas } from '@/components/TelaAlertas';
@@ -20,7 +21,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
   const hoje = paraDiaISO();
   const inicio = new Date(`${hoje}T00:00:00Z`);
 
-  const [aba, setAba] = useState<Aba>('calendario');
+  // Admin entra pelo painel, que é sua primeira aba; analista, pelo calendário.
+  const [aba, setAba] = useState<Aba>(sessao.perfil === 'ADMIN' ? 'painel' : 'calendario');
   const [ano, setAno] = useState(inicio.getUTCFullYear());
   const [mes, setMes] = useState(inicio.getUTCMonth());
   const [diaSelecionado, setDiaSelecionado] = useState(hoje);
@@ -128,6 +130,15 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <div className="cartao">
           <div className="vazio"><span className="girando">⏳</span> Carregando…</div>
         </div>
+      ) : aba === 'painel' && sessao.perfil === 'ADMIN' ? (
+        <TelaPainel
+          sessao={sessao}
+          demandas={demandas}
+          equipe={equipe}
+          hoje={hoje}
+          aoAbrirDemanda={setDetalhe}
+          aoVerDemandas={() => setAba('demandas')}
+        />
       ) : aba === 'calendario' ? (
         <TelaCalendario
           sessao={sessao}
