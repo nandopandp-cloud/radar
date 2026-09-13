@@ -57,16 +57,17 @@ export function App({ sessao }: { sessao: SessaoUI }) {
 
       // A lista da equipe é restrita a administradores — nem pedimos como analista.
       const ehAdmin = sessao.perfil === 'ADMIN';
+      // Ofensiva é um recurso de analista — admin não acumula nem vê contagem.
       const [rd, re, ro] = await Promise.all([
         fetch(`/api/demandas?${params}`),
         ehAdmin ? fetch('/api/usuarios') : Promise.resolve(null),
-        fetch('/api/ofensiva'),
+        ehAdmin ? Promise.resolve(null) : fetch('/api/ofensiva'),
       ]);
       if (!rd.ok) throw new Error('Falha ao carregar as demandas.');
       const lista: Demanda[] = await rd.json();
       setDemandas(lista);
       if (re?.ok) setEquipe(await re.json());
-      if (ro.ok) {
+      if (ro?.ok) {
         const nova: Ofensiva = await ro.json();
         /*
          * O dia virou "contado" agora: comemora. Compara com o estado anterior
@@ -255,11 +256,11 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         />
       )}
 
-      {ofensivaAberta && ofensiva && (
+      {sessao.perfil !== 'ADMIN' && ofensivaAberta && ofensiva && (
         <GavetaOfensiva ofensiva={ofensiva} aoFechar={() => setOfensivaAberta(false)} />
       )}
 
-      {brinde !== null && (
+      {sessao.perfil !== 'ADMIN' && brinde !== null && (
         <ModalOfensiva
           dias={brinde}
           meta={metaAtual(brinde)}

@@ -110,7 +110,9 @@ export function TelaCalendario({
           </p>
         </div>
         <div className="cabecalho-acoes-tela">
-          <SeloOfensiva ofensiva={ofensiva} pulsando={ofensivaPulsando} aoAbrir={aoAbrirOfensiva} />
+          {sessao.perfil !== 'ADMIN' && (
+            <SeloOfensiva ofensiva={ofensiva} pulsando={ofensivaPulsando} aoAbrir={aoAbrirOfensiva} />
+          )}
           <button className="btn btn-primario" onClick={() => aoNovaDemanda(diaSelecionado)}>
             <IconeMais size={18} /> Nova demanda
           </button>
