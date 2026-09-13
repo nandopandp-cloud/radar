@@ -4,6 +4,7 @@ import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate } from '@/lib/datas';
 import { ehPrioridade } from '@/lib/dominio';
 import { ehFrequencia, proximasDatas, validarRegra, type Regra } from '@/lib/recorrencia';
+import { MAXIMO_POR_DEMANDA, validarAnexo } from '@/lib/anexos';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,22 @@ export async function POST(req: Request) {
       ? corpo.autorId
       : sessao.sub;
 
+  // Anexos do molde: validados aqui, copiados em cada demanda gerada.
+  const anexosMolde = [];
+  if (Array.isArray(corpo.anexos)) {
+    if (corpo.anexos.length > MAXIMO_POR_DEMANDA) {
+      return NextResponse.json(
+        { erro: `Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.` },
+        { status: 400 },
+      );
+    }
+    for (const entrada of corpo.anexos) {
+      const resultado = validarAnexo(entrada);
+      if (!resultado.ok) return NextResponse.json({ erro: resultado.erro }, { status: 400 });
+      anexosMolde.push(resultado.valor);
+    }
+  }
+
   const recorrencia = await prisma.recorrencia.create({
     data: {
       titulo,
@@ -84,6 +101,12 @@ export async function POST(req: Request) {
     include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
   });
 
+  if (anexosMolde.length > 0) {
+    await prisma.anexoRecorrencia.createMany({
+      data: anexosMolde.map((a) => ({ recorrenciaId: recorrencia.id, ...a })),
+    });
+  }
+
   /*
    * A primeira ocorrência nasce junto, se já estiver vencida ou for hoje —
    * assim quem cria uma recorrência que começa hoje vê a demanda na hora, em
@@ -92,7 +115,7 @@ export async function POST(req: Request) {
   const hoje = new Date().toISOString().slice(0, 10);
   const primeira = proximasDatas(regra, 1)[0];
   if (primeira && primeira <= hoje) {
-    await prisma.demanda.create({
+    const demanda = await prisma.demanda.create({
       data: {
         titulo: recorrencia.titulo,
         descricao: recorrencia.descricao,
@@ -104,6 +127,16 @@ export async function POST(req: Request) {
         recorrenciaId: recorrencia.id,
       },
     });
+    if (anexosMolde.length > 0) {
+      await prisma.anexo.createMany({
+        data: anexosMolde.map((a) => ({
+          demandaId: demanda.id,
+          ...a,
+          autorId: recorrencia.autorId,
+          autorNome: recorrencia.autor.nome,
+        })),
+      });
+    }
     await prisma.recorrencia.update({
       where: { id: recorrencia.id },
       data: { ultimaGeracao: diaParaDate(primeira), geradas: { increment: 1 } },

@@ -116,9 +116,28 @@ model Recorrencia {
   atualizadoEm DateTime @updatedAt
 
   demandas     Demanda[]
+  anexos       AnexoRecorrencia[]
 
   @@index([ativa, inicio])
   @@index([autorId])
+}
+
+/// Anexo do molde: fica guardado na regra e é copiado para cada demanda que
+/// ela gera. Separado de Anexo porque aquele exige uma demanda, que aqui
+/// ainda não existe quando o arquivo é escolhido.
+model AnexoRecorrencia {
+  id            String      @id @default(cuid())
+  recorrenciaId String
+  recorrencia   Recorrencia @relation(fields: [recorrenciaId], references: [id], onDelete: Cascade)
+
+  nome          String
+  tipo          String
+  tamanho       Int
+  conteudo      String
+
+  criadoEm      DateTime    @default(now())
+
+  @@index([recorrenciaId])
 }
 
 /// Arquivo anexado a uma demanda (até 1MB), guardado no banco como data URI —

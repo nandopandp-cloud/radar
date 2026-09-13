@@ -22,6 +22,10 @@ export type ResultadoGeracao = {
 export async function gerarRecorrentes(ate = paraDiaISO()): Promise<ResultadoGeracao> {
   const regras = await prisma.recorrencia.findMany({
     where: { ativa: true, inicio: { lte: diaParaDate(ate) } },
+    include: {
+      anexos: true,
+      autor: { select: { nome: true } },
+    },
   });
 
   let demandasCriadas = 0;
@@ -52,7 +56,7 @@ export async function gerarRecorrentes(ate = paraDiaISO()): Promise<ResultadoGer
     const aCriar = pendentes.slice(0, restantes);
 
     for (const dia of aCriar) {
-      await prisma.demanda.create({
+      const demanda = await prisma.demanda.create({
         data: {
           titulo: r.titulo,
           descricao: r.descricao,
@@ -64,6 +68,21 @@ export async function gerarRecorrentes(ate = paraDiaISO()): Promise<ResultadoGer
           recorrenciaId: r.id,
         },
       });
+      // Cada ocorrência recebe a própria cópia dos anexos do molde, para
+      // apagar uma demanda não afetar as outras nem a regra.
+      if (r.anexos.length > 0) {
+        await prisma.anexo.createMany({
+          data: r.anexos.map((a) => ({
+            demandaId: demanda.id,
+            nome: a.nome,
+            tipo: a.tipo,
+            tamanho: a.tamanho,
+            conteudo: a.conteudo,
+            autorId: r.autorId,
+            autorNome: r.autor.nome,
+          })),
+        });
+      }
       demandasCriadas += 1;
     }
 

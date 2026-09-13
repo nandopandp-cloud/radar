@@ -55,7 +55,6 @@ export function ModalNovaDemanda({
 }) {
   const [aba, setAba] = useState<'unica' | 'recorrente'>('unica');
   const [salvando, setSalvando] = useState(false);
-  const [maisOpcoes, setMaisOpcoes] = useState(false);
   const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
 
   const [form, setForm] = useState({
@@ -65,7 +64,6 @@ export function ModalNovaDemanda({
     prazo: prazoInicial,
     prioridade: 'MEDIA',
     categoria: '',
-    solicitante: '',
     autorId: sessao.id,
   });
 
@@ -118,18 +116,24 @@ export function ModalNovaDemanda({
 
     setSalvando(true);
     try {
+      /*
+       * Os anexos vão em lotes: vários arquivos de 1MB em base64 estouram o
+       * corpo da requisição. Na recorrente o primeiro lote viaja junto da
+       * criação, para a regra já nascer com o molde.
+       */
+      const lotes = dividirEmLotes(anexos);
       const rota = aba === 'unica' ? '/api/demandas' : '/api/recorrencias';
       const corpo = aba === 'unica'
         ? form
         : {
             titulo: form.titulo,
             descricao: form.descricao,
-            solicitante: form.solicitante,
             categoria: form.categoria,
             prioridade: form.prioridade,
             autorId: form.autorId,
             ...regra,
             fim: temFim ? regra.fim : null,
+            anexos: lotes[0] ?? [],
           };
 
       const res = await fetch(rota, {
@@ -140,28 +144,32 @@ export function ModalNovaDemanda({
       const resposta = await res.json();
       if (!res.ok) throw new Error(resposta.erro ?? 'Não foi possível salvar.');
 
-      /*
-       * Anexos só na demanda única: a recorrente é um molde, e anexar o mesmo
-       * arquivo a cada ocorrência futura encheria o banco sem pedido claro.
-       */
       let anexosFalharam = false;
-      if (aba === 'unica') {
-        for (const lote of dividirEmLotes(anexos)) {
-          try {
-            const r = await fetch(`/api/demandas/${resposta.id}/anexos`, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ anexos: lote }),
-            });
-            if (!r.ok) anexosFalharam = true;
-          } catch {
-            anexosFalharam = true;
-          }
+      // Na única, todos os lotes sobem depois; na recorrente, só os restantes.
+      const pendentes = aba === 'unica' ? lotes : lotes.slice(1);
+      const destino = aba === 'unica'
+        ? `/api/demandas/${resposta.id}/anexos`
+        : `/api/recorrencias/${resposta.id}/anexos`;
+      for (const lote of pendentes) {
+        try {
+          const r = await fetch(destino, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ anexos: lote }),
+          });
+          if (!r.ok) anexosFalharam = true;
+        } catch {
+          anexosFalharam = true;
         }
       }
 
       if (anexosFalharam) {
-        notificar('Demanda criada, mas os anexos não subiram. Tente anexá-los na demanda.', 'erro');
+        notificar(
+          aba === 'unica'
+            ? 'Demanda criada, mas os anexos não subiram. Tente anexá-los na demanda.'
+            : 'Recorrência criada, mas alguns anexos não subiram.',
+          'erro',
+        );
       } else {
         notificar(aba === 'unica' ? 'Demanda registrada.' : 'Recorrência criada.', 'ok');
       }
@@ -284,7 +292,28 @@ export function ModalNovaDemanda({
                     </select>
                   </div>
                 </div>
-                {aba === 'unica' && (
+              </div>
+
+              {/* Início e entrega lado a lado: são um par, e assim se conferem. */}
+              {aba === 'unica' && (
+                <div className="campo linha-campos">
+                  <div>
+                    <label className="rotulo" htmlFor="d-inicio-unica">Data de início</label>
+                    <input
+                      id="d-inicio-unica" type="date" className="entrada"
+                      max={form.prazo || undefined}
+                      value={form.inicio}
+                      onChange={(e) => {
+                        const inicio = e.target.value;
+                        // Empurra a entrega junto se o início passar dela.
+                        setForm((f) => ({
+                          ...f,
+                          inicio,
+                          prazo: inicio && inicio > f.prazo ? inicio : f.prazo,
+                        }));
+                      }}
+                    />
+                  </div>
                   <div>
                     <label className="rotulo" htmlFor="d-prazo">
                       Data de entrega <span className="obrigatorio">*</span>
@@ -296,8 +325,8 @@ export function ModalNovaDemanda({
                       onChange={(e) => setForm({ ...form, prazo: e.target.value })}
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {aba === 'recorrente' && (
                 <>
@@ -433,90 +462,49 @@ export function ModalNovaDemanda({
                 </>
               )}
 
-              <div className={`mais-opcoes${maisOpcoes ? ' aberto' : ''}`}>
-                <button
-                  type="button" className="mais-opcoes-topo"
-                  aria-expanded={maisOpcoes}
-                  onClick={() => setMaisOpcoes((v) => !v)}
-                >
-                  <span className="mais-opcoes-seta">›</span>
-                  <span>
-                    <span className="mais-opcoes-titulo">Mais opções</span>
-                    <span className="mais-opcoes-desc">
-                      {aba === 'recorrente'
-                        ? 'Solicitante, total de ocorrências ou apenas dias úteis.'
-                        : 'Solicitante, data de início e anexos.'}
-                    </span>
-                  </span>
-                </button>
-
-                {maisOpcoes && (
-                  <div className="mais-opcoes-corpo">
-                    <div className="campo">
-                      <label className="rotulo" htmlFor="d-sol">Solicitante</label>
-                      <input
-                        id="d-sol" className="entrada" maxLength={120} placeholder="Quem pediu"
-                        value={form.solicitante}
-                        onChange={(e) => setForm({ ...form, solicitante: e.target.value })}
-                      />
-                    </div>
-
-                    {aba === 'unica' ? (
-                      <>
-                        <div className="campo">
-                          <label className="rotulo" htmlFor="d-ini-unica">Data de início</label>
-                          <input
-                            id="d-ini-unica" type="date" className="entrada"
-                            max={form.prazo || undefined}
-                            value={form.inicio}
-                            onChange={(e) => {
-                              const inicio = e.target.value;
-                              setForm((f) => ({
-                                ...f,
-                                inicio,
-                                prazo: inicio && inicio > f.prazo ? inicio : f.prazo,
-                              }));
-                            }}
-                          />
-                        </div>
-                        <div className="campo">
-                          <label className="rotulo">
-                            <IconeClipe size={15} /> Anexos
-                          </label>
-                          <AnexosPendentes anexos={anexos} aoMudar={setAnexos} notificar={notificar} />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="campo">
-                          <label className="rotulo" htmlFor="d-max">Total de ocorrências</label>
-                          <input
-                            id="d-max" type="number" className="entrada" min={1} max={500}
-                            placeholder="Sem limite"
-                            value={regra.maximo ?? ''}
-                            onChange={(e) => setRegra({
-                              ...regra,
-                              maximo: e.target.value ? Number(e.target.value) : null,
-                            })}
-                          />
-                        </div>
-                        <label className="caixa-marcar">
-                          <input
-                            type="checkbox"
-                            checked={regra.apenasDiasUteis}
-                            onChange={(e) => setRegra({ ...regra, apenasDiasUteis: e.target.checked })}
-                          />
-                          <span>
-                            <strong>Apenas dias úteis</strong>
-                            <span className="caixa-marcar-desc">
-                              Datas que caem no fim de semana passam para a segunda-feira.
-                            </span>
-                          </span>
-                        </label>
-                      </>
-                    )}
+              {/* Na recorrente, o que antes vivia em "Mais opções" fica à vista. */}
+              {aba === 'recorrente' && (
+                <div className="campo linha-campos">
+                  <div>
+                    <label className="rotulo" htmlFor="d-max">Total de ocorrências</label>
+                    <input
+                      id="d-max" type="number" className="entrada" min={1} max={500}
+                      placeholder="Sem limite"
+                      value={regra.maximo ?? ''}
+                      onChange={(e) => setRegra({
+                        ...regra,
+                        maximo: e.target.value ? Number(e.target.value) : null,
+                      })}
+                    />
                   </div>
+                  <label className="caixa-marcar caixa-marcar-campo">
+                    <input
+                      type="checkbox"
+                      checked={regra.apenasDiasUteis}
+                      onChange={(e) => setRegra({ ...regra, apenasDiasUteis: e.target.checked })}
+                    />
+                    <span>
+                      <strong>Apenas dias úteis</strong>
+                      <span className="caixa-marcar-desc">
+                        Datas no fim de semana passam para a segunda.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Anexos à vista nas duas abas. Na recorrente viram o molde:
+                  cada demanda gerada recebe a própria cópia dos arquivos. */}
+              <div className="campo">
+                <label className="rotulo">
+                  <IconeClipe size={15} /> Anexos <span className="opcional">(opcional)</span>
+                </label>
+                {aba === 'recorrente' && (
+                  <p className="campo-ajuda">
+                    Os arquivos são copiados para cada demanda criada pela recorrência.
+                  </p>
                 )}
+                <AnexosPendentes anexos={anexos} aoMudar={setAnexos} notificar={notificar} />
               </div>
             </div>
 
