@@ -69,7 +69,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const demanda = await prisma.demanda.update({
     where: { id },
     data: dados,
-    include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
+    include: {
+      autor: { select: { id: true, nome: true, email: true, equipe: true } },
+      recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+    },
   });
   return NextResponse.json(demanda);
 }

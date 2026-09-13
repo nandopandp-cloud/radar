@@ -35,7 +35,10 @@ export async function GET(req: Request) {
         ? { prazo: { gte: diaParaDate(de), lte: diaParaDate(ate) } }
         : {}),
     },
-    include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
+    include: {
+      autor: { select: { id: true, nome: true, email: true, equipe: true } },
+      recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+    },
     orderBy: [{ prazo: 'asc' }, { criadoEm: 'asc' }],
   });
 
@@ -88,7 +91,10 @@ export async function POST(req: Request) {
       prazo: diaParaDate(prazo),
       autorId,
     },
-    include: { autor: { select: { id: true, nome: true, email: true, equipe: true } } },
+    include: {
+      autor: { select: { id: true, nome: true, email: true, equipe: true } },
+      recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+    },
   });
 
   return NextResponse.json(demanda, { status: 201 });

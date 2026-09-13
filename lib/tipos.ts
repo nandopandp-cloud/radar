@@ -13,6 +13,18 @@ export type Usuario = UsuarioResumo & {
   _count?: { demandas: number };
 };
 
+/** Vínculo da demanda com a regra que a criou, quando houver. */
+export type RecorrenciaDaDemanda = {
+  id: string;
+  frequencia: string;
+  intervalo: number;
+  diaDoMes: number | null;
+  diasSemana: number[];
+  apenasDiasUteis: boolean;
+  inicio: string;
+  ativa: boolean;
+};
+
 export type Demanda = {
   id: string;
   titulo: string;
@@ -29,6 +41,8 @@ export type Demanda = {
   autorId: string;
   autor: UsuarioResumo;
   criadoEm: string;
+  recorrenciaId?: string | null;
+  recorrencia?: RecorrenciaDaDemanda | null;
 };
 
 export type SessaoUI = {

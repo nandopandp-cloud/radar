@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dispararAlertas } from '@/lib/disparo';
+import { gerarRecorrentes } from '@/lib/gerar-recorrentes';
 
 export const dynamic = 'force-dynamic';
 // A apuração percorre todos os analistas e envia um e-mail por pessoa;
@@ -44,6 +45,18 @@ export async function GET(req: Request) {
   const dia = searchParams.get('dia');
   const diaReferencia = dia && /^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia : undefined;
 
+  /*
+   * As demandas recorrentes nascem antes do disparo: assim uma que vence hoje
+   * já entra na apuração do alerta deste mesmo dia.
+   */
+  const recorrentes = await gerarRecorrentes(diaReferencia);
+  if (recorrentes.demandasCriadas > 0 || recorrentes.regrasEncerradas > 0) {
+    console.log(
+      `[cron] recorrências: ${recorrentes.demandasCriadas} demanda(s) criada(s), ` +
+        `${recorrentes.regrasEncerradas} regra(s) encerrada(s) de ${recorrentes.regrasVistas}`,
+    );
+  }
+
   const resultado = await dispararAlertas({
     apenasUsuarioId,
     diaReferencia,
@@ -56,5 +69,5 @@ export async function GET(req: Request) {
       `${resultado.ignorados} ignorado(s)`,
   );
 
-  return NextResponse.json(resultado);
+  return NextResponse.json({ ...resultado, recorrentes });
 }

@@ -10,7 +10,7 @@ import { TelaAlertas } from '@/components/TelaAlertas';
 import { TelaEquipe } from '@/components/TelaEquipe';
 import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
-import { GavetaNova } from '@/components/GavetaNova';
+import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
 import { ModalDia } from '@/components/ModalDia';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
@@ -215,7 +215,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
       )}
 
       {novaEm && (
-        <GavetaNova
+        <ModalNovaDemanda
           prazoInicial={novaEm}
           sessao={sessao}
           equipe={equipe}

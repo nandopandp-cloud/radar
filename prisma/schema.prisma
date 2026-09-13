@@ -29,6 +29,7 @@ model Usuario {
   alertas   Alerta[]
   anexos    Anexo[]
   comentarios Comentario[]
+  recorrencias Recorrencia[]
 
   @@index([ativo])
 }
@@ -62,8 +63,62 @@ model Demanda {
   anexos       Anexo[]
   comentarios  Comentario[]
 
+  /// Preenchido quando a demanda nasceu de uma regra de recorrência.
+  recorrenciaId String?
+  recorrencia   Recorrencia? @relation(fields: [recorrenciaId], references: [id], onDelete: SetNull)
+
   @@index([status, prazo])
   @@index([autorId, prazo])
+  @@index([recorrenciaId])
+}
+
+/// Regra que repete uma demanda no tempo. Guarda o molde (título, responsável,
+/// prioridade…) e a cadência; as demandas em si são criadas pelo cron diário,
+/// uma por vez, conforme a data chega.
+model Recorrencia {
+  id           String   @id @default(cuid())
+
+  /// Molde da demanda gerada.
+  titulo       String
+  descricao    String?
+  prioridade   String   @default("MEDIA")
+  categoria    String?
+  solicitante  String?
+
+  /// DIARIA | SEMANAL | MENSAL | PERSONALIZADA
+  frequencia   String
+  /// Passo da cadência: a cada N dias/semanas/meses. 1 nos atalhos.
+  intervalo    Int      @default(1)
+  /// Dias da semana no modo semanal: 0 = domingo … 6 = sábado.
+  diasSemana   Int[]    @default([])
+  /// Dia do mês no modo mensal (1–31). Meses curtos caem no último dia.
+  diaDoMes     Int?
+  /// Pula sábado e domingo, empurrando para a segunda-feira seguinte.
+  apenasDiasUteis Boolean @default(false)
+
+  /// Primeira data da série e, opcionalmente, quando parar.
+  inicio       DateTime
+  fim          DateTime?
+  /// Teto de ocorrências, alternativa à data de fim.
+  maximo       Int?
+
+  /// Última data já materializada, para o cron não repetir nem pular.
+  ultimaGeracao DateTime?
+  /// Quantas demandas a regra já criou.
+  geradas      Int      @default(0)
+  /// Pausada ou encerrada deixa de gerar, sem apagar o histórico.
+  ativa        Boolean  @default(true)
+
+  autorId      String
+  autor        Usuario  @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  demandas     Demanda[]
+
+  @@index([ativa, inicio])
+  @@index([autorId])
 }
 
 /// Arquivo anexado a uma demanda (até 1MB), guardado no banco como data URI —

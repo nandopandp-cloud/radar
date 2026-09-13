@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   IconeAlerta, IconeBalao, IconeBandeira, IconeCalendario, IconeCheck, IconeCheckCirculo,
   IconeCirculo, IconeClipe, IconeDocumento, IconeEtiqueta, IconeLapis, IconeLixeira,
-  IconeUsuario, IconeX,
+  IconeRepetir, IconeUsuario, IconeX,
 } from '@/components/icones';
 import { AnexosDemanda } from '@/components/AnexosDemanda';
+import { resumoDaRegra, type Frequencia } from '@/lib/recorrencia';
 import { ComentariosDemanda } from '@/components/ComentariosDemanda';
 import {
   CATEGORIAS, PRIORIDADES, ROTULO_PRIORIDADE, ROTULO_SITUACAO, STATUS,
@@ -101,6 +102,30 @@ export function GavetaDemanda({
     }
   }
 
+  /** Encerra a série: as demandas já criadas ficam, novas deixam de nascer. */
+  async function pararRecorrencia() {
+    if (!demanda.recorrencia) return;
+    if (!confirm('Parar esta recorrência? As demandas já criadas continuam; novas deixam de ser geradas.')) return;
+    setSalvando(true);
+    try {
+      const res = await fetch(`/api/recorrencias/${demanda.recorrencia.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ativa: false }),
+      });
+      if (!res.ok) {
+        const corpo = await res.json().catch(() => ({}));
+        throw new Error(corpo.erro ?? 'Não foi possível parar a recorrência.');
+      }
+      notificar('Recorrência encerrada.', 'ok');
+      await aoAtualizar();
+    } catch (e) {
+      notificar(e instanceof Error ? e.message : 'Erro.', 'erro');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   async function excluir() {
     if (!confirm(`Excluir "${demanda.titulo}"? Esta ação não pode ser desfeita.`)) return;
     setSalvando(true);
@@ -158,6 +183,36 @@ export function GavetaDemanda({
             {demanda.vezesAlertada > 0 &&
               ` · ${demanda.vezesAlertada} ${demanda.vezesAlertada === 1 ? 'aviso enviado' : 'avisos enviados'}`}
           </div>
+
+          {/* Nasceu de uma regra: o selo diz qual, e deixa parar a série. */}
+          {demanda.recorrencia && (
+            <div className={`selo-recorrencia${demanda.recorrencia.ativa ? '' : ' encerrada'}`}>
+              <IconeRepetir size={15} />
+              <span className="selo-recorrencia-texto">
+                {resumoDaRegra({
+                  frequencia: demanda.recorrencia.frequencia as Frequencia,
+                  intervalo: demanda.recorrencia.intervalo,
+                  diasSemana: demanda.recorrencia.diasSemana,
+                  diaDoMes: demanda.recorrencia.diaDoMes,
+                  apenasDiasUteis: demanda.recorrencia.apenasDiasUteis,
+                  inicio: demanda.recorrencia.inicio.slice(0, 10),
+                  fim: null,
+                  maximo: null,
+                })}
+                {!demanda.recorrencia.ativa && ' · encerrada'}
+              </span>
+              {podeEditar && demanda.recorrencia.ativa && (
+                <button
+                  type="button"
+                  className="selo-recorrencia-parar"
+                  disabled={salvando}
+                  onClick={pararRecorrencia}
+                >
+                  Parar
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Editar ocupa a gaveta inteira; as abas só fazem sentido fora dele. */}
           {!editando && (

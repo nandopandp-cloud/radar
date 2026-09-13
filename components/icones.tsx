@@ -66,6 +66,41 @@ export const IconeDireita = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}><path d="M9 18l6-6-6-6" /></svg>
 );
 
+/** "i" em círculo — avisos informativos. */
+export const IconeInfo = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8v.1" />
+  </svg>
+);
+
+/** Setas em ciclo — demanda recorrente. */
+export const IconeRepetir = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M17 2.5l3 3-3 3" />
+    <path d="M4 12V11a4.5 4.5 0 0 1 4.5-4.5H20" />
+    <path d="M7 21.5l-3-3 3-3" />
+    <path d="M20 12v1a4.5 4.5 0 0 1-4.5 4.5H4" />
+  </svg>
+);
+
+/** Calendário com ciclo — cartão de frequência. */
+export const IconeCalendarioRepetir = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    <path d="M9 15.5a3 3 0 0 1 5-2.2M15 15.5a3 3 0 0 1-5 2.2" />
+  </svg>
+);
+
+/** Régua e lápis — regra personalizada. */
+export const IconeAjustes = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+    <path d="M3 9.5h18" />
+    <path d="M12 13v3.5M10.2 14.8h3.6" />
+  </svg>
+);
+
 /** Barras de gráfico — o painel. */
 export const IconeGrafico = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
