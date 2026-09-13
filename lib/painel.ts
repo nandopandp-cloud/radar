@@ -2,22 +2,40 @@ import { COR_SITUACAO, PESO_PRIORIDADE, ROTULO_PRIORIDADE, situacaoDe, type Prio
 import { somarDias } from '@/lib/datas';
 import type { Demanda } from '@/lib/tipos';
 
-/** Períodos oferecidos no seletor do topo. */
+/** Atalhos do seletor. "personalizado" vem das datas escolhidas à mão. */
 export const PERIODOS = [
   { id: '7', rotulo: 'Últimos 7 dias', dias: 7 },
   { id: '30', rotulo: 'Últimos 30 dias', dias: 30 },
   { id: '90', rotulo: 'Últimos 90 dias', dias: 90 },
   { id: 'tudo', rotulo: 'Todo o período', dias: 0 },
+  { id: 'personalizado', rotulo: 'Personalizado', dias: -1 },
 ] as const;
 
 export type PeriodoId = (typeof PERIODOS)[number]['id'];
 
-/** Recorte de datas de um período, em dias ISO. */
-export function intervaloDe(periodo: PeriodoId, hoje: string): { de: string; ate: string } | null {
+export type Intervalo = { de: string; ate: string };
+
+/**
+ * Recorte de datas do período. Null = sem recorte (todo o histórico).
+ * No modo personalizado o intervalo vem pronto de fora.
+ */
+export function intervaloDe(
+  periodo: PeriodoId,
+  hoje: string,
+  personalizado?: Intervalo | null,
+): Intervalo | null {
+  if (periodo === 'personalizado') return personalizado ?? null;
   const p = PERIODOS.find((x) => x.id === periodo);
   if (!p || p.dias === 0) return null;
   // Inclui hoje: 30 dias = hoje e os 29 anteriores.
   return { de: somarDias(hoje, -(p.dias - 1)), ate: hoje };
+}
+
+/** Quantos dias um intervalo cobre, contando as duas pontas. */
+export function diasNoIntervalo(intervalo: Intervalo): number {
+  const de = Date.parse(`${intervalo.de}T00:00:00Z`);
+  const ate = Date.parse(`${intervalo.ate}T00:00:00Z`);
+  return Math.round((ate - de) / 86_400_000) + 1;
 }
 
 /** O dia que serve de referência para a demanda no painel. */
@@ -63,17 +81,17 @@ function variar(atual: number, anterior: number): number | null {
 export function calcularKpis(
   demandas: Demanda[],
   hoje: string,
-  periodo: PeriodoId,
+  intervalo: Intervalo | null,
 ): Kpi[] {
-  const intervalo = intervaloDe(periodo, hoje);
   const noPeriodo = demandas.filter((d) => dentroDoIntervalo(d, intervalo));
   const atual = contarPorSituacao(noPeriodo, hoje);
 
   let anterior: Record<Situacao, number> | null = null;
   if (intervalo) {
-    const p = PERIODOS.find((x) => x.id === periodo)!;
+    // A janela anterior tem o mesmo tamanho, encostada no início desta.
+    const dias = diasNoIntervalo(intervalo);
     const anteriorAte = somarDias(intervalo.de, -1);
-    const anteriorDe = somarDias(anteriorAte, -(p.dias - 1));
+    const anteriorDe = somarDias(anteriorAte, -(dias - 1));
     const antes = demandas.filter((d) => {
       const dia = diaDe(d);
       return dia >= anteriorDe && dia <= anteriorAte;
@@ -118,10 +136,8 @@ export type PontoSerie = { dia: string; valores: Record<Situacao, number> };
 export function serieDiaria(
   demandas: Demanda[],
   hoje: string,
-  periodo: PeriodoId,
+  intervalo: Intervalo | null,
 ): PontoSerie[] {
-  const intervalo = intervaloDe(periodo, hoje);
-
   // Sem intervalo, cobre do primeiro ao último prazo existente.
   let de: string; let ate: string;
   if (intervalo) {

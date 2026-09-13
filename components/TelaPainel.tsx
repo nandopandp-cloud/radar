@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import { Avatar } from '@/components/Avatar';
 import {
-  GraficoBarras, GraficoEvolucao, GraficoRosca, LegendaEvolucao, LegendaRosca,
+  BlocoRosca, GraficoBarras, GraficoEvolucao, LegendaEvolucao,
 } from '@/components/Graficos';
+import { SeletorPeriodo } from '@/components/SeletorPeriodo';
 import {
   IconeAlerta, IconeCheckCirculo, IconeDocumento, IconeRelogio,
 } from '@/components/icones';
@@ -13,7 +14,7 @@ import { formatarDiaCurto } from '@/lib/datas';
 import {
   calcularKpis, dentroDoIntervalo, intervaloDe, porCategoria, porPrioridade,
   porSituacao, proximosPrazos, recentes, serieDiaria, topResponsaveis,
-  PERIODOS, type PeriodoId,
+  type Intervalo, type PeriodoId,
 } from '@/lib/painel';
 import type { Demanda, SessaoUI, Usuario } from '@/lib/tipos';
 
@@ -60,8 +61,12 @@ export function TelaPainel({
   aoVerDemandas: () => void;
 }) {
   const [periodo, setPeriodo] = useState<PeriodoId>('30');
+  const [personalizado, setPersonalizado] = useState<Intervalo | null>(null);
 
-  const intervalo = useMemo(() => intervaloDe(periodo, hoje), [periodo, hoje]);
+  const intervalo = useMemo(
+    () => intervaloDe(periodo, hoje, personalizado),
+    [periodo, hoje, personalizado],
+  );
 
   /** Tudo abaixo dos KPIs olha só o período escolhido. */
   const noPeriodo = useMemo(
@@ -69,8 +74,8 @@ export function TelaPainel({
     [demandas, intervalo],
   );
 
-  const kpis = useMemo(() => calcularKpis(demandas, hoje, periodo), [demandas, hoje, periodo]);
-  const serie = useMemo(() => serieDiaria(demandas, hoje, periodo), [demandas, hoje, periodo]);
+  const kpis = useMemo(() => calcularKpis(demandas, hoje, intervalo), [demandas, hoje, intervalo]);
+  const serie = useMemo(() => serieDiaria(demandas, hoje, intervalo), [demandas, hoje, intervalo]);
   const categorias = useMemo(() => porCategoria(noPeriodo), [noPeriodo]);
   const situacoes = useMemo(() => porSituacao(noPeriodo, hoje), [noPeriodo, hoje]);
   const prioridades = useMemo(() => porPrioridade(noPeriodo), [noPeriodo]);
@@ -101,14 +106,13 @@ export function TelaPainel({
               {formatarDiaCurto(intervalo.de)} → {formatarDiaCurto(intervalo.ate)}
             </span>
           )}
-          <select
-            className="selecao painel-periodo"
-            value={periodo}
-            onChange={(e) => setPeriodo(e.target.value as PeriodoId)}
-            aria-label="Período"
-          >
-            {PERIODOS.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
-          </select>
+          <SeletorPeriodo
+            periodo={periodo}
+            personalizado={personalizado}
+            intervalo={intervalo}
+            hoje={hoje}
+            aoMudar={(p, custom) => { setPeriodo(p); setPersonalizado(custom); }}
+          />
         </div>
       </div>
 
@@ -160,9 +164,8 @@ export function TelaPainel({
           <div className="cartao-cabecalho">
             <div className="cartao-titulo">Demandas por categoria</div>
           </div>
-          <div className="cartao-corpo rosca-bloco">
-            <GraficoRosca fatias={categorias} total={noPeriodo.length} />
-            <LegendaRosca fatias={categorias} />
+          <div className="cartao-corpo">
+            <BlocoRosca fatias={categorias} total={noPeriodo.length} />
           </div>
         </div>
       </div>
@@ -202,9 +205,8 @@ export function TelaPainel({
           <div className="cartao-cabecalho">
             <div className="cartao-titulo">Status das demandas</div>
           </div>
-          <div className="cartao-corpo rosca-bloco">
-            <GraficoRosca fatias={situacoes} total={noPeriodo.length} />
-            <LegendaRosca fatias={situacoes} />
+          <div className="cartao-corpo">
+            <BlocoRosca fatias={situacoes} total={noPeriodo.length} />
           </div>
         </div>
 

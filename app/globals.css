@@ -1106,7 +1106,22 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .kpi-versus, .kpi-sem { font-size: 12px; color: var(--tinta-tenue); }
 
 /* Grades de cartões */
-.painel-grade { display: grid; gap: 16px; margin-bottom: 18px; align-items: start; }
+/*
+ * align-items padrão (stretch): os cartões de uma linha terminam na mesma
+ * altura, sem "buracos" entre um cartão curto e o vizinho alto.
+ */
+.painel-grade { display: grid; gap: 16px; margin-bottom: 18px; }
+/* O cartão vira coluna para o corpo poder ocupar a sobra de altura. */
+.painel-grade > .cartao { display: flex; flex-direction: column; }
+.painel-grade > .cartao > .cartao-corpo,
+.painel-grade > .cartao > .tabela-envolvente { flex: 1; }
+/*
+ * Gráficos (rosca, barras) ficam centrados na altura que sobra; listas e
+ * tabelas começam no topo, senão descolam do título do cartão.
+ */
+.painel-grade > .cartao > .cartao-corpo { display: flex; flex-direction: column; }
+.painel-grade > .cartao > .cartao-corpo:has(.rosca-bloco),
+.painel-grade > .cartao > .cartao-corpo:has(.barras) { justify-content: center; }
 .painel-grade-2 { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 .painel-grade-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .painel-grade-baixo { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
@@ -1192,3 +1207,108 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .prazo-autor { font-size: 12px; color: var(--tinta-suave); }
+
+/* ══ Dicas dos gráficos ═════════════════════════════════ */
+.grafico-caixa { position: relative; }
+
+/* Guia vertical que acompanha o cursor no gráfico de área. */
+.grafico-guia line { stroke: var(--borda-forte); stroke-width: 1; stroke-dasharray: 4 4; }
+
+.dica-grafico {
+  position: absolute; top: 8px; z-index: 5; pointer-events: none;
+  min-width: 172px; padding: 11px 13px;
+  background: var(--superficie); border: 1px solid var(--borda);
+  border-radius: var(--raio); box-shadow: var(--sombra-md);
+  /* Opaca por padrão: a animação é só o fade de entrada, e se ela não rodar
+     (ou for interrompida) a dica continua legível em vez de sumir. */
+  opacity: 1;
+  animation: dica-entra .12s ease-out;
+}
+/*
+ * Só a opacidade entra na animação: o transform carrega o posicionamento
+ * (virar para a esquerda perto da borda) e animá-lo desfaria esse cálculo.
+ */
+@keyframes dica-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .dica-grafico { animation: none; } }
+
+.dica-titulo-g {
+  font-size: 12.5px; font-weight: 700; color: var(--tinta);
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--borda);
+}
+.dica-linhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dica-linhas li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.dica-rotulo { color: var(--tinta-suave); }
+.dica-valor { margin-left: auto; font-weight: 700; color: var(--tinta); }
+.dica-total {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--borda);
+  font-size: 12.5px; color: var(--tinta-suave);
+}
+.dica-total strong { font-size: 14px; color: var(--tinta); }
+
+/* Dica da barra: nasce no topo da própria coluna. */
+.dica-barra {
+  left: 50%; top: auto; bottom: calc(100% + 16px);
+  transform: translateX(-50%); min-width: 0; white-space: nowrap;
+  z-index: 6;
+}
+.dica-barra-linha { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.dica-barra-linha strong { font-size: 15px; }
+
+.barra-coluna { position: relative; }
+.barra-trilho { position: relative; }
+.barra-coluna .barra-preenchida { transition: height .2s, filter .14s; }
+.barra-coluna.ativa .barra-preenchida { filter: brightness(1.06) saturate(1.1); }
+.barra-coluna.ativa .barra-valor { color: var(--marca); }
+
+/* Destaque compartilhado entre rosca e legenda. */
+.rosca-fatia { transition: stroke-width .14s, opacity .14s; cursor: default; }
+.rosca-legenda li { transition: opacity .14s; border-radius: 7px; }
+.rosca-legenda li.destacada { background: #f8fafc; }
+.rosca-legenda li.apagada { opacity: .45; }
+
+/* ══ Seletor de período ═════════════════════════════════ */
+.seletor-periodo { position: relative; }
+.periodo-botao {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 13px; border-radius: var(--raio);
+  border: 1px solid var(--borda); background: var(--superficie);
+  font-size: 13.5px; font-weight: 600; color: var(--tinta-media);
+  box-shadow: var(--sombra-sm); white-space: nowrap;
+  transition: border-color .14s, background .14s;
+}
+.periodo-botao:hover, .periodo-botao.aberto { border-color: var(--marca-borda); background: #f8fafc; }
+.periodo-seta { transform: rotate(90deg); color: var(--tinta-tenue); transition: transform .16s; }
+.periodo-botao.aberto .periodo-seta { transform: rotate(-90deg); }
+
+.periodo-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
+  width: 286px; padding: 8px;
+  background: var(--superficie); border: 1px solid var(--borda);
+  border-radius: var(--raio-lg); box-shadow: var(--sombra-lg);
+  animation: dica-entra .13s ease-out;
+}
+.periodo-atalhos { display: flex; flex-direction: column; gap: 2px; }
+.periodo-atalho {
+  text-align: left; padding: 9px 11px; border-radius: var(--raio-sm);
+  border: none; background: none; font-size: 13.5px; color: var(--tinta-media);
+  transition: background .12s, color .12s;
+}
+.periodo-atalho:hover { background: #f1f5f9; color: var(--tinta); }
+.periodo-atalho.ativo { background: var(--marca-clara); color: var(--marca); font-weight: 600; }
+.periodo-divisor { height: 1px; background: var(--borda); margin: 8px 4px; }
+.periodo-custom { padding: 2px 4px 4px; }
+.periodo-custom-titulo {
+  font-size: 12px; font-weight: 700; color: var(--tinta-suave);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 9px;
+}
+.periodo-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
+.periodo-campos .rotulo { margin-bottom: 4px; }
+.periodo-campos .entrada { padding: 8px 10px; font-size: 13px; }
+
+@media (max-width: 620px) {
+  .periodo-menu { width: min(286px, calc(100vw - 32px)); }
+}
