@@ -63,6 +63,9 @@ export function ehOrigem(v: unknown): v is Origem {
 
 /// Categorias para agrupar demandas. Livre, mas com sugestões prontas.
 export const CATEGORIAS = [
+  'Departamento Pessoal',
+  'Contabilidade',
+  'Recursos Humanos',
   'Financeiro',
   'Comercial',
   'Operações',
