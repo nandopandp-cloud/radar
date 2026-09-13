@@ -208,6 +208,8 @@ a { color: var(--marca); text-decoration: none; }
 .grade-calendario { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
 @media (max-width: 1280px) { .grade-calendario { grid-template-columns: 1fr; } }
 
+/* Calendário e agenda do dia empilhados na mesma coluna. */
+.coluna-calendario { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .painel-lateral { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 /* ══ Cartões ════════════════════════════════════════════ */
@@ -409,10 +411,11 @@ a { color: var(--marca); text-decoration: none; }
 .mini-dia.hoje .mini-ponto { background: rgba(255, 255, 255, .85) !important; }
 
 /* ══ Resumo ═════════════════════════════════════════════ */
-.resumo-linhas { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
+/* Linhas com mais presença: o resumo divide a coluna com o mini-calendário. */
+.resumo-linhas { display: flex; flex-direction: column; gap: 10px; padding: 0 16px 16px; }
 .resumo-linha {
   display: flex; align-items: center; gap: 13px; width: 100%; text-align: left;
-  padding: 12px 14px; border-radius: var(--raio); border: 1px solid transparent;
+  padding: 15px 14px; border-radius: var(--raio); border: 1px solid transparent;
   background: #f8fafc; transition: border-color .14s, box-shadow .14s, transform .14s;
 }
 button.resumo-linha:hover { border-color: var(--borda-forte); transform: translateX(2px); }
@@ -430,10 +433,10 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .resumo-linha-rotulo { font-size: 12.5px; color: var(--tinta-suave); margin-top: 3px; }
 
 /* ══ Agenda do dia ══════════════════════════════════════ */
-.agenda { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 14px; }
+.agenda { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 12px; }
 .agenda-item {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  padding: 10px 12px; border-radius: var(--raio-sm);
+  padding: 9px 12px; border-radius: var(--raio-sm);
   border: 1px solid transparent; background: transparent;
   transition: background .14s, border-color .14s;
 }
@@ -448,6 +451,19 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   display: flex; align-items: center; gap: 6px;
 }
 .agenda-separador { color: var(--borda-forte); }
+/* Atalho para o restante do dia: discreto, some quando cabe tudo na lista. */
+.agenda-mais {
+  display: block; width: 100%; text-align: left;
+  padding: 9px 12px; margin-top: 2px;
+  border: none; background: none; border-radius: var(--raio-sm);
+  font-size: 12.5px; font-weight: 600; color: var(--marca);
+  transition: background .14s;
+}
+.agenda-mais:hover { background: var(--marca-clara); }
+
+/* O cartão do dia fica sob o calendário: cabeçalho enxuto para não roubar altura. */
+.coluna-calendario > .cartao > .cartao-cabecalho { padding-bottom: 14px; }
+
 .agenda-vazia {
   padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 12px;
   font-size: 13px; color: var(--tinta-suave);

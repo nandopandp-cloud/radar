@@ -14,6 +14,13 @@ import {
 import { diaParaDate } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
 
+/**
+ * Quantas demandas o cartão do dia mostra antes de remeter ao modal, que
+ * lista todas. Três mantém o cartão raso o bastante para a coluna fechar
+ * junto com a lateral.
+ */
+const MAXIMO_AGENDA = 3;
+
 /** Linhas do resumo do mês, na ordem em que aparecem no painel. */
 const LINHAS_RESUMO: { situacao: Situacao; rotulo: string; tom: string; Icone: typeof IconeRelogio }[] = [
   { situacao: 'ATRASADA', rotulo: 'Atrasadas', tom: 'vermelho', Icone: IconeAlerta },
@@ -100,18 +107,69 @@ export function TelaCalendario({
       </div>
 
       <div className="grade-calendario">
-        <Calendario
-          ano={ano}
-          mes={mes}
-          hoje={hoje}
-          diaSelecionado={diaSelecionado}
-          demandas={demandas}
-          filtro={filtro}
-          contagem={contagem}
-          aoFiltrar={setFiltro}
-          aoSelecionar={aoSelecionarDia}
-          aoMudarMes={aoMudarMes}
-        />
+        <div className="coluna-calendario">
+          <Calendario
+            ano={ano}
+            mes={mes}
+            hoje={hoje}
+            diaSelecionado={diaSelecionado}
+            demandas={demandas}
+            filtro={filtro}
+            contagem={contagem}
+            aoFiltrar={setFiltro}
+            aoSelecionar={aoSelecionarDia}
+            aoMudarMes={aoMudarMes}
+          />
+
+          <div className="cartao">
+            <div className="cartao-cabecalho">
+              <div>
+                <div className="cartao-titulo">Demandas do dia</div>
+                <div className="cartao-desc primeira-maiuscula">{rotuloDiaSelecionado}</div>
+              </div>
+              {doDia.length > 0 && (
+                <button
+                  className="btn btn-secundario btn-pequeno"
+                  onClick={() => aoSelecionarDia(diaSelecionado)}
+                >
+                  Ver todas{doDia.length > MAXIMO_AGENDA ? ` (${doDia.length})` : ''}
+                </button>
+              )}
+            </div>
+
+            {doDia.length === 0 ? (
+              <div className="agenda-vazia">
+                <p>Nenhuma demanda com prazo neste dia.</p>
+                <button className="btn-adicionar-dia" onClick={() => aoNovaDemanda(diaSelecionado)}>
+                  <IconeMais size={16} /> Criar demanda
+                </button>
+              </div>
+            ) : (
+              <div className="agenda">
+                {doDia.slice(0, MAXIMO_AGENDA).map(({ d, situacao }) => (
+                  <button key={d.id} className="agenda-item" onClick={() => aoAbrirDemanda(d)}>
+                    <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                    <span className="agenda-texto">
+                      <span className="agenda-titulo">{d.titulo}</span>
+                      <span className="agenda-sub">
+                        {ROTULO_SITUACAO[situacao]}
+                        <span className="agenda-separador">•</span>
+                        {ROTULO_PRIORIDADE[d.prioridade as keyof typeof ROTULO_PRIORIDADE] ?? d.prioridade}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+                {/* O restante fica no modal do dia, que já lista tudo. */}
+                {doDia.length > MAXIMO_AGENDA && (
+                  <button className="agenda-mais" onClick={() => aoSelecionarDia(diaSelecionado)}>
+                    +{doDia.length - MAXIMO_AGENDA}{' '}
+                    {doDia.length - MAXIMO_AGENDA === 1 ? 'outra demanda' : 'outras demandas'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         <aside className="painel-lateral">
           <MiniCalendario
@@ -156,39 +214,6 @@ export function TelaCalendario({
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="cartao">
-            <div className="cartao-cabecalho">
-              <div className="cartao-titulo">Demandas do dia</div>
-              <span className="texto-suave">{rotuloDiaSelecionado}</span>
-            </div>
-
-
-            {doDia.length === 0 ? (
-              <div className="agenda-vazia">
-                <p>Nenhuma demanda com prazo neste dia.</p>
-                <button className="btn-adicionar-dia" onClick={() => aoNovaDemanda(diaSelecionado)}>
-                  <IconeMais size={16} /> Criar demanda
-                </button>
-              </div>
-            ) : (
-              <div className="agenda">
-                {doDia.map(({ d, situacao }) => (
-                  <button key={d.id} className="agenda-item" onClick={() => aoAbrirDemanda(d)}>
-                    <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
-                    <span className="agenda-texto">
-                      <span className="agenda-titulo">{d.titulo}</span>
-                      <span className="agenda-sub">
-                        {ROTULO_SITUACAO[situacao]}
-                        <span className="agenda-separador">•</span>
-                        {ROTULO_PRIORIDADE[d.prioridade as keyof typeof ROTULO_PRIORIDADE] ?? d.prioridade}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </aside>
       </div>
