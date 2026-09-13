@@ -1128,7 +1128,11 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
  */
 .painel-grade { display: grid; gap: 16px; margin-bottom: 18px; }
 /* O cartão vira coluna para o corpo poder ocupar a sobra de altura. */
-.painel-grade > .cartao { display: flex; flex-direction: column; }
+/*
+ * min-width: 0 deixa o cartão encolher abaixo do conteúdo: sem isso a tabela
+ * larga estica a coluna do grid e a página inteira ganha rolagem lateral.
+ */
+.painel-grade > .cartao { display: flex; flex-direction: column; min-width: 0; }
 .painel-grade > .cartao > .cartao-corpo,
 .painel-grade > .cartao > .tabela-envolvente { flex: 1; }
 /*
@@ -1534,3 +1538,59 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 }
 .selo-recorrencia-parar:hover { background: #dbeafe; }
 .selo-recorrencia-parar:disabled { opacity: .5; }
+
+/* ══ Faixa de desempenho (Radar Score) ══════════════════ */
+.faixa-score {
+  display: grid; grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
+  gap: 12px; margin-bottom: 16px; align-items: stretch;
+}
+@media (max-width: 1400px) {
+  .faixa-score { grid-template-columns: 1.35fr repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) { .faixa-score { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px) { .faixa-score { grid-template-columns: 1fr; } }
+
+/* O cartão do score ocupa a linha toda quando a faixa quebra. */
+@media (max-width: 1400px) { .score-cartao { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .score-cartao { grid-column: auto; } }
+
+.score-cartao { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.score-titulo { font-size: 15px; font-weight: 800; letter-spacing: -.02em; color: var(--tinta); }
+.score-corpo { display: flex; align-items: center; gap: 16px; }
+.anel-score { width: 104px; height: 104px; flex-shrink: 0; }
+.anel-score-valor {
+  font-size: 30px; font-weight: 800; fill: var(--tinta); letter-spacing: -.03em;
+}
+.anel-score-base { font-size: 11px; fill: var(--tinta-tenue); }
+.score-texto { min-width: 0; }
+.score-faixa { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; }
+.score-desc { font-size: 12.5px; color: var(--tinta-suave); margin-top: 3px; line-height: 1.45; }
+.score-link {
+  margin-top: 9px; padding: 0; border: none; background: none;
+  font-size: 13px; font-weight: 700; color: var(--marca);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.score-link:hover { text-decoration: underline; }
+.score-vazio { font-size: 12.5px; color: var(--tinta-suave); line-height: 1.5; }
+
+/* Os quatro indicadores ao lado do score. */
+.indicador { display: flex; align-items: flex-start; gap: 11px; padding: 15px 14px; }
+.indicador-icone {
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+  display: grid; place-items: center;
+}
+.ind-azul    .indicador-icone { background: var(--pendente-fundo);  color: var(--pendente); }
+.ind-vermelho .indicador-icone { background: var(--atrasada-fundo); color: var(--atrasada); }
+.ind-roxo    .indicador-icone { background: #eef2ff;               color: #6366f1; }
+.ind-verde   .indicador-icone { background: var(--concluida-fundo); color: var(--concluida); }
+.indicador-corpo { min-width: 0; }
+/* Uma linha por rótulo: quebrar desalinha os valores dos quatro cartões. */
+.indicador-rotulo {
+  font-size: 12px; color: var(--tinta-suave); line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.indicador-valor {
+  font-size: 23px; font-weight: 800; letter-spacing: -.03em;
+  line-height: 1.2; margin: 3px 0 6px; white-space: nowrap;
+}
+.indicador-rodape { font-size: 11.5px; color: var(--tinta-tenue); margin-top: 5px; }

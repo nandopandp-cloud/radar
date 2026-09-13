@@ -6,17 +6,27 @@ import {
   BlocoRosca, GraficoBarras, GraficoEvolucao, LegendaEvolucao,
 } from '@/components/Graficos';
 import { SeletorPeriodo } from '@/components/SeletorPeriodo';
+import { AnelScore } from '@/components/RadarScore';
 import {
-  IconeAlerta, IconeCheckCirculo, IconeDocumento, IconeRelogio,
+  IconeAlerta, IconeCheckCirculo, IconeDocumento, IconeRelogio, IconeTendencia,
 } from '@/components/icones';
 import { COR_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO, situacaoDe, type Prioridade } from '@/lib/dominio';
 import { formatarDiaCurto } from '@/lib/datas';
 import {
-  calcularKpis, dentroDoIntervalo, intervaloDe, porCategoria, porPrioridade,
-  porSituacao, proximosPrazos, recentes, serieDiaria, topResponsaveis,
+  calcularDesempenho, calcularKpis, dentroDoIntervalo, diasNoIntervalo, faixaDoScore,
+  indicadoresDesempenho, intervaloDe, porCategoria, porPrioridade, porSituacao,
+  proximosPrazos, recentes, serieDiaria, calcularScore, topResponsaveis,
   type Intervalo, type PeriodoId,
 } from '@/lib/painel';
+import { somarDias } from '@/lib/datas';
 import type { Demanda, SessaoUI, Usuario } from '@/lib/tipos';
+
+const ICONE_DESEMPENHO: Record<string, typeof IconeDocumento> = {
+  cumprimento: IconeTendencia,
+  atraso: IconeRelogio,
+  atrasoMedio: IconeRelogio,
+  noPrazo: IconeCheckCirculo,
+};
 
 const ICONE_KPI: Record<string, typeof IconeDocumento> = {
   total: IconeDocumento,
@@ -74,6 +84,26 @@ export function TelaPainel({
     [demandas, intervalo],
   );
 
+  /** Desempenho do período e da janela anterior, para o comparativo. */
+  const desempenho = useMemo(() => calcularDesempenho(noPeriodo, hoje), [noPeriodo, hoje]);
+  const desempenhoAnterior = useMemo(() => {
+    if (!intervalo) return null;
+    const dias = diasNoIntervalo(intervalo);
+    const ate = somarDias(intervalo.de, -1);
+    const de = somarDias(ate, -(dias - 1));
+    const antes = demandas.filter((d) => {
+      const dia = d.prazo.slice(0, 10);
+      return dia >= de && dia <= ate;
+    });
+    return calcularDesempenho(antes, hoje);
+  }, [demandas, hoje, intervalo]);
+
+  const score = useMemo(() => calcularScore(desempenho), [desempenho]);
+  const indicadores = useMemo(
+    () => indicadoresDesempenho(desempenho, desempenhoAnterior),
+    [desempenho, desempenhoAnterior],
+  );
+
   const kpis = useMemo(() => calcularKpis(demandas, hoje, intervalo), [demandas, hoje, intervalo]);
   const serie = useMemo(() => serieDiaria(demandas, hoje, intervalo), [demandas, hoje, intervalo]);
   const categorias = useMemo(() => porCategoria(noPeriodo), [noPeriodo]);
@@ -114,6 +144,50 @@ export function TelaPainel({
             aoMudar={(p, custom) => { setPeriodo(p); setPersonalizado(custom); }}
           />
         </div>
+      </div>
+
+      {/* Faixa de desempenho: o score e os indicadores que o compõem. */}
+      <div className="faixa-score">
+        <div className="cartao score-cartao">
+          <div className="score-titulo">Radar Score</div>
+          {score === null ? (
+            <p className="score-vazio">
+              Ainda não há demandas concluídas ou vencidas no período para calcular.
+            </p>
+          ) : (
+            <div className="score-corpo">
+              <AnelScore score={score} />
+              <div className="score-texto">
+                <div className="score-faixa" style={{ color: faixaDoScore(score).cor }}>
+                  {faixaDoScore(score).rotulo}
+                </div>
+                <p className="score-desc">{faixaDoScore(score).descricao}</p>
+                <button type="button" className="score-link" onClick={aoVerDemandas}>
+                  Ver detalhes <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {indicadores.map((ind) => {
+          const Icone = ICONE_DESEMPENHO[ind.id];
+          return (
+            <div className={`cartao indicador ind-${ind.tom}`} key={ind.id}>
+              <span className="indicador-icone"><Icone size={20} /></span>
+              <div className="indicador-corpo">
+                <div className="indicador-rotulo">{ind.rotulo}</div>
+                <div className="indicador-valor">{ind.valor}</div>
+                {ind.variacao && (
+                  <span className={`kpi-variacao${ind.variacaoBoa ? ' boa' : ' ruim'}`}>
+                    {ind.variacao}
+                  </span>
+                )}
+                <div className="indicador-rodape">{ind.rodape}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="kpis">

@@ -101,6 +101,14 @@ export const IconeAjustes = ({ size = 19, className }: P) => (
   </svg>
 );
 
+/** Linha em alta — taxa de cumprimento. */
+export const IconeTendencia = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3.5 16.5l5-5 3.5 3.5 6-6.5" />
+    <path d="M14.5 8h4v4" />
+  </svg>
+);
+
 /** Barras de gráfico — o painel. */
 export const IconeGrafico = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>

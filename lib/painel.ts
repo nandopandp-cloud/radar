@@ -267,3 +267,206 @@ export function proximosPrazos(demandas: Demanda[], hoje: string, limite = 5): D
 
   return [...aVencer, ...vencidas].slice(0, limite);
 }
+
+/* ══ Indicadores de desempenho ═══════════════════════════════════════════ */
+
+/** Uma demanda conta para o desempenho quando já foi concluída ou já venceu. */
+function apurada(d: Demanda, hoje: string): boolean {
+  if (d.status === 'CANCELADA') return false;
+  if (d.status === 'CONCLUIDA') return true;
+  return diaDe(d) < hoje;
+}
+
+/** Concluída até o prazo. Sem data de conclusão, cai para o status. */
+function noPrazo(d: Demanda): boolean {
+  if (d.status !== 'CONCLUIDA') return false;
+  if (!d.concluidaEm) return true;
+  return d.concluidaEm.slice(0, 10) <= diaDe(d);
+}
+
+/** Dias entre o prazo e a conclusão (ou hoje, se ainda aberta). Zero se em dia. */
+function diasDeAtraso(d: Demanda, hoje: string): number {
+  const referencia = d.status === 'CONCLUIDA' && d.concluidaEm
+    ? d.concluidaEm.slice(0, 10)
+    : hoje;
+  const atraso = Math.round(
+    (Date.parse(`${referencia}T00:00:00Z`) - Date.parse(`${diaDe(d)}T00:00:00Z`)) / 86_400_000,
+  );
+  return atraso > 0 ? atraso : 0;
+}
+
+export type Desempenho = {
+  /** Demandas que já podem ser julgadas (concluídas ou vencidas). */
+  apuradas: number;
+  concluidasNoPrazo: number;
+  /** 0–100. Null quando não há base para julgar. */
+  taxaCumprimento: number | null;
+  taxaAtraso: number | null;
+  /** Média de dias de atraso entre as que atrasaram. Null sem atrasos. */
+  atrasoMedio: number | null;
+  concluidas: number;
+  total: number;
+};
+
+export function calcularDesempenho(demandas: Demanda[], hoje: string): Desempenho {
+  const doPeriodo = demandas.filter((d) => d.status !== 'CANCELADA');
+  const paraApurar = doPeriodo.filter((d) => apurada(d, hoje));
+  const emDia = paraApurar.filter(noPrazo);
+
+  const atrasadas = paraApurar.filter((d) => !noPrazo(d));
+  const diasAtraso = atrasadas.map((d) => diasDeAtraso(d, hoje)).filter((n) => n > 0);
+
+  const base = paraApurar.length;
+  return {
+    apuradas: base,
+    concluidasNoPrazo: emDia.length,
+    taxaCumprimento: base === 0 ? null : (emDia.length / base) * 100,
+    taxaAtraso: base === 0 ? null : ((base - emDia.length) / base) * 100,
+    atrasoMedio: diasAtraso.length === 0
+      ? null
+      : diasAtraso.reduce((s, n) => s + n, 0) / diasAtraso.length,
+    concluidas: doPeriodo.filter((d) => d.status === 'CONCLUIDA').length,
+    total: doPeriodo.length,
+  };
+}
+
+/**
+ * Radar Score: 0–100, resumindo a saúde da operação no período.
+ *
+ * Pesa o que o time controla: entregar no prazo (70%) e, quando atrasa,
+ * atrasar pouco (30%). Um atraso médio de 5 dias ou mais zera essa segunda
+ * parte — além disso a diferença deixa de ser informativa.
+ */
+export const PESO_CUMPRIMENTO = 0.7;
+export const PESO_PONTUALIDADE = 0.3;
+const ATRASO_TOLERADO = 5;
+
+export function calcularScore(d: Desempenho): number | null {
+  if (d.taxaCumprimento === null) return null;
+
+  const cumprimento = d.taxaCumprimento / 100;
+  // Sem atrasos, a pontualidade é perfeita.
+  const atraso = d.atrasoMedio ?? 0;
+  const pontualidade = Math.max(0, 1 - atraso / ATRASO_TOLERADO);
+
+  return Math.round((cumprimento * PESO_CUMPRIMENTO + pontualidade * PESO_PONTUALIDADE) * 100);
+}
+
+export type FaixaScore = {
+  rotulo: string;
+  descricao: string;
+  cor: string;
+  fundo: string;
+};
+
+/** Leitura qualitativa do score, para o cartão não ser só um número. */
+export function faixaDoScore(score: number): FaixaScore {
+  if (score >= 85) {
+    return {
+      rotulo: 'Boa performance',
+      descricao: 'Sua operação está saudável.',
+      cor: '#16a34a', fundo: '#22c55e',
+    };
+  }
+  if (score >= 70) {
+    return {
+      rotulo: 'Desempenho regular',
+      descricao: 'Há espaço para reduzir atrasos.',
+      cor: '#0369a1', fundo: '#3b82f6',
+    };
+  }
+  if (score >= 50) {
+    return {
+      rotulo: 'Atenção',
+      descricao: 'Os atrasos estão pesando no período.',
+      cor: '#b45309', fundo: '#f59e0b',
+    };
+  }
+  return {
+    rotulo: 'Crítico',
+    descricao: 'A maior parte das entregas saiu do prazo.',
+    cor: '#b91c1c', fundo: '#ef4444',
+  };
+}
+
+export type IndicadorDesempenho = {
+  id: string;
+  rotulo: string;
+  /** Já formatado para a tela: "87,1%", "1,8 dias", "27 de 31". */
+  valor: string;
+  /** Variação contra o período anterior, já formatada. Null sem base. */
+  variacao: string | null;
+  /** Se a variação é boa (verde) ou ruim (vermelha). */
+  variacaoBoa: boolean;
+  /** Texto sob a variação. */
+  rodape: string;
+  tom: string;
+};
+
+const fmt1 = (n: number) => n.toFixed(1).replace('.', ',');
+
+/**
+ * Os quatro indicadores ao lado do score. Compara com a janela anterior de
+ * mesmo tamanho, como os KPIs já fazem.
+ */
+export function indicadoresDesempenho(
+  atual: Desempenho,
+  anterior: Desempenho | null,
+): IndicadorDesempenho[] {
+  /** Diferença em pontos percentuais, com sinal. */
+  const pp = (a: number | null, b: number | null | undefined) =>
+    a === null || b === null || b === undefined ? null : a - b;
+
+  const dCumpr = pp(atual.taxaCumprimento, anterior?.taxaCumprimento);
+  const dAtraso = pp(atual.taxaAtraso, anterior?.taxaAtraso);
+  const dDias =
+    atual.atrasoMedio === null || anterior?.atrasoMedio === null || anterior?.atrasoMedio === undefined
+      ? null
+      : atual.atrasoMedio - anterior.atrasoMedio;
+  const dConcl =
+    anterior === null ? null : atual.concluidasNoPrazo - anterior.concluidasNoPrazo;
+
+  return [
+    {
+      id: 'cumprimento',
+      rotulo: 'Taxa de cumprimento',
+      valor: atual.taxaCumprimento === null ? '—' : `${fmt1(atual.taxaCumprimento)}%`,
+      variacao: dCumpr === null || Math.abs(dCumpr) < 0.05 ? null : `${dCumpr > 0 ? '↑' : '↓'} ${fmt1(Math.abs(dCumpr))} p.p.`,
+      variacaoBoa: (dCumpr ?? 0) >= 0,
+      rodape: 'vs. período anterior',
+      tom: 'azul',
+    },
+    {
+      id: 'atraso',
+      rotulo: 'Taxa de atraso',
+      valor: atual.taxaAtraso === null ? '—' : `${fmt1(atual.taxaAtraso)}%`,
+      variacao: dAtraso === null || Math.abs(dAtraso) < 0.05 ? null : `${dAtraso > 0 ? '↑' : '↓'} ${fmt1(Math.abs(dAtraso))} p.p.`,
+      // Aqui cair é bom: menos atraso.
+      variacaoBoa: (dAtraso ?? 0) <= 0,
+      rodape: 'vs. período anterior',
+      tom: 'vermelho',
+    },
+    {
+      id: 'atrasoMedio',
+      // Rótulo curto: "Tempo médio de atraso" não cabe no cartão sem truncar.
+      rotulo: 'Atraso médio',
+      valor: atual.atrasoMedio === null ? '—' : `${fmt1(atual.atrasoMedio)} dias`,
+      variacao: dDias === null || Math.abs(dDias) < 0.05 ? null : `${dDias > 0 ? '↑' : '↓'} ${fmt1(Math.abs(dDias))} dias`,
+      variacaoBoa: (dDias ?? 0) <= 0,
+      rodape: 'vs. período anterior',
+      tom: 'roxo',
+    },
+    {
+      id: 'noPrazo',
+      rotulo: 'Demandas concluídas',
+      valor: `${atual.concluidasNoPrazo} de ${atual.apuradas}`,
+      variacao: null,
+      variacaoBoa: (dConcl ?? 0) >= 0,
+      // "+6 que no período anterior" deixa claro quem ganhou de quem.
+      rodape: dConcl === null
+        ? 'concluídas no prazo'
+        : `${dConcl >= 0 ? '+' : ''}${dConcl} que no período anterior`,
+      tom: 'verde',
+    },
+  ];
+}
