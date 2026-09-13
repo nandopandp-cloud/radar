@@ -872,7 +872,6 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .barra-recolhida .barra-topo { flex-direction: row; padding: 26px 22px 22px; }
   .btn-recolher { display: none; }
   .conteudo { padding: 20px 16px 50px; }
-  .cabecalho { padding: 13px 16px; }
   .resumo-grade { grid-template-columns: 1fr; }
   .cal-celula { min-height: 74px; }
   .linha-campos { grid-template-columns: 1fr; }
