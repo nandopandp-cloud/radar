@@ -215,9 +215,10 @@ export function ModalOfensiva({
     return () => window.removeEventListener('keydown', onKey);
   }, [aoFechar]);
 
-  /* A trilha mostra uma bolinha por dia da meta. Em metas longas vira
-     um traço só, então acima de 15 dias mostramos os últimos 15. */
-  const bolinhas = Math.min(meta, 15);
+  /* A trilha é uma janela dos últimos dias, não a meta inteira: com 15
+     bolinhas elas ficam miúdas e a contagem ao lado não cabe. No primeiro
+     dia mostramos a meta toda, que é o que dá a noção do caminho à frente. */
+  const bolinhas = primeiroDia ? Math.min(meta, 15) : Math.min(meta, 8);
   const deslocamento = Math.max(0, dias - bolinhas);
 
   return (
@@ -246,13 +247,11 @@ export function ModalOfensiva({
             <IconeX size={20} />
           </button>
 
-          {/* O foguete sai por cima da caixa, como nas referências. */}
+          {/* O foguete sai por cima da caixa, saindo de um banco de nuvens. */}
           <div className="festa-palco" aria-hidden="true">
-            <span className="festa-brilho" />
-            <span className="festa-foguete"><IconeFogueteVertical size={150} /></span>
-            <span className="festa-faisca f1" />
-            <span className="festa-faisca f2" />
-            <span className="festa-faisca f3" />
+            <span className="festa-rastro" />
+            <span className="festa-foguete"><IconeFogueteVertical size={168} /></span>
+            <span className="festa-nuvens" />
           </div>
 
           <div className="festa-corpo">
@@ -271,7 +270,7 @@ export function ModalOfensiva({
               )}
             </p>
 
-            <div className="festa-trilha">
+            <div className={`festa-trilha${primeiroDia ? ' inicio' : ''}`}>
               <div className={`festa-bolinhas${primeiroDia ? ' miudas' : ''}`}>
                 {Array.from({ length: bolinhas }, (_, i) => {
                   const diaDaBolinha = deslocamento + i + 1;
