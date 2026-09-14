@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from 'react';
 import {
-  IconeAlvo, IconeBarrinhas, IconeCheck, IconeDireita, IconeFoguete,
-  IconeFogueteVertical, IconeTrofeu, IconeX,
+  IconeAlvo, IconeBarrinhas, IconeCeuOfensiva, IconeCheck, IconeDireita,
+  IconeFoguete, IconeFogueteVertical, IconeTrofeu, IconeX,
 } from '@/components/icones';
 import {
   mensagemDeRitmo, metaAtual, rotuloOfensiva, type Ofensiva,
@@ -247,11 +247,10 @@ export function ModalOfensiva({
             <IconeX size={20} />
           </button>
 
-          {/* O foguete sai por cima da caixa, saindo de um banco de nuvens. */}
+          {/* O céu (arcos + nuvem + faíscas) fica atrás; o foguete sobe nele. */}
           <div className="festa-palco" aria-hidden="true">
-            <span className="festa-rastro" />
-            <span className="festa-foguete"><IconeFogueteVertical size={168} /></span>
-            <span className="festa-nuvens" />
+            <IconeCeuOfensiva className="festa-ceu" />
+            <span className="festa-foguete"><IconeFogueteVertical size={166} /></span>
           </div>
 
           <div className="festa-corpo">

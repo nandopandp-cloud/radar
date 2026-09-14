@@ -1,3 +1,7 @@
+'use client';
+
+import { useId } from 'react';
+
 /** Ícones em traço, no estilo das referências. Tamanho padrão 19px. */
 type P = { size?: number; className?: string };
 
@@ -154,63 +158,143 @@ export const IconeBarrinhas = ({ size = 19, className }: P) => (
   </svg>
 );
 
+
 /**
- * Foguete inclinado subindo para a direita — ilustração do modal de
- * comemoração. Desenhado na vertical e girado no grupo: é mais simples
- * acertar as proporções em pé do que direto na diagonal.
+ * Foguete do modal de comemoração, quase em pé.
+ *
+ * O volume vem de camadas, não de um gradiente só: cilindro com aresta de
+ * luz à esquerda e sombra à direita, bico com topo iluminado, abas com
+ * dobra interna e escotilha em cúpula. Os IDs levam sufixo único porque
+ * dois foguetes na mesma página colidiriam nos gradientes.
  */
-export const IconeFogueteVertical = ({ size = 120, className }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 120 120" fill="none" className={className}>
-    <defs>
-      {/* Corpo: branco na aresta de luz, azul bem claro na sombra. */}
-      <linearGradient id="fv-corpo" x1="42" y1="22" x2="80" y2="88" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#fff" /><stop offset=".5" stopColor="#eff5ff" /><stop offset="1" stopColor="#c3d9fb" />
-      </linearGradient>
-      {/* Bico. */}
-      <linearGradient id="fv-bico" x1="44" y1="12" x2="76" y2="44" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#5b8def" /><stop offset="1" stopColor="#1f54d4" />
-      </linearGradient>
-      {/* Abas. */}
-      <linearGradient id="fv-aba" x1="24" y1="54" x2="44" y2="88" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#6d9bf5" /><stop offset="1" stopColor="#2f6ae4" />
-      </linearGradient>
-      <linearGradient id="fv-aba2" x1="96" y1="58" x2="76" y2="94" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#5b8def" /><stop offset="1" stopColor="#2559d6" />
-      </linearGradient>
-      {/* Chama: laranja por fora, núcleo amarelo por dentro. */}
-      <linearGradient id="fv-fogo" x1="60" y1="96" x2="51" y2="130" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#fb923c" /><stop offset="1" stopColor="#ea6a10" />
-      </linearGradient>
-      <linearGradient id="fv-fogo2" x1="59" y1="98" x2="54" y2="121" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#fde68a" /><stop offset="1" stopColor="#f9ad1c" />
-      </linearGradient>
-    </defs>
+export const IconeFogueteVertical = ({ size = 120, className }: { size?: number; className?: string }) => {
+  const u = useId();
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 130" fill="none" className={className}>
+      <defs>
+        {/* Cilindro: luz à esquerda, meio claro, sombra fria à direita. */}
+        <linearGradient id={`fv-corpo-${u}`} x1="39" y1="0" x2="81" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#dae7f8" /><stop offset=".18" stopColor="#fff" />
+          <stop offset=".58" stopColor="#f4f8fe" /><stop offset=".85" stopColor="#cfdef4" />
+          <stop offset="1" stopColor="#b3c8e6" />
+        </linearGradient>
+        {/* Bico: mesma leitura cilíndrica, em azul. */}
+        <linearGradient id={`fv-bico-${u}`} x1="39" y1="0" x2="81" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2f6ae0" /><stop offset=".22" stopColor="#4f8bf5" />
+          <stop offset=".6" stopColor="#2a6ae8" /><stop offset="1" stopColor="#1546b4" />
+        </linearGradient>
+        {/* Abas: face externa e dobra interna mais escura. */}
+        <linearGradient id={`fv-aba-${u}`} x1="20" y1="60" x2="44" y2="98" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#5b93f6" /><stop offset="1" stopColor="#1d55c8" />
+        </linearGradient>
+        <linearGradient id={`fv-aba2-${u}`} x1="100" y1="60" x2="76" y2="98" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#3f7cee" /><stop offset="1" stopColor="#14409f" />
+        </linearGradient>
+        {/* Cúpula da escotilha: reflexo no alto, fundo escuro embaixo. */}
+        <radialGradient id={`fv-vidro-${u}`} cx=".36" cy=".3" r=".85">
+          <stop stopColor="#4a6b8f" /><stop offset=".45" stopColor="#173352" />
+          <stop offset="1" stopColor="#0a1a2e" />
+        </radialGradient>
+        <linearGradient id={`fv-aro-${u}`} x1="47" y1="42" x2="73" y2="68" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#5d9bff" /><stop offset=".5" stopColor="#1e62ef" /><stop offset="1" stopColor="#0f3fae" />
+        </linearGradient>
+        {/* Cinta: metal escuro com brilho no topo. */}
+        <linearGradient id={`fv-cinta-${u}`} x1="44" y1="0" x2="76" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2b3444" /><stop offset=".2" stopColor="#59637a" />
+          <stop offset=".65" stopColor="#333d4f" /><stop offset="1" stopColor="#1b2230" />
+        </linearGradient>
+        {/* Chama: núcleo quente por dentro, laranja nas bordas. */}
+        <radialGradient id={`fv-fogo-${u}`} cx=".5" cy=".24" r=".8">
+          <stop stopColor="#fff3b0" /><stop offset=".35" stopColor="#fdc023" />
+          <stop offset=".72" stopColor="#f97316" /><stop offset="1" stopColor="#ea5a09" />
+        </radialGradient>
+        <radialGradient id={`fv-fogo2-${u}`} cx=".5" cy=".2" r=".75">
+          <stop stopColor="#fffbeb" /><stop offset=".5" stopColor="#fde68a" />
+          <stop offset="1" stopColor="#fbbf24" />
+        </radialGradient>
+      </defs>
 
-    {/* Tudo gira junto: o foguete sobe apontando para a direita. */}
-    <g transform="rotate(42 60 60)">
-      {/* Chama em folha, saindo abaixo da cinta do propulsor. */}
-      <path d="M58 132c-10-10-15-19-15-27 0-8 4-14 11-18 0 6 1.5 9.5 4 11.5 2.5-8 1.5-14 0-20 11 7 17 16 17 25 0 10-6 19-17 28.5Z" fill="url(#fv-fogo)" />
-      <path d="M58.5 122c-6-6-9-12-9-17 0-5 2-9 6-12 0 4 .9 6.5 2.4 8 1.7-5 1-9.5 .3-13 6.5 4.5 10 10 10 16 0 6.5-3.5 12.5-9.7 18Z" fill="url(#fv-fogo2)" />
+      {/* Quase em pé: só uma leve inclinação, como na referência. */}
+      <g transform="rotate(8 60 66)">
+        {/* Chama, atrás de tudo. */}
+        <path d="M60 130c-10-11-15-21-15-30 0-7 3-13 9-17 .5 6 2 9.5 4.5 11.5 2.5-8 2-15 .5-21 11 8 16 17 16 26 0 10-5 20-15 30.5Z" fill={`url(#fv-fogo-${u})`} />
+        <path d="M60 120c-6-7-9-13-9-19 0-4 1.6-8 5-10.5 .3 4 1 6.5 2.5 8 1.6-5 1.2-9.5 .6-13 6.6 5 9.9 11 9.9 17 0 6-3 12-9 17.5Z" fill={`url(#fv-fogo2-${u})`} />
 
-      {/* Abas atrás do corpo — largas e curtas, como na ilustração. */}
-      <path d="M45 54c-13 6-21 16-24 31 3 2 6 2 9 1 10-4 16-12 19-20l-4-12Z" fill="url(#fv-aba)" />
-      <path d="M75 58c13 6 20 16 23 31-3 2-6 2-9 1-10-4-16-12-19-20l5-12Z" fill="url(#fv-aba2)" />
+        {/* Abas com dobra: a face de trás aparece mais escura na base. */}
+        <path d="M41 62c-11 7-17 18-19 34 5 2 9 1 13-2 6-5 9-12 10-20l-4-12Z" fill={`url(#fv-aba-${u})`} />
+        <path d="M41 62c-9 6-14.5 15.5-17 28 1.5-11 6.5-19.5 14-25.5l3-2.5Z" fill="#8fb6fb" opacity=".75" />
+        <path d="M41 62c-4 9-5 19-4 32 2 1 5 1 7-1 1-8 1-17 1-23l-4-8Z" fill="#1c4fbe" opacity=".55" />
+        <path d="M79 62c11 7 17 18 19 34-5 2-9 1-13-2-6-5-9-12-10-20l4-12Z" fill={`url(#fv-aba2-${u})`} />
+        <path d="M79 62c8 6 13 15 15.5 26-2-10-6.5-18-13-23.5l-2.5-2.5Z" fill="#6f9ef7" opacity=".5" />
+        <path d="M79 62c4 9 5 19 4 32-2 1-5 1-7-1-1-8-1-17-1-23l4-8Z" fill="#0d3792" opacity=".5" />
 
-      {/* Corpo em cápsula alongada. */}
-      <path d="M60 2c12 15 18 34 18 55v26c0 7-8 11-18 11s-18-4-18-11V57C42 36 48 17 60 2Z" fill="url(#fv-corpo)" />
-      {/* Bico azul: cone curto e largo. */}
-      <path d="M60 2c9 11 14 24 17 36H43c3-12 8-25 17-36Z" fill="url(#fv-bico)" />
+        {/* Corpo. */}
+        <path d="M56.5 6.5a5 5 0 0 1 7 0c12 14 17.5 31 17.5 48.5v25c0 8-9 13-21 13s-21-5-21-13V55c0-17.5 5.5-34.5 17.5-48.5Z" fill={`url(#fv-corpo-${u})`} />
+        {/* Aresta de luz, colada na borda esquerda. */}
+        <path d="M50 22c-4 9-6.5 20-6.5 33v25c0 3 1 5 3 6.5-.6-3-.8-6-.8-9V55c0-12 1.5-23 4.3-33Z" fill="#fff" opacity=".9" />
+        {/* Bico e a linha de junção com o corpo. */}
+        <path d="M56.5 6.5a5 5 0 0 1 7 0c9.5 11 15 23.5 17.5 34.5a70 70 0 0 0-42 0C41.5 30 47 17.5 56.5 6.5Z" fill={`url(#fv-bico-${u})`} />
+        <path d="M60 3.6c1.2 0 2.4.5 3.4 1.5a5 5 0 0 0-6.9 0c1-1 2.2-1.5 3.5-1.5Z" fill="#7fb0ff" opacity=".7" />
+        <path d="M39 41.5a70 70 0 0 1 42 0l.5 2.2a72 72 0 0 0-43 0l.5-2.2Z" fill="#0f3aa0" opacity=".28" />
 
-      {/* Escotilha: anel claro, vidro escuro e um ponto de luz. */}
-      <circle cx="60" cy="54" r="13.5" fill="#c2d9fb" />
-      <circle cx="60" cy="54" r="10.5" fill="#1d4ed8" />
-      <path d="M54.5 50c1.4-1.9 3.4-3 5.6-3.4.8-.1.9 1 0 1.2-1.9.4-3.6 1.4-4.7 2.9-.5.7-1.4 0-.9-.7Z" fill="#e0ecfe" />
+        {/* Escotilha: aro em anel, vidro em cúpula e dois reflexos. */}
+        <circle cx="60" cy="54" r="16.8" fill="#eef5ff" />
+        <circle cx="60" cy="54" r="15.4" fill={`url(#fv-aro-${u})`} />
+        {/* Brilho no alto do aro, que dá o arredondado do metal. */}
+        <path d="M60 39.4a15.4 15.4 0 0 1 13 7.1 15.4 15.4 0 0 0-26 0 15.4 15.4 0 0 1 13-7.1Z" fill="#9cc4ff" opacity=".85" />
+        <circle cx="60" cy="54" r="10.8" fill={`url(#fv-vidro-${u})`} />
+        <path d="M52.6 48.6c1.7-2.6 4.3-4.4 7.2-5 .9-.2 1.2 1.2.3 1.4-2.5.6-4.8 2.1-6.3 4.4-.6.9-1.8.1-1.2-.8Z" fill="#cfe2ff" opacity=".9" />
+        <ellipse cx="64.5" cy="61" rx="3.6" ry="2.2" fill="#8fb4e0" opacity=".28" transform="rotate(-28 64.5 61)" />
 
-      {/* Cinta do propulsor, atravessando a base. */}
-      <rect x="45" y="86" width="30" height="9" rx="4.5" fill="#2f6ae4" />
-    </g>
-  </svg>
-);
+        {/* Cinta do propulsor, com lábio inferior mais escuro. */}
+        <rect x="44" y="85" width="32" height="11" rx="4" fill={`url(#fv-cinta-${u})`} />
+        <rect x="44" y="93" width="32" height="3" rx="1.5" fill="#10161f" opacity=".55" />
+      </g>
+    </svg>
+  );
+};
+
+/**
+ * Céu do modal da ofensiva: arcos concêntricos, banco de nuvens e as
+ * faíscas de quatro pontas. Fica atrás do foguete, no topo da caixa.
+ */
+export const IconeCeuOfensiva = ({ className }: { className?: string }) => {
+  const u = useId();
+  return (
+    <svg viewBox="0 0 520 300" fill="none" className={className} preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id={`ceu-nuvem-${u}`} x1="260" y1="150" x2="260" y2="300" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fff" /><stop offset="1" stopColor="#eef4fd" />
+        </linearGradient>
+      </defs>
+
+      {/* Arcos concêntricos, do mais claro ao mais forte. */}
+      <g>
+        <circle cx="260" cy="300" r="250" fill="#eaf1fd" />
+        <circle cx="260" cy="300" r="200" fill="#dce9fc" />
+        <circle cx="260" cy="300" r="150" fill="#ccddfa" />
+      </g>
+
+      {/* Banco de nuvens: lóbulos sobrepostos, apoiados na base. */}
+      <g fill={`url(#ceu-nuvem-${u})`}>
+        <circle cx="128" cy="280" r="46" />
+        <circle cx="190" cy="266" r="54" />
+        <circle cx="262" cy="258" r="60" />
+        <circle cx="336" cy="268" r="52" />
+        <circle cx="398" cy="282" r="42" />
+        <rect x="74" y="276" width="372" height="34" rx="17" />
+      </g>
+
+      {/* Faíscas de quatro pontas espalhadas pelo céu. */}
+      <g>
+        <path d="M96 118c1.8 8 3.6 9.8 11.6 11.6-8 1.8-9.8 3.6-11.6 11.6-1.8-8-3.6-9.8-11.6-11.6 8-1.8 9.8-3.6 11.6-11.6Z" fill="#3b82f6" />
+        <path d="M430 146c1.5 6.8 3 8.3 9.8 9.8-6.8 1.5-8.3 3-9.8 9.8-1.5-6.8-3-8.3-9.8-9.8 6.8-1.5 8.3-3 9.8-9.8Z" fill="#3b82f6" />
+        <path d="M146 54c1.3 5.8 2.6 7.1 8.4 8.4-5.8 1.3-7.1 2.6-8.4 8.4-1.3-5.8-2.6-7.1-8.4-8.4 5.8-1.3 7.1-2.6 8.4-8.4Z" fill="#60a5fa" />
+        <path d="M380 52c1.6 7.2 3.2 8.8 10.4 10.4-7.2 1.6-8.8 3.2-10.4 10.4-1.6-7.2-3.2-8.8-10.4-10.4 7.2-1.6 8.8-3.2 10.4-10.4Z" fill="#4ade80" />
+      </g>
+    </svg>
+  );
+};
 
 /** Chama — dias de ofensiva no painel. */
 export const IconeChama = ({ size = 19, className }: P) => (

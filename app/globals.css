@@ -1759,129 +1759,111 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   pointer-events: none;
 }
 .festa-caixa {
-  position: relative; pointer-events: auto;
-  width: min(534px, 100%);
-  /* Espaço no topo para o foguete sair da caixa. */
-  margin-top: 126px; padding: 0 44px 40px;
-  background: linear-gradient(180deg, #f4f8ff 0%, #fff 34%);
-  border-radius: 30px; box-shadow: 0 30px 80px rgba(15, 23, 42, .3);
+  position: relative; pointer-events: auto; overflow: hidden;
+  width: min(496px, 100%);
+  /* O céu ocupa o topo da caixa; o foguete sobe além dela. */
+  padding: 0 40px 34px;
+  background: #f8fafe;
+  border-radius: 28px; box-shadow: 0 30px 80px rgba(15, 23, 42, .3);
   animation: festa-entrar .46s cubic-bezier(.34, 1.4, .64, 1);
 }
 @keyframes festa-entrar {
   from { opacity: 0; transform: translateY(26px) scale(.92); }
 }
 .festa-fechar {
-  position: absolute; top: 16px; right: 16px; z-index: 4;
-  color: var(--marca);
+  position: absolute; top: 18px; right: 18px; z-index: 5;
+  color: var(--tinta);
 }
 
-/* Palco do foguete: ele nasce acima da borda da caixa, sobre as nuvens. */
+/* Palco: o céu preenche a largura da caixa e o foguete fica no centro. */
 .festa-palco {
-  position: relative; height: 126px; margin-top: -126px;
+  position: relative; height: 212px;
+  /* Sangra até as bordas da caixa, anulando o padding lateral. */
+  margin: 0 -40px 0; 
   display: flex; align-items: flex-end; justify-content: center;
+}
+.festa-ceu {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block;
 }
 .festa-foguete {
   display: block; position: relative; z-index: 3;
-  /* Sobe um pouco além do topo da caixa, como na referência. */
-  margin-bottom: -6px;
-  /* A chama pesa à esquerda: desloca para o foguete ficar óptico no centro. */
-  margin-left: 26px;
-  transform-origin: 50% 70%;
+  /* Apoiado na nuvem, um pouco acima da base do palco. */
+  margin-bottom: 30px;
+  transform-origin: 50% 80%;
   animation:
     festa-subir .8s cubic-bezier(.22, 1.25, .36, 1) both,
     festa-flutuar 3.4s ease-in-out 1s infinite;
 }
 @keyframes festa-subir {
-  from { opacity: 0; transform: translate(-34px, 46px) scale(.6); }
-  to   { opacity: 1; transform: translate(0, 0) scale(1); }
+  from { opacity: 0; transform: translateY(54px) scale(.62); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes festa-flutuar {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(3px, -8px); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
 }
 
-/* Rastro claro que o foguete deixa no ar. */
-.festa-rastro {
-  position: absolute; z-index: 1;
-  left: 50%; bottom: 20px; width: 164px; height: 150px;
-  transform: translateX(-38%);
-  background: radial-gradient(closest-side, rgba(219, 234, 254, .95), rgba(219, 234, 254, 0) 70%);
-}
-/* Banco de nuvens branco na base do palco, por cima da borda da caixa. */
-.festa-nuvens {
-  /* Fica atrás do foguete e baixa o suficiente para não cobrir a chama. */
-  position: absolute; z-index: 1; left: 50%; bottom: -20px;
-  width: 268px; height: 52px; transform: translateX(-50%);
-  background:
-    radial-gradient(closest-side, #fff 76%, rgba(255, 255, 255, 0)) 10% 78% / 42% 72% no-repeat,
-    radial-gradient(closest-side, #fff 76%, rgba(255, 255, 255, 0)) 50% 58% / 38% 92% no-repeat,
-    radial-gradient(closest-side, #fff 76%, rgba(255, 255, 255, 0)) 90% 80% / 38% 66% no-repeat;
-}
-
-.festa-corpo { position: relative; z-index: 3; text-align: center; padding-top: 14px; }
+.festa-corpo { position: relative; z-index: 3; text-align: center; }
 .festa-titulo {
-  font-size: 37px; font-weight: 800; letter-spacing: -.04em;
-  line-height: 1.12; color: var(--tinta); margin-bottom: 14px;
+  font-size: 34px; font-weight: 800; letter-spacing: -.035em;
+  line-height: 1.16; color: #0b1020; margin-bottom: 10px;
   animation: festa-surgir .5s ease-out .18s both;
 }
-.festa-destaque { color: var(--marca); }
+.festa-destaque { color: #0f62fe; }
 .festa-sub {
-  font-size: 17px; color: var(--tinta-suave); line-height: 1.45;
+  font-size: 16px; color: #475582; line-height: 1.45;
   animation: festa-surgir .5s ease-out .26s both;
 }
-.festa-sub strong { color: var(--tinta); font-weight: 800; }
+.festa-sub strong { color: #0b1020; font-weight: 700; }
 @keyframes festa-surgir {
   from { opacity: 0; transform: translateY(9px); }
 }
 
-/* Trilha de dias: bolinhas e contagem na mesma linha. */
-.festa-trilha {
-  display: flex; align-items: center; justify-content: center; gap: 16px;
-  flex-wrap: wrap; margin: 30px 0 26px;
-  animation: festa-surgir .5s ease-out .32s both;
+/* Trilha de dias */
+.festa-trilha { margin: 26px 0 22px; animation: festa-surgir .5s ease-out .32s both; }
+.festa-bolinhas {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  min-width: 0;
 }
-.festa-bolinhas { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .festa-bolinha {
   /* height: auto + aspect-ratio mantém o círculo redondo quando encolhe. */
-  width: 30px; height: auto; flex: 0 1 30px; min-width: 0; aspect-ratio: 1;
-  border-radius: 50%; background: #fff; color: #fff;
-  /* Dia ainda não cumprido é só um contorno. */
-  box-shadow: inset 0 0 0 2px #d5e3f8;
+  width: 26px; height: auto; flex: 0 1 26px; min-width: 0; aspect-ratio: 1;
+  border-radius: 50%; background: #dde4f5; color: #fff;
   display: grid; place-items: center;
   animation: festa-bolinha-entra .4s cubic-bezier(.34, 1.5, .64, 1) both;
 }
-.festa-bolinha svg { width: 62%; height: 62%; stroke-width: 3; }
-.festa-bolinha.feita { background: var(--marca); box-shadow: none; }
-/* No primeiro dia a trilha é longa: bolinhas menores, sem check, e
-   espalhadas de ponta a ponta para casar com os rótulos "Dia 1/Dia N". */
-.festa-trilha.inicio { display: block; }
-.festa-bolinhas.miudas { justify-content: space-between; gap: 4px; }
-.festa-bolinhas.miudas .festa-bolinha { width: 19px; height: 19px; }
+.festa-bolinha svg { width: 60%; height: 60%; }
+.festa-bolinha.feita { background: #005dfe; }
+/* No primeiro dia a trilha cobre a meta toda: bolinhas menores, sem check. */
+.festa-bolinhas.miudas { justify-content: space-between; gap: 5px; }
+.festa-bolinhas.miudas .festa-bolinha { width: 21px; flex: 0 1 21px; }
 @keyframes festa-bolinha-entra {
   from { opacity: 0; transform: scale(.3); }
 }
 .festa-trilha-pontas {
-  display: flex; justify-content: space-between; margin-top: 10px;
-  font-size: 13px; font-weight: 700; color: var(--tinta-media);
+  display: flex; justify-content: space-between; margin-top: 11px;
+  font-size: 13.5px; font-weight: 700; color: #26365c;
 }
 .festa-contagem {
-  font-size: 19px; font-weight: 800; color: var(--tinta);
-  letter-spacing: -.02em; white-space: nowrap;
+  display: block; margin-top: 12px;
+  font-size: 17px; font-weight: 800; color: #0b1020; letter-spacing: -.02em;
 }
 
 .festa-dica {
-  display: flex; align-items: center; gap: 14px; text-align: left;
-  padding: 18px 20px; border-radius: 16px;
-  background: #f1f5fb; color: var(--marca);
-  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 15px; text-align: left;
+  padding: 18px 22px; border-radius: 16px;
+  background: #ddebfe; color: #0f62fe;
+  margin-bottom: 20px;
   animation: festa-surgir .5s ease-out .4s both;
 }
-.festa-dica p { font-size: 15.5px; font-weight: 500; color: var(--tinta-media); line-height: 1.5; }
+.festa-dica p { font-size: 15.5px; font-weight: 600; color: #16306e; line-height: 1.5; }
 .festa-dica svg { flex-shrink: 0; }
 
 .festa-botao {
   width: 100%; justify-content: center; gap: 10px;
   padding: 19px; font-size: 17px; font-weight: 700; border-radius: 15px;
+  background: #005dfe;
   animation: festa-surgir .5s ease-out .48s both;
 }
 
@@ -1903,26 +1885,24 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 }
 
 @media (max-width: 620px) {
-  .festa-caixa { margin-top: 92px; padding: 0 20px 24px; border-radius: 24px; }
-  .festa-palco { height: 92px; margin-top: -92px; }
-  .festa-foguete { margin-bottom: -4px; }
-  .festa-foguete svg { width: 124px; height: 124px; }
-  .festa-nuvens { width: 190px; height: 48px; }
-  /* Em tela estreita o título divide a linha com o botão de fechar. */
-  .festa-titulo { font-size: 25px; padding: 0 22px; }
-  .festa-sub { font-size: 15px; }
-  .festa-trilha { gap: 8px; margin: 22px 0 20px; }
-  .festa-bolinhas { gap: 4px; }
+  .festa-caixa { padding: 0 20px 24px; border-radius: 22px; }
+  .festa-palco { height: 162px; margin: 0 -20px 0; }
+  .festa-foguete { margin-bottom: 26px; }
+  .festa-foguete svg { width: 116px; height: 116px; }
+  .festa-titulo { font-size: 26px; }
+  .festa-sub { font-size: 14.5px; }
+  .festa-trilha { margin: 20px 0 18px; }
+  .festa-bolinhas { gap: 6px; }
   .festa-bolinha { width: 22px; flex: 0 1 22px; }
   .festa-contagem { font-size: 15px; }
-  .festa-dica { padding: 14px 16px; }
+  .festa-dica { padding: 14px 16px; gap: 12px; }
   .festa-dica p { font-size: 13.5px; }
   .festa-botao { padding: 15px; font-size: 15px; }
 }
 
 /* Movimento reduzido: mantém a informação, tira o balé. */
 @media (prefers-reduced-motion: reduce) {
-  .festa-caixa, .festa-foguete, .festa-rastro,
+  .festa-caixa, .festa-foguete,
   .festa-titulo, .festa-sub, .festa-trilha, .festa-bolinha,
   .festa-dica, .festa-botao { animation: none; }
   .festa-confete { display: none; }
