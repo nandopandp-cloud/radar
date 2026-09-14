@@ -190,6 +190,26 @@ prisma/schema.prisma        Usuario, Demanda, Alerta
 Vercel (região `gru1`) com Postgres no Neon (`sa-east-1`). Variáveis definidas no
 painel: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `SMTP_*`, `MAIL_FROM`.
 
+### Migrations são um passo manual
+
+O build da Vercel roda apenas `prisma generate && next build` — ele **não**
+aplica migrations. Subir código que depende de uma tabela nova sem aplicá-la
+antes quebra a aplicação no ar.
+
+Antes de fazer push de uma migration nova:
+
+```bash
+./scripts/aplicar-migration.sh            # mostra o que está pendente
+./scripts/aplicar-migration.sh --aplicar  # aplica
+```
+
+O script carrega `.env.production.local` por cima do `.env` — necessário porque
+o `.env` da raiz aponta para SQLite e o Prisma o carrega por padrão.
+
+Dá para automatizar incluindo `prisma migrate deploy` no `buildCommand` do
+`vercel.json`, mas confirme antes que `DIRECT_URL` existe nas variáveis do
+projeto na Vercel: sem ela o comando falha e derruba o build inteiro.
+
 ---
 
 ## Próximo passo: Teams e Google Chat

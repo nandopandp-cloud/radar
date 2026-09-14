@@ -4,6 +4,9 @@ import { carregarPerfil } from '@/lib/perfil';
 
 export const dynamic = 'force-dynamic';
 
+/** Tabela ausente no Postgres: a migration da gamificação não foi aplicada. */
+const TABELA_AUSENTE = 'P2021';
+
 /**
  * Perfil gamificado de quem está logado: XP, conquistas, missões e evolução.
  *
@@ -17,5 +20,19 @@ export async function GET() {
     return NextResponse.json({ erro: 'A gamificação é exclusiva dos analistas.' }, { status: 403 });
   }
 
-  return NextResponse.json(await carregarPerfil(sessao.sub));
+  try {
+    return NextResponse.json(await carregarPerfil(sessao.sub));
+  } catch (erro) {
+    /* O deploy da Vercel não aplica migrations (veja o README). Se as tabelas
+       da gamificação ainda não existem, devolve um erro que diz o que fazer em
+       vez do erro cru do Prisma. */
+    if (typeof erro === 'object' && erro !== null && 'code' in erro && erro.code === TABELA_AUSENTE) {
+      console.error('Gamificação sem migration aplicada. Rode scripts/aplicar-migration.sh --aplicar');
+      return NextResponse.json(
+        { erro: 'A gamificação ainda não foi liberada neste ambiente.' },
+        { status: 503 },
+      );
+    }
+    throw erro;
+  }
 }
