@@ -1907,3 +1907,302 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .festa-dica, .festa-botao { animation: none; }
   .festa-confete { display: none; }
 }
+
+/* ══ Meu perfil ═════════════════════════════════════════ */
+.pf-topo {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+}
+
+/* ── Cartão de identidade + nível ── */
+.pf-cabecalho {
+  display: grid; grid-template-columns: 1.05fr 1fr; gap: 0;
+  padding: 26px 30px; margin-bottom: 20px;
+}
+.pf-identidade { display: flex; gap: 22px; padding-right: 30px; }
+.pf-retrato { position: relative; flex-shrink: 0; width: 122px; height: 122px; }
+.pf-retrato .avatar-lg { width: 122px; height: 122px; font-size: 38px; }
+.pf-trocar-foto {
+  position: absolute; right: 0; bottom: 4px;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; color: var(--tinta-media);
+  border: 1px solid var(--borda); box-shadow: var(--sombra-sm);
+}
+.pf-trocar-foto:hover { color: var(--marca); border-color: var(--marca-borda); }
+.pf-trocar-foto:disabled { opacity: .5; cursor: default; }
+
+.pf-dados { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pf-nome { font-size: 25px; font-weight: 800; letter-spacing: -.03em; color: var(--tinta); }
+.pf-cargo { font-size: 14.5px; color: var(--tinta-suave); margin-bottom: 8px; }
+.pf-contato {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 14.5px; color: var(--tinta-media);
+}
+.pf-contato svg { color: var(--tinta-tenue); flex-shrink: 0; }
+.pf-lema {
+  margin-top: 10px; padding: 10px 14px; border-radius: 10px;
+  background: var(--fundo); border: 1px solid var(--borda);
+  font-size: 13.5px; font-style: italic; color: var(--tinta-suave);
+}
+.pf-editar { align-self: flex-start; margin-top: 12px; }
+
+.pf-nivel { padding-left: 30px; border-left: 1px solid var(--borda); }
+.pf-nivel-topo { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.pf-nivel-barra { flex: 1; min-width: 0; }
+.pf-nivel-rotulos { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pf-nivel-titulo { font-size: 18px; font-weight: 800; color: var(--tinta); letter-spacing: -.02em; }
+.pf-nivel-xp { font-size: 13.5px; font-weight: 600; color: var(--tinta-suave); }
+.pf-nivel-falta { margin-top: 6px; font-size: 12.5px; color: var(--tinta-suave); text-align: right; }
+.pf-nivel-barra .barra { margin-top: 8px; }
+
+/* Barra de progresso, reaproveitada em níveis, missões e conquistas. */
+.barra {
+  display: block; width: 100%; height: 9px; border-radius: 99px;
+  background: #e6ecf6; overflow: hidden;
+}
+.barra.fina { height: 7px; }
+.barra-preenchida {
+  display: block; height: 100%; border-radius: 99px;
+  background: #1460fd; transition: width .4s ease;
+}
+.barra-preenchida.verde { background: var(--concluida); }
+
+.pf-atalhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.pf-atalho {
+  display: flex; align-items: center; gap: 11px; text-align: left;
+  padding: 14px 13px; border-radius: 14px; min-width: 0;
+  background: #fff; border: 1px solid var(--borda); appearance: none;
+}
+.pf-atalho:hover { border-color: var(--marca-borda); box-shadow: var(--sombra-sm); }
+.pf-atalho > span:nth-child(2) { flex: 1; min-width: 0; }
+.pf-atalho strong { display: block; font-size: 21px; font-weight: 800; color: var(--tinta); }
+.pf-atalho small { font-size: 12.5px; color: var(--tinta-suave); white-space: nowrap; }
+.pf-atalho-seta { color: var(--tinta-tenue); flex-shrink: 0; }
+.pf-atalho-icone, .pf-bloco-icone {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 12px;
+}
+.pf-atalho-icone.laranja, .pf-bloco-icone.laranja { background: #fff1e8; color: #f97316; }
+.pf-atalho-icone.azul,    .pf-bloco-icone.azul    { background: var(--marca-clara); color: var(--marca); }
+.pf-atalho-icone.roxo,    .pf-bloco-icone.roxo    { background: #f3ecfe; color: #7c3aed; }
+.pf-bloco-icone.ambar   { background: #fef4e2; color: #d97706; }
+.pf-bloco-icone.vermelho { background: var(--atrasada-fundo); color: var(--atrasada); }
+
+/* ── Abas ── */
+.pf-abas {
+  display: flex; gap: 4px; margin-bottom: 18px;
+  border-bottom: 1px solid var(--borda); padding-bottom: 0;
+}
+.pf-aba {
+  /* Sem isso o user-agent desenha borda e fundo cinza no <button>. */
+  border: 0; background: none; appearance: none;
+  padding: 11px 18px; border-radius: 9px 9px 0 0;
+  font-size: 14.5px; font-weight: 600; color: var(--tinta-suave);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.pf-aba:hover { color: var(--tinta-media); }
+.pf-aba.ativa {
+  background: #eff5fe; color: var(--marca);
+  border-bottom-color: var(--marca); font-weight: 700;
+}
+
+/* ── Blocos das abas ── */
+.pf-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.pf-bloco { padding: 22px 24px; }
+.pf-bloco-topo { display: flex; align-items: center; gap: 13px; margin-bottom: 18px; }
+.pf-bloco-topo > div:not([class]) { flex: 1; min-width: 0; }
+.pf-texto { font-size: 14px; color: var(--tinta-suave); line-height: 1.5; margin-bottom: 18px; }
+.pf-vertodas {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+  border: 0; background: none; appearance: none;
+  font-size: 13.5px; font-weight: 700; color: var(--marca); flex-shrink: 0;
+}
+
+/* Mapa de calor da evolução */
+.pf-mapa { display: flex; gap: 4px; justify-content: space-between; }
+.pf-mapa-semana { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.pf-mapa-dia {
+  aspect-ratio: 1; border-radius: 3px; background: #eef3fa;
+}
+.pf-mapa-dia.ativo { background: #7eaefc; }
+.pf-mapa-meses {
+  display: flex; justify-content: space-between; margin-top: 10px;
+  font-size: 12px; color: var(--tinta-suave);
+}
+.pf-numeros {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--borda);
+}
+.pf-numeros strong { display: block; font-size: 21px; font-weight: 800; color: var(--tinta); }
+.pf-numeros small { font-size: 12.5px; color: var(--tinta-suave); }
+
+/* Trilha da ofensiva */
+.pf-trilha { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.pf-trilha-bolas { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+.pf-bola {
+  width: 28px; height: auto; flex: 0 1 28px; aspect-ratio: 1;
+  border-radius: 50%; background: #fff; color: #fff;
+  box-shadow: inset 0 0 0 2px #d9e4f5;
+  display: grid; place-items: center;
+}
+.pf-bola.feita { background: #1460fd; box-shadow: none; }
+.pf-trilha-valor { font-size: 15px; font-weight: 800; color: var(--tinta); white-space: nowrap; }
+.pf-aviso {
+  display: flex; align-items: center; gap: 12px;
+  padding: 15px 18px; border-radius: 12px;
+  background: #eef4fe; color: var(--marca);
+}
+.pf-aviso span { font-size: 13.5px; color: var(--tinta-media); }
+.pf-aviso strong { color: var(--tinta); }
+
+/* Emblemas na visão geral */
+.pf-emblemas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.pf-emblema { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.pf-emblema-nome { font-size: 12.5px; font-weight: 700; color: var(--tinta); line-height: 1.3; }
+.pf-emblema-data { font-size: 11.5px; color: var(--tinta-suave); }
+.pf-emblema-cadeado { color: var(--tinta-tenue); }
+
+.emblema { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; }
+.emblema svg { display: block; }
+.emblema-miolo {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; pointer-events: none;
+}
+
+/* Missões resumidas na visão geral */
+.pf-missoes-mini { display: flex; flex-direction: column; gap: 16px; }
+.pf-missao-mini { display: flex; align-items: center; gap: 12px; }
+.pf-missao-estado {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #eef3fa; color: var(--tinta-tenue);
+}
+.pf-missao-estado.ok { background: var(--concluida); color: #fff; }
+.pf-missao-corpo { flex: 1; min-width: 0; }
+.pf-missao-titulo { display: block; font-size: 13.5px; font-weight: 600; color: var(--tinta); margin-bottom: 7px; }
+.pf-missao-contagem { font-size: 12.5px; font-weight: 700; color: var(--tinta-suave); white-space: nowrap; }
+.pf-missao-xp {
+  padding: 6px 11px; border-radius: 9px; white-space: nowrap;
+  background: #fef1ed; color: #ea580c; font-size: 12.5px; font-weight: 800;
+}
+
+/* ── Aba Conquistas ── */
+.pf-filtros { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.pf-filtro {
+  padding: 8px 14px; border-radius: 10px; appearance: none;
+  font-size: 13px; font-weight: 600; color: var(--tinta-media);
+  background: #fff; border: 1px solid var(--borda);
+}
+.pf-filtro:hover { border-color: var(--marca-borda); }
+.pf-filtro.ativo {
+  background: #eff5fe; color: var(--marca);
+  border-color: var(--marca-borda); font-weight: 700;
+}
+
+.pf-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.pf-card {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  text-align: center; padding: 22px 16px;
+  border: 1px solid var(--borda); border-radius: 16px; background: #fff;
+}
+.pf-card-titulo { font-size: 14.5px; font-weight: 700; color: var(--tinta); }
+.pf-card-desc { font-size: 12.5px; color: var(--tinta-suave); line-height: 1.45; flex: 1; }
+.pf-card-data { font-size: 12.5px; color: var(--tinta-suave); }
+.pf-card-barra { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--tinta-tenue); }
+.pf-card-valor { font-size: 12px; font-weight: 700; color: var(--tinta-suave); white-space: nowrap; }
+
+.selo.verde { background: var(--concluida-fundo); color: #15803d; border-color: #bbf7d0; }
+.selo.azul  { background: var(--marca-clara); color: var(--marca); border-color: var(--marca-borda); }
+.selo.cinza { background: #f1f5f9; color: var(--tinta-suave); border-color: var(--borda); }
+
+/* ── Aba Missões ── */
+.pf-missoes { display: flex; flex-direction: column; gap: 14px; }
+.pf-missao {
+  display: flex; align-items: center; gap: 18px;
+  padding: 20px 22px; border: 1px solid var(--borda); border-radius: 16px; background: #fff;
+}
+.pf-missao-icone {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 52px; height: 52px; border-radius: 14px;
+}
+.pf-missao-icone.azul    { background: var(--marca-clara); color: var(--marca); }
+.pf-missao-icone.laranja { background: #fff1e8; color: #f97316; }
+.pf-missao-icone.roxo    { background: #f3ecfe; color: #7c3aed; }
+.pf-missao-info { flex: 1; min-width: 0; }
+.pf-missao-nome { font-size: 16px; font-weight: 700; color: var(--tinta); }
+.pf-missao-desc { font-size: 13.5px; color: var(--tinta-suave); margin: 3px 0 10px; }
+.pf-missao-etiquetas { display: flex; gap: 8px; flex-wrap: wrap; }
+.etiqueta {
+  padding: 5px 11px; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+}
+.etiqueta.azul    { background: var(--marca-clara); color: var(--marca); }
+.etiqueta.laranja { background: #fff1e8; color: #ea580c; }
+.etiqueta.roxo    { background: #f3ecfe; color: #7c3aed; }
+.etiqueta.xp      { background: #fef1ed; color: #ea580c; }
+.pf-missao-progresso { width: 300px; flex-shrink: 0; }
+.pf-missao-valor { display: block; font-size: 14px; font-weight: 700; color: var(--tinta); margin-bottom: 7px; }
+.pf-missao-falta { display: block; margin-top: 7px; font-size: 12.5px; color: var(--tinta-suave); }
+
+.pf-rodape-missoes {
+  display: flex; align-items: center; gap: 15px; margin-top: 18px;
+  padding: 18px 22px; border-radius: 14px;
+  background: #eef4fe; color: var(--marca);
+}
+.pf-rodape-missoes strong { display: block; font-size: 14.5px; color: var(--tinta); }
+.pf-rodape-missoes p { font-size: 13px; color: var(--tinta-suave); margin-top: 3px; }
+
+/* ── Aba Segurança ── */
+.pf-seguranca { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.pf-caixa {
+  padding: 22px 24px; border: 1px solid var(--borda);
+  border-radius: 16px; background: #fff;
+}
+.pf-caixa-topo { display: flex; align-items: center; gap: 13px; margin-bottom: 18px; }
+.pf-caixa-topo > div:not([class]) { flex: 1; min-width: 0; }
+.pf-caixa-topo .selo { margin-left: auto; flex-shrink: 0; }
+.pf-caixa.perigo { border-color: var(--atrasada-borda); }
+/* Seção desenhada mas ainda sem backend: some o miolo, mantém o contexto. */
+.pf-caixa.indisponivel { background: var(--fundo); }
+.pf-indisponivel-texto { font-size: 13.5px; color: var(--tinta-suave); line-height: 1.55; }
+.pf-dispositivos-fantasma {
+  display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+}
+.pf-dispositivos-fantasma span {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 10px;
+  background: #fff; border: 1px dashed var(--borda-forte);
+  font-size: 13px; color: var(--tinta-tenue);
+}
+
+/* ── Edição de dados ── */
+.pf-editar-dados { padding: 22px 24px; margin-bottom: 20px; }
+.pf-editar-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pf-editar-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.campo-erro { margin-top: 6px; font-size: 12.5px; color: var(--atrasada); }
+.pf-vazio { padding: 30px; text-align: center; color: var(--tinta-suave); font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .pf-cabecalho { grid-template-columns: 1fr; }
+  .pf-identidade { padding-right: 0; padding-bottom: 22px; }
+  .pf-nivel { padding-left: 0; padding-top: 22px; border-left: 0; border-top: 1px solid var(--borda); }
+  .pf-grade, .pf-seguranca { grid-template-columns: 1fr; }
+  .pf-cards { grid-template-columns: repeat(2, 1fr); }
+  .pf-missao-progresso { width: 200px; }
+}
+
+@media (max-width: 620px) {
+  .pf-cabecalho { padding: 20px; }
+  .pf-identidade { flex-direction: column; gap: 16px; }
+  .pf-atalhos { grid-template-columns: 1fr; }
+  .pf-abas { overflow-x: auto; }
+  .pf-aba { white-space: nowrap; }
+  .pf-cards { grid-template-columns: 1fr; }
+  .pf-emblemas { grid-template-columns: repeat(3, 1fr); }
+  .pf-numeros { grid-template-columns: repeat(2, 1fr); }
+  /* A missão empilha: barra e selo passam para baixo do texto. */
+  .pf-missao { flex-wrap: wrap; gap: 14px; }
+  .pf-missao-progresso { width: 100%; }
+  .pf-editar-campos { grid-template-columns: 1fr; }
+}

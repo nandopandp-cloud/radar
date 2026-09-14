@@ -31,6 +31,9 @@ model Usuario {
   comentarios Comentario[]
   recorrencias Recorrencia[]
   diasAtivos DiaAtivo[]
+  progresso  Progresso?
+  conquistas Conquista[]
+  missoes    Missao[]
 
   @@index([ativo])
 }
@@ -227,4 +230,62 @@ model Alerta {
 
   @@index([dataReferencia])
   @@unique([usuarioId, dataReferencia])
+}
+
+/// Progresso de gamificação de uma pessoa: XP acumulado e o nível que ele
+/// concede. Uma linha por usuário, criada na primeira ação que dá XP.
+///
+/// O nível não é guardado como fonte da verdade — ele é derivado do XP em
+/// `lib/gamificacao.ts`. Guardamos o XP porque é um acumulado histórico:
+/// recalcular a partir das demandas perderia o XP de missões já resgatadas.
+model Progresso {
+  id        String   @id @default(cuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// XP total acumulado desde sempre. Nunca diminui.
+  xp        Int      @default(0)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+/// Uma conquista desbloqueada. A linha só existe depois de conquistada —
+/// as bloqueadas e em progresso são calculadas na hora, comparando o
+/// catálogo de `lib/gamificacao.ts` com os números reais da pessoa.
+model Conquista {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// Chave do catálogo: 'primeiros-passos', '5-dias', etc.
+  chave     String
+  /// Quando a pessoa bateu o requisito.
+  emQue     DateTime @default(now())
+
+  @@unique([usuarioId, chave])
+  @@index([usuarioId])
+}
+
+/// O progresso de uma pessoa numa missão. A definição (título, meta, XP)
+/// vive no catálogo em código; aqui fica só o que muda por pessoa.
+model Missao {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// Chave do catálogo: 'concluir-5-semana', 'ofensiva-15', etc.
+  chave     String
+  /// Quanto já foi feito. A meta vem do catálogo.
+  progresso Int      @default(0)
+  /// Preenchido quando a missão é concluída; nulo enquanto está ativa.
+  concluidaEm DateTime?
+  /// Evita pagar o XP duas vezes se o progresso for recalculado.
+  xpCreditado Boolean @default(false)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([usuarioId, chave])
+  @@index([usuarioId])
 }

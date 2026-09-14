@@ -296,10 +296,157 @@ export const IconeCeuOfensiva = ({ className }: { className?: string }) => {
   );
 };
 
+/**
+ * Emblema hexagonal das conquistas. O hexágono é o mesmo em todos; o que
+ * muda é o tom e o ícone no miolo, passado como filho.
+ *
+ * Bloqueada vira cinza: o mesmo desenho, sem cor, comunica "ainda não" sem
+ * precisar de um segundo ícone.
+ */
+export const Emblema = ({
+  tom = 'azul',
+  apagado = false,
+  size = 62,
+  children,
+}: {
+  tom?: 'laranja' | 'ambar' | 'azul' | 'roxo' | 'verde';
+  apagado?: boolean;
+  size?: number;
+  children?: React.ReactNode;
+}) => {
+  const u = useId();
+  const tons: Record<string, [string, string]> = {
+    laranja: ['#fb923c', '#ea580c'],
+    ambar: ['#fbbf24', '#d97706'],
+    azul: ['#60a5fa', '#2563eb'],
+    roxo: ['#a78bfa', '#7c3aed'],
+    verde: ['#4ade80', '#16a34a'],
+  };
+  const [claro, escuro] = apagado ? ['#cbd5e1', '#94a3b8'] : tons[tom] ?? tons.azul;
+
+  return (
+    <span className="emblema" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+        <defs>
+          <linearGradient id={`em-${u}`} x1="14" y1="6" x2="50" y2="58" gradientUnits="userSpaceOnUse">
+            <stop stopColor={claro} /><stop offset="1" stopColor={escuro} />
+          </linearGradient>
+        </defs>
+        {/* Hexágono de pontas arredondadas. */}
+        <path
+          d="M28.2 3.6a7.6 7.6 0 0 1 7.6 0l18 10.4a7.6 7.6 0 0 1 3.8 6.6v20.8a7.6 7.6 0 0 1-3.8 6.6l-18 10.4a7.6 7.6 0 0 1-7.6 0l-18-10.4a7.6 7.6 0 0 1-3.8-6.6V20.6a7.6 7.6 0 0 1 3.8-6.6Z"
+          fill={`url(#em-${u})`}
+        />
+        {/* Brilho no topo, que dá o volume do emblema. */}
+        <path
+          d="M28.2 3.6a7.6 7.6 0 0 1 7.6 0l18 10.4a7.6 7.6 0 0 1 3.5 4.6c-1-1-14-8.6-21.5-8.6s-20.5 7.6-21.5 8.6a7.6 7.6 0 0 1 3.5-4.6Z"
+          fill="#fff" opacity=".28"
+        />
+      </svg>
+      <span className="emblema-miolo">{children}</span>
+    </span>
+  );
+};
+
+/** Coroa — a conquista mais alta da trilha. */
+export const IconeCoroa = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M3 8.5 6.5 12 12 5l5.5 7L21 8.5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5Z" />
+  </svg>
+);
+
+/** Gota — marco intermediário da ofensiva. */
+export const IconeGota = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 3s6 6.4 6 10.4A6 6 0 0 1 6 13.4C6 9.4 12 3 12 3Z" />
+  </svg>
+);
+
+/** Estrela cheia — usada dentro dos emblemas. */
+export const IconeEstrela = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="m12 3.5 2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8Z" />
+  </svg>
+);
+
+/** Escudo — segurança da conta. */
+export const IconeEscudo = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2.5l7.5 3v6c0 4.6-3.1 8.6-7.5 10-4.4-1.4-7.5-5.4-7.5-10v-6Z" />
+  </svg>
+);
+
+/** Cadeado — conquista ainda bloqueada. */
+export const IconeCadeado = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.2" />
+    <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
+  </svg>
+);
+
+/** Chave — trocar a senha. */
+export const IconeChave = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="8" cy="8" r="4.2" />
+    <path d="M11 11l8.5 8.5M16 16l2.2-2.2M18.5 18.5l2-2" />
+  </svg>
+);
+
+/** Monitor — dispositivo de mesa na lista de sessões. */
+export const IconeMonitor = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="2.5" y="4" width="19" height="12.5" rx="2" />
+    <path d="M9 20.5h6M12 16.5v4" />
+  </svg>
+);
+
+/** Celular — dispositivo móvel na lista de sessões. */
+export const IconeCelular = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="6.5" y="2.5" width="11" height="19" rx="2.4" />
+    <path d="M11 18.5h2" />
+  </svg>
+);
+
+/** Câmera — trocar a foto do perfil. */
+export const IconeCamera = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3.5 8.5h3l1.4-2.2h8.2L17.5 8.5h3v11h-17Z" />
+    <circle cx="12" cy="13.5" r="3.4" />
+  </svg>
+);
+
+/** Prédio — a empresa, nos dados do perfil. */
+export const IconePredio = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="4.5" y="3.5" width="15" height="17" rx="1.6" />
+    <path d="M8.5 8h2M13.5 8h2M8.5 12h2M13.5 12h2M10.5 20.5v-4h3v4" />
+  </svg>
+);
+
+/** Envelope — o e-mail, nos dados do perfil. */
+export const IconeEnvelope = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="2.5" y="5" width="19" height="14" rx="2.2" />
+    <path d="m3.5 6.5 8.5 6 8.5-6" />
+  </svg>
+);
+
+/** Quatro quadrados — missão de explorar o produto. */
+export const IconeGrade = ({ size = 19, className }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2" />
+    <rect x="13" y="3.5" width="7.5" height="7.5" rx="2" />
+    <rect x="3.5" y="13" width="7.5" height="7.5" rx="2" />
+    <rect x="13" y="13" width="7.5" height="7.5" rx="2" />
+  </svg>
+);
+
 /** Chama — dias de ofensiva no painel. */
 export const IconeChama = ({ size = 19, className }: P) => (
-  <svg {...base(size)} className={className}>
-    <path d="M12 3s5 4.2 5 9a5 5 0 0 1-10 0c0-1.6.7-3 1.5-4 .2 1.3 1 2.2 2 2.2 1.4 0 1.8-1.6 1.5-3.2-.2-1.4-.6-2.7-1-4Z" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2.5c.3 3 1.7 4.6 3.2 6.2C16.8 10.4 18 12 18 14.3a6 6 0 0 1-12 0c0-1.9.8-3.3 1.8-4.5.3 1.6 1.1 2.6 2.1 2.9-.6-3.6.4-7.5 2.1-10.2Z" />
+    <path d="M12 21a3.2 3.2 0 0 1-3.2-3.2c0-1.3.8-2.3 1.7-3.2.3 1 .9 1.6 1.6 1.8-.3-2 .5-3.6 1.4-4.6.2 1.6 1 2.5 1.6 3.3.6.8 1.1 1.6 1.1 2.7A3.2 3.2 0 0 1 12 21Z" fill="#fff" opacity=".32" />
   </svg>
 );
 
@@ -398,8 +545,9 @@ export const IconeEtiqueta = ({ size = 19, className }: P) => (
 );
 
 export const IconeBandeira = ({ size = 19, className }: P) => (
-  <svg {...base(size)} className={className}>
-    <path d="M4 21V4M4 4h10l-1.5 3.5L14 11H4" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M5 21.5V3" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M6.6 3.4h10.2a.8.8 0 0 1 .7 1.2l-1.7 3.3 1.7 3.3a.8.8 0 0 1-.7 1.2H6.6Z" fill="currentColor" />
   </svg>
 );
 
