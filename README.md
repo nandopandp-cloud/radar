@@ -203,8 +203,14 @@ Antes de fazer push de uma migration nova:
 ./scripts/aplicar-migration.sh --aplicar  # aplica
 ```
 
-O script carrega `.env.production.local` por cima do `.env` — necessário porque
-o `.env` da raiz aponta para SQLite e o Prisma o carrega por padrão.
+O script troca o `.env` da raiz durante a execução e o restaura ao final
+(inclusive em erro ou Ctrl+C). É necessário porque o Prisma sempre carrega esse
+arquivo e ele vence sobre variáveis exportadas no shell — e ali o banco é o
+SQLite de desenvolvimento.
+
+Atenção: `DIRECT_URL` no `.env.production.local` contém um placeholder inválido.
+O script o ignora e usa `DATABASE_URL_UNPOOLED`, que é a conexão sem pooler que
+o `migrate deploy` precisa para rodar DDL.
 
 Dá para automatizar incluindo `prisma migrate deploy` no `buildCommand` do
 `vercel.json`, mas confirme antes que `DIRECT_URL` existe nas variáveis do
