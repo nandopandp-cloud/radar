@@ -5,12 +5,13 @@ import {
   Emblema, IconeAlvo, IconeBandeira, IconeBarrinhas, IconeCadeado, IconeCalendario,
   IconeCamera, IconeCelular, IconeChama, IconeChave, IconeCheck, IconeCheckCirculo,
   IconeCoroa, IconeDireita, IconeEnvelope, IconeEquipe, IconeEscudo, IconeEstrela,
-  IconeFoguete, IconeGota, IconeGrade, IconeInfo, IconeLapis, IconeLixeira,
+  IconeFoguete, IconeGota, IconeGrade, IconeInfo, IconeLapis,
   IconeMonitor, IconePredio, IconeRelogio, IconeTrofeu,
 } from '@/components/icones';
 import { CampoSenha } from '@/components/CampoSenha';
 import { Avatar } from '@/components/Avatar';
-import { prepararAvatar } from '@/lib/imagem';
+import { lerParaEditor } from '@/lib/imagem';
+import { EditorFoto } from '@/components/EditorFoto';
 import type { Notificar, SessaoUI } from '@/lib/tipos';
 import type { PerfilGamificado } from '@/lib/perfil';
 import type { ConquistaApurada, MissaoApurada } from '@/lib/gamificacao';
@@ -54,6 +55,18 @@ function dataCurta(iso: string): string {
   return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
+/** Texto do estado vazio, que muda conforme o motivo de não haver nada. */
+function textoVazio(
+  estado: 'carregando' | 'pronto' | 'indisponivel',
+  oQue: 'conquista' | 'missão',
+): string {
+  if (estado === 'carregando') return 'Carregando…';
+  if (estado === 'indisponivel') {
+    return `Não foi possível carregar suas ${oQue}s agora. Tente recarregar a página.`;
+  }
+  return `Nenhuma ${oQue} neste filtro.`;
+}
+
 export function TelaPerfil({
   sessao,
   aoAtualizar,
@@ -69,6 +82,9 @@ export function TelaPerfil({
 
   const [aba, setAba] = useState<AbaId>(jogando ? 'geral' : 'seguranca');
   const [perfil, setPerfil] = useState<PerfilGamificado | null>(null);
+  /* 'carregando' → 'pronto' | 'indisponivel'. Sem isso a tela fica presa em
+     "Carregando…" quando a API falha, e a lista vazia não se explica. */
+  const [estado, setEstado] = useState<'carregando' | 'pronto' | 'indisponivel'>('carregando');
 
   const [nome, setNome] = useState(sessao.nome);
   const [salvandoNome, setSalvandoNome] = useState(false);
@@ -76,6 +92,8 @@ export function TelaPerfil({
 
   const [avatar, setAvatar] = useState<string | null>(sessao.avatar ?? null);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  /* Foto escolhida aguardando enquadramento no editor. */
+  const [fotoParaEditar, setFotoParaEditar] = useState<string | null>(null);
   const inputFoto = useRef<HTMLInputElement>(null);
 
   const [senhas, setSenhas] = useState({ atual: '', nova: '', confirma: '' });
@@ -90,8 +108,12 @@ export function TelaPerfil({
     let vivo = true;
     fetch('/api/perfil')
       .then((r) => (r.ok ? r.json() : null))
-      .then((dados) => { if (vivo && dados) setPerfil(dados); })
-      .catch(() => { /* o perfil é enfeite: falhar aqui não quebra a tela */ });
+      .then((dados) => {
+        if (!vivo) return;
+        if (dados) { setPerfil(dados); setEstado('pronto'); }
+        else setEstado('indisponivel');
+      })
+      .catch(() => { if (vivo) setEstado('indisponivel'); });
     return () => { vivo = false; };
   }, [jogando]);
 
@@ -123,9 +145,11 @@ export function TelaPerfil({
 
     setEnviandoFoto(true);
     try {
-      const pronto = await prepararAvatar(arquivo);
+      const { dataUri, editavel } = await lerParaEditor(arquivo);
       setEnviandoFoto(false);
-      await gravarAvatar(pronto, 'Foto atualizada.');
+      // GIF vai direto: passar pelo canvas do editor mataria a animação.
+      if (editavel) setFotoParaEditar(dataUri);
+      else await gravarAvatar(dataUri, 'Foto atualizada.');
     } catch (erro) {
       setEnviandoFoto(false);
       notificar(erro instanceof Error ? erro.message : 'Erro ao processar a imagem.', 'erro');
@@ -247,7 +271,6 @@ export function TelaPerfil({
             <p className="pf-contato"><IconeEnvelope size={17} /> {sessao.email}</p>
             {/* A sessão não carrega a equipe; a empresa do produto é sempre a MSA. */}
             <p className="pf-contato"><IconePredio size={17} /> MSA</p>
-            <p className="pf-lema">“Organização hoje, grandes resultados amanhã.”</p>
 
             <button
               type="button"
@@ -273,14 +296,16 @@ export function TelaPerfil({
                 <span className="barra-preenchida" style={{ width: `${nivel?.progresso ?? 0}%` }} />
               </span>
               <p className="pf-nivel-falta">
-                {nivel ? `Mais ${nivel.falta} XP para o nível ${nivel.nivel + 1}` : 'Carregando…'}
+                {nivel
+                  ? `Mais ${nivel.falta} XP para o nível ${nivel.nivel + 1}`
+                  : estado === 'indisponivel' ? 'Progresso indisponível agora' : 'Carregando…'}
               </p>
             </div>
           </div>
 
           <div className="pf-atalhos">
             <button type="button" className="pf-atalho" onClick={() => setAba('geral')}>
-              <span className="pf-atalho-icone laranja"><IconeChama size={22} /></span>
+              <span className="pf-atalho-icone laranja"><IconeFoguete size={24} /></span>
               <span>
                 <strong>{perfil?.ofensiva.atual ?? 0}</strong>
                 <small>dias de ofensiva</small>
@@ -444,7 +469,7 @@ export function TelaPerfil({
 
           <div className="cartao pf-bloco">
             <div className="pf-bloco-topo">
-              <span className="pf-bloco-icone laranja"><IconeChama size={22} /></span>
+              <span className="pf-bloco-icone laranja"><IconeFoguete size={24} /></span>
               <div>
                 <div className="cartao-titulo">Ofensiva Radar</div>
                 <div className="cartao-desc">{perfil?.ofensiva.atual ?? 0} dias de consistência</div>
@@ -604,7 +629,7 @@ export function TelaPerfil({
               </div>
             ))}
             {conquistasVisiveis.length === 0 && (
-              <p className="pf-vazio">Nenhuma conquista neste filtro.</p>
+              <p className="pf-vazio">{textoVazio(estado, 'conquista')}</p>
             )}
           </div>
         </div>
@@ -668,7 +693,7 @@ export function TelaPerfil({
               </div>
             ))}
             {missoesVisiveis.length === 0 && (
-              <p className="pf-vazio">Nenhuma missão neste filtro.</p>
+              <p className="pf-vazio">{textoVazio(estado, 'missão')}</p>
             )}
           </div>
 
@@ -680,6 +705,17 @@ export function TelaPerfil({
             </div>
           </div>
         </div>
+      )}
+
+      {fotoParaEditar && (
+        <EditorFoto
+          arquivo={fotoParaEditar}
+          aoCancelar={() => setFotoParaEditar(null)}
+          aoConfirmar={async (recortada) => {
+            setFotoParaEditar(null);
+            await gravarAvatar(recortada, 'Foto atualizada.');
+          }}
+        />
       )}
 
       {/* ── Segurança ────────────────────────────────────── */}
@@ -783,19 +819,6 @@ export function TelaPerfil({
                 </p>
               </div>
 
-              <div className="pf-caixa perigo">
-                <div className="pf-caixa-topo">
-                  <span className="pf-bloco-icone vermelho"><IconeLixeira size={20} /></span>
-                  <div>
-                    <div className="cartao-titulo">Excluir minha conta</div>
-                    <div className="cartao-desc">Atenção: esta ação é irreversível.</div>
-                  </div>
-                </div>
-                <p className="pf-indisponivel-texto">
-                  A exclusão apaga suas demandas, anexos e comentários. Para excluir sua
-                  conta, fale com um administrador.
-                </p>
-              </div>
             </div>
           </div>
         </div>

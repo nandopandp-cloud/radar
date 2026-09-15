@@ -13,6 +13,40 @@ function lerComoDataURI(arquivo: File): Promise<string> {
 }
 
 /**
+ * Lê o arquivo escolhido para o editor de enquadramento, sem recortar nada.
+ *
+ * O recorte automático pelo centro corta mal a maioria das fotos, então o
+ * enquadramento passou a ser escolhido à mão em `EditorFoto`. Aqui só
+ * validamos tipo e tamanho.
+ *
+ * GIFs não passam pelo editor: redesenhá-los no canvas manteria só o
+ * primeiro quadro. Por isso o retorno diz se a imagem é editável.
+ */
+export async function lerParaEditor(
+  arquivo: File,
+): Promise<{ dataUri: string; editavel: boolean }> {
+  const tipo = arquivo.type.toLowerCase();
+
+  if (!(TIPOS_AVATAR as readonly string[]).includes(tipo)) {
+    throw new Error('Use uma imagem JPG, PNG ou GIF.');
+  }
+  if (arquivo.size > ARQUIVO_MAXIMO) {
+    throw new Error('Arquivo muito grande. Escolha uma imagem de até 8 MB.');
+  }
+
+  const dataUri = await lerComoDataURI(arquivo);
+
+  if (tipo === 'image/gif') {
+    if (dataUri.length > TAMANHO_MAXIMO) {
+      throw new Error('Este GIF é muito pesado. Escolha um menor.');
+    }
+    return { dataUri, editavel: false };
+  }
+
+  return { dataUri, editavel: true };
+}
+
+/**
  * Prepara a foto de perfil no navegador: valida o tipo, reduz para um
  * quadrado de LADO_MAXIMO e devolve um data URI pronto para o banco.
  *
