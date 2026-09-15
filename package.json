@@ -13,7 +13,8 @@
     "db:seed": "node --experimental-strip-types scripts/seed.ts",
     "db:studio": "prisma studio",
     "scheduler": "node --experimental-strip-types scripts/scheduler.ts",
-    "db:seed-admin": "node --experimental-strip-types scripts/seed-admin.ts"
+    "db:seed-admin": "node --experimental-strip-types scripts/seed-admin.ts",
+    "db:popular-gamificacao": "node --experimental-strip-types scripts/popular-gamificacao.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

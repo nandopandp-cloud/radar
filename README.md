@@ -190,6 +190,24 @@ prisma/schema.prisma        Usuario, Demanda, Alerta
 Vercel (região `gru1`) com Postgres no Neon (`sa-east-1`). Variáveis definidas no
 painel: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `SMTP_*`, `MAIL_FROM`.
 
+### Ver o perfil com dados populados
+
+Para conferir a tela de perfil cheia (XP, conquistas, missões, mapa de calor)
+sem esperar semanas de uso real:
+
+```bash
+npm run db:seed                  # cria os analistas de exemplo, se não existirem
+npm run db:popular-gamificacao   # popula dias ativos e demandas concluídas
+```
+
+Depois entre como `ana.ribeiro@exemplo.com` (senha `12345`) e abra "Meu perfil".
+A gamificação é recalculada no primeiro acesso a partir desses números — a tela
+não inventa nada.
+
+O script só aceita contas `@exemplo.com`, para nunca alterar dados de uma pessoa
+real. Não existe "senha mestra": cada pessoa vê apenas o próprio perfil, e o
+admin não participa da gamificação.
+
 ### Migrations são um passo manual
 
 O build da Vercel roda apenas `prisma generate && next build` — ele **não**
