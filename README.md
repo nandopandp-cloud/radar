@@ -196,17 +196,21 @@ Para conferir a tela de perfil cheia (XP, conquistas, missões, mapa de calor)
 sem esperar semanas de uso real:
 
 ```bash
-npm run db:seed                  # cria os analistas de exemplo, se não existirem
-npm run db:popular-gamificacao   # popula dias ativos e demandas concluídas
+npm run db:popular-gamificacao
 ```
 
-Depois entre como `ana.ribeiro@exemplo.com` (senha `12345`) e abra "Meu perfil".
+Entre como `demonstracao.perfil@exemplo.com` (senha `12345`) e abra "Meu perfil".
 A gamificação é recalculada no primeiro acesso a partir desses números — a tela
 não inventa nada.
 
-O script só aceita contas `@exemplo.com`, para nunca alterar dados de uma pessoa
-real. Não existe "senha mestra": cada pessoa vê apenas o próprio perfil, e o
-admin não participa da gamificação.
+O script cria a própria conta e só executa `create`: nunca apaga nem altera
+nada que já exista. Rodar duas vezes não duplica — se a conta já tiver dados,
+ele avisa e sai.
+
+Não existe "senha mestra": cada pessoa vê apenas o próprio perfil, e o admin não
+participa da gamificação. Um acesso de admin ao perfil alheio não seria só
+leitura — `carregarPerfil()` grava conquistas e credita XP, então alteraria os
+dados reais do analista.
 
 ### Migrations são um passo manual
 
