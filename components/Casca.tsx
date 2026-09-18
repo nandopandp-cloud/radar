@@ -7,6 +7,7 @@ import {
   IconeLista, IconeMenu, IconeSair, IconeSino,
 } from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
+import { RodapeCreditos } from '@/components/RodapeCreditos';
 import type { SessaoUI } from '@/lib/tipos';
 
 export type Aba = 'painel' | 'calendario' | 'demandas' | 'alertas' | 'equipe' | 'perfil';
@@ -159,6 +160,8 @@ export function Casca({
         <main className="conteudo">
           <div className="conteudo-largo">{children}</div>
         </main>
+
+        <RodapeCreditos />
       </div>
     </div>
   );

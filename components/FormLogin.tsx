@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { MarcaRadar } from '@/components/Logo';
 import { CampoSenha } from '@/components/CampoSenha';
+import { RodapeCreditos } from '@/components/RodapeCreditos';
 
 function IconeEnvelope() {
   return (
@@ -117,6 +118,7 @@ function Formulario() {
           </div>
         </div>
       </div>
+      <RodapeCreditos />
     </div>
   );
 }
