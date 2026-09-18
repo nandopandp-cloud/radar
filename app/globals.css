@@ -798,9 +798,12 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 
 /* ══ Login ══════════════════════════════════════════════ */
 .login-tela {
-  min-height: 100vh; display: flex;
-  align-items: center; justify-content: center; padding: 28px;
+  min-height: 100vh; display: flex; flex-direction: column;
+  padding: 28px;
   background: var(--fundo);
+}
+.login-tela-centro {
+  flex: 1; display: flex; align-items: center; justify-content: center;
 }
 
 .login-cartao {

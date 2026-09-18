@@ -58,63 +58,65 @@ function Formulario() {
 
   return (
     <div className="login-tela">
-      <div className="login-cartao">
-        <div className="login-vitrine">
-          <div className="login-vitrine-marca">
-            <MarcaRadar size={40} />
+      <div className="login-tela-centro">
+        <div className="login-cartao">
+          <div className="login-vitrine">
+            <div className="login-vitrine-marca">
+              <MarcaRadar size={40} />
+            </div>
+            <p className="login-vitrine-slogan">Mais organização para o seu dia.</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/radar-simbolo.png" alt="" className="login-vitrine-radar" />
           </div>
-          <p className="login-vitrine-slogan">Mais organização para o seu dia.</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/radar-simbolo.png" alt="" className="login-vitrine-radar" />
-        </div>
 
-        <div className="login-formulario">
-          <h1 className="login-titulo">Bem-vindo ao Radar</h1>
-          <p className="login-sub">Acesse sua conta para continuar</p>
+          <div className="login-formulario">
+            <h1 className="login-titulo">Bem-vindo ao Radar</h1>
+            <p className="login-sub">Acesse sua conta para continuar</p>
 
-          <form onSubmit={entrar}>
-            <div className="campo login-campo-icone">
-              <span className="login-campo-icone-simbolo"><IconeEnvelope /></span>
-              <input
-                id="email"
-                type="email"
-                className="entrada"
-                placeholder="voce@msaconsultoriacontabil.com.br"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="username"
-                autoFocus
-                required
-              />
-            </div>
-
-            <div className="campo login-campo-icone">
-              <span className="login-campo-icone-simbolo"><IconeEscudo /></span>
-              <CampoSenha
-                id="senha"
-                placeholder="Sua senha"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
-
-            {erro && (
-              <div className="aviso aviso-erro" style={{ marginBottom: 14 }}>
-                <span className="aviso-icone">✕</span>
-                <div>{erro}</div>
+            <form onSubmit={entrar}>
+              <div className="campo login-campo-icone">
+                <span className="login-campo-icone-simbolo"><IconeEnvelope /></span>
+                <input
+                  id="email"
+                  type="email"
+                  className="entrada"
+                  placeholder="voce@msaconsultoriacontabil.com.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                />
               </div>
-            )}
 
-            <button type="submit" className="btn btn-primario btn-bloco" disabled={entrando}>
-              {entrando ? <><span className="girando">⏳</span> Entrando…</> : <>Entrar →</>}
-            </button>
-          </form>
+              <div className="campo login-campo-icone">
+                <span className="login-campo-icone-simbolo"><IconeEscudo /></span>
+                <CampoSenha
+                  id="senha"
+                  placeholder="Sua senha"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
 
-          <div className="login-seguranca">
-            <IconeEscudo />
-            <div>Seus dados estão seguros com a gente.</div>
+              {erro && (
+                <div className="aviso aviso-erro" style={{ marginBottom: 14 }}>
+                  <span className="aviso-icone">✕</span>
+                  <div>{erro}</div>
+                </div>
+              )}
+
+              <button type="submit" className="btn btn-primario btn-bloco" disabled={entrando}>
+                {entrando ? <><span className="girando">⏳</span> Entrando…</> : <>Entrar →</>}
+              </button>
+            </form>
+
+            <div className="login-seguranca">
+              <IconeEscudo />
+              <div>Seus dados estão seguros com a gente.</div>
+            </div>
           </div>
         </div>
       </div>
