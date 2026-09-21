@@ -13,6 +13,7 @@ import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
 import { ModalDia } from '@/components/ModalDia';
 import { GavetaOfensiva, ModalOfensiva } from '@/components/OfensivaRadar';
+import { ProvedorDialogo } from '@/components/Dialogo';
 import { metaAtual, type Ofensiva } from '@/lib/ofensiva';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
@@ -150,6 +151,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
   );
 
   return (
+    <ProvedorDialogo>
     <Casca sessao={sessao} aba={aba} aoTrocarAba={setAba} atrasadas={atrasadas}>
       {carregando ? (
         <div className="cartao">
@@ -274,5 +276,6 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         ))}
       </div>
     </Casca>
+    </ProvedorDialogo>
   );
 }

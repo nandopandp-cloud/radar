@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { IconeMais } from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
+import { useDialogo } from '@/components/Dialogo';
 import type { LinkAcesso, Notificar, SessaoUI, Usuario } from '@/lib/tipos';
 
 /** "em 14 min", "expirado" — quanto ainda resta de um link. */
@@ -39,6 +40,7 @@ export function TelaEquipe({
   notificar: Notificar;
 }) {
   const admin = sessao.perfil === 'ADMIN';
+  const { confirmar, pedirTexto } = useDialogo();
   const [form, setForm] = useState({ nome: '', email: '', senha: '', equipe: '', perfil: 'ANALISTA' });
   const [salvando, setSalvando] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
@@ -63,11 +65,18 @@ export function TelaEquipe({
   }, [admin]);
 
   async function gerarLink(u: Usuario) {
-    if (!confirm(
-      `Gerar um link de acesso à conta de ${u.nome}?\n\n` +
-      'Quem abrir o link entra como essa pessoa e tudo que fizer ficará ' +
-      'registrado com o nome dela. O link vale 15 minutos e só pode ser usado uma vez.',
-    )) return;
+    const segue = await confirmar({
+      titulo: `Acessar a conta de ${u.nome}?`,
+      mensagem: 'Você vai entrar no Radar como esta pessoa, para dar suporte.',
+      detalhes: [
+        'Tudo que você fizer ficará registrado com o nome dela.',
+        'O link vale 15 minutos e só pode ser usado uma vez.',
+        'O acesso fica registrado no histórico, com data e IP.',
+      ],
+      confirmar: 'Gerar link',
+      tom: 'aviso',
+    });
+    if (!segue) return;
 
     setOcupado(u.id);
     try {
@@ -154,17 +163,31 @@ export function TelaEquipe({
   }
 
   async function redefinirSenha(u: Usuario) {
-    const senha = prompt(`Nova senha para ${u.nome} (mínimo 5 caracteres):`);
+    const senha = await pedirTexto({
+      titulo: `Redefinir a senha de ${u.nome}`,
+      mensagem: 'A pessoa passa a entrar com esta senha. Combine com ela como vai recebê-la.',
+      rotulo: 'Nova senha',
+      placeholder: 'Mínimo 5 caracteres',
+      segredo: true,
+      confirmar: 'Redefinir',
+      validar: (v) => (v.length < 5 ? 'A senha precisa de ao menos 5 caracteres.' : null),
+    });
     if (!senha) return;
-    if (senha.length < 5) return notificar('A senha precisa de ao menos 5 caracteres.', 'erro');
     await alterar(u, { senha }, 'Senha redefinida.');
   }
 
   async function excluir(u: Usuario) {
     const n = u._count?.demandas ?? 0;
-    if (!confirm(n > 0
-      ? `Excluir ${u.nome}? As ${n} demanda(s) dessa pessoa também serão removidas.`
-      : `Excluir ${u.nome}?`)) return;
+    const segue = await confirmar({
+      titulo: `Excluir a conta de ${u.nome}?`,
+      mensagem: 'Esta ação não pode ser desfeita.',
+      detalhes: n > 0
+        ? [`As ${n} demanda(s) dessa pessoa também serão removidas.`]
+        : undefined,
+      confirmar: 'Excluir conta',
+      tom: 'perigo',
+    });
+    if (!segue) return;
     setOcupado(u.id);
     try {
       const res = await fetch(`/api/usuarios/${u.id}`, { method: 'DELETE' });

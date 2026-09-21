@@ -31,6 +31,29 @@ export default async function ResgatarAcesso({
     cabecalhos.get('x-real-ip') ||
     null;
 
+  /*
+   * Prefetch não pode queimar o link. Navegadores e o próprio Next buscam
+   * páginas antes do clique; como abrir esta aqui consome o token de uso único,
+   * uma busca especulativa gastaria o link e a pessoa encontraria "já
+   * utilizado" ao chegar de verdade. Esses pedidos se anunciam nestes
+   * cabeçalhos, e para eles não resgatamos nada.
+   */
+  const especulativo =
+    cabecalhos.get('purpose') === 'prefetch' ||
+    cabecalhos.get('x-purpose') === 'preview' ||
+    cabecalhos.get('sec-purpose')?.includes('prefetch') ||
+    cabecalhos.get('next-router-prefetch') === '1';
+
+  if (especulativo) {
+    return (
+      <main className="acesso-aviso">
+        <div className="cartao acesso-cartao">
+          <h1 className="acesso-titulo">Abrindo…</h1>
+        </div>
+      </main>
+    );
+  }
+
   const resultado = await resgatarLinkAcesso(decodeURIComponent(token), ip);
 
   if (!resultado.ok) {

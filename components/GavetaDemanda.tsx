@@ -14,6 +14,7 @@ import {
   ROTULO_STATUS, situacaoDe, type Prioridade, type Status,
 } from '@/lib/dominio';
 import { formatarDiaExtenso } from '@/lib/datas';
+import { useDialogo } from '@/components/Dialogo';
 import type { Anexo, Comentario, Demanda, Notificar, SessaoUI } from '@/lib/tipos';
 
 export function GavetaDemanda({
@@ -33,6 +34,7 @@ export function GavetaDemanda({
   aoAtualizar: () => Promise<void> | void;
   notificar: Notificar;
 }) {
+  const { confirmar } = useDialogo();
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [aba, setAba] = useState<'detalhes' | 'anexos' | 'comentarios'>('detalhes');
@@ -105,7 +107,14 @@ export function GavetaDemanda({
   /** Encerra a série: as demandas já criadas ficam, novas deixam de nascer. */
   async function pararRecorrencia() {
     if (!demanda.recorrencia) return;
-    if (!confirm('Parar esta recorrência? As demandas já criadas continuam; novas deixam de ser geradas.')) return;
+    const segue = await confirmar({
+      titulo: 'Parar esta recorrência?',
+      mensagem: 'As demandas já criadas continuam como estão.',
+      detalhes: ['Novas demandas deixam de ser geradas por esta regra.'],
+      confirmar: 'Parar recorrência',
+      tom: 'aviso',
+    });
+    if (!segue) return;
     setSalvando(true);
     try {
       const res = await fetch(`/api/recorrencias/${demanda.recorrencia.id}`, {
@@ -127,7 +136,14 @@ export function GavetaDemanda({
   }
 
   async function excluir() {
-    if (!confirm(`Excluir "${demanda.titulo}"? Esta ação não pode ser desfeita.`)) return;
+    const segue = await confirmar({
+      titulo: 'Excluir esta demanda?',
+      mensagem: `“${demanda.titulo}” será removida, junto com seus anexos e comentários.`,
+      detalhes: ['Esta ação não pode ser desfeita.'],
+      confirmar: 'Excluir demanda',
+      tom: 'perigo',
+    });
+    if (!segue) return;
     setSalvando(true);
     try {
       const res = await fetch(`/api/demandas/${demanda.id}`, { method: 'DELETE' });

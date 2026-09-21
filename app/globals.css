@@ -664,7 +664,75 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .comentario-atalho { font-size: 11.5px; color: var(--tinta-tenue); }
 .btn-pequeno { padding: 7px 14px; font-size: 13px; }
 
+/* ══ Diálogos do produto (substituem confirm/prompt) ════ */
+/* Fica acima de tudo, inclusive da gaveta de demanda (z-index 51) e da faixa
+   de acesso (200): um pedido de confirmação nunca pode ficar atrás do que o
+   originou. */
+.dialogo {
+  position: fixed; z-index: 260;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 32px));
+  background: var(--superficie); border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-lg);
+  animation: dialogo-surgir .16s cubic-bezier(.32, .72, 0, 1);
+}
+@keyframes dialogo-surgir {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) { .dialogo { animation: none; } }
+
+.dialogo-fechar { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; }
+.dialogo-corpo { display: flex; gap: 14px; padding: 24px 24px 18px; }
+
+/* O ícone colorido é o primeiro sinal do peso da ação, antes mesmo do texto. */
+.dialogo-icone {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.dialogo-perigo .dialogo-icone { background: var(--atrasada-fundo); color: var(--atrasada); }
+.dialogo-aviso .dialogo-icone { background: #fef3c7; color: #b45309; }
+
+.dialogo-texto { flex: 1; min-width: 0; }
+.dialogo-titulo {
+  font-size: 17px; font-weight: 800; color: var(--tinta);
+  letter-spacing: -.01em; margin: 0 0 6px; padding-right: 24px;
+}
+.dialogo-mensagem { font-size: 13.5px; line-height: 1.6; color: var(--tinta-suave); margin: 0; }
+
+/* Consequências em lista: mais difíceis de pular do que um parágrafo corrido. */
+.dialogo-detalhes {
+  margin: 12px 0 0; padding: 11px 13px 11px 28px;
+  border-radius: var(--raio); background: #f8fafc; border: 1px solid var(--borda);
+  font-size: 13px; line-height: 1.6; color: var(--tinta-media);
+}
+.dialogo-detalhes li + li { margin-top: 5px; }
+
+.dialogo-campo { margin-top: 14px; }
+.dialogo-erro { font-size: 12.5px; color: var(--atrasada); margin: 6px 0 0; font-weight: 600; }
+
+.dialogo-acoes {
+  display: flex; justify-content: flex-end; gap: 9px;
+  padding: 14px 24px 20px;
+}
+@media (max-width: 520px) {
+  .dialogo-corpo { padding: 20px 18px 14px; }
+  .dialogo-acoes { padding: 12px 18px 18px; }
+  /* Em tela estreita os botões ocupam a linha toda, na ordem natural de leitura. */
+  .dialogo-acoes { flex-direction: column-reverse; }
+  .dialogo-acoes .btn { width: 100%; }
+}
+
 /* ══ Acesso a outra conta (personificação) ══════════════ */
+/* Página de resgate do link: fora da Casca, então precisa do próprio centro. */
+.acesso-aviso {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--fundo);
+}
+.acesso-cartao { max-width: 420px; width: 100%; padding: 30px 28px; text-align: center; }
+.acesso-titulo { font-size: 19px; font-weight: 800; color: var(--tinta); margin: 0 0 10px; }
+.acesso-texto { font-size: 14px; line-height: 1.6; color: var(--tinta-suave); margin: 0 0 8px; }
+.acesso-dica { font-size: 13px; color: var(--tinta-tenue); margin-bottom: 20px; }
+
 /* Faixa fixa e âmbar, deliberadamente difícil de ignorar: enquanto ela estiver
    na tela, tudo que for feito é registrado com o nome de outra pessoa. */
 .faixa-acesso {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar } from '@/components/Avatar';
+import { useDialogo } from '@/components/Dialogo';
 import { IconeBalao, IconeLixeira } from '@/components/icones';
 import type { Comentario, Mencionavel, Notificar, SessaoUI } from '@/lib/tipos';
 
@@ -87,6 +88,7 @@ export function ComentariosDemanda({
   aoMudar: (comentarios: Comentario[]) => void;
   notificar: Notificar;
 }) {
+  const { confirmar } = useDialogo();
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [pessoas, setPessoas] = useState<Mencionavel[]>([]);
@@ -185,7 +187,13 @@ export function ComentariosDemanda({
   }
 
   async function remover(c: Comentario) {
-    if (!confirm('Remover este comentário?')) return;
+    const segue = await confirmar({
+      titulo: 'Remover este comentário?',
+      mensagem: 'Ele sai da demanda para todo mundo e não há como recuperá-lo.',
+      confirmar: 'Remover',
+      tom: 'perigo',
+    });
+    if (!segue) return;
     try {
       const res = await fetch(`/api/comentarios/${c.id}`, { method: 'DELETE' });
       if (!res.ok) {

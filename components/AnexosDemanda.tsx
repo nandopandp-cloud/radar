@@ -5,6 +5,7 @@ import { IconeBaixar, IconeClipe, IconeEnviar, IconeLixeira } from '@/components
 import {
   dividirEmLotes, formatarTamanho, MAXIMO_POR_DEMANDA, TAMANHO_MAXIMO,
 } from '@/lib/anexos';
+import { useDialogo } from '@/components/Dialogo';
 import type { Anexo, AnexoPendente, Notificar } from '@/lib/tipos';
 
 /** Lê um arquivo como data URI, o formato que a API grava. */
@@ -178,6 +179,7 @@ export function AnexosDemanda({
   aoMudar: (anexos: Anexo[]) => void;
   notificar: Notificar;
 }) {
+  const { confirmar } = useDialogo();
   const [enviando, setEnviando] = useState(false);
 
   async function enviar(arquivos: FileList | File[]) {
@@ -211,7 +213,13 @@ export function AnexosDemanda({
   }
 
   async function remover(anexo: Anexo) {
-    if (!confirm(`Remover "${anexo.nome}"?`)) return;
+    const segue = await confirmar({
+      titulo: 'Remover este anexo?',
+      mensagem: `“${anexo.nome}” será apagado da demanda e não poderá ser recuperado.`,
+      confirmar: 'Remover',
+      tom: 'perigo',
+    });
+    if (!segue) return;
     try {
       const res = await fetch(`/api/anexos/${anexo.id}`, { method: 'DELETE' });
       if (!res.ok) {

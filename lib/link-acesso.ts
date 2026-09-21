@@ -1,6 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
-import { BASE_URL } from '@/lib/email-base';
 
 /** Janela de validade do link. Curta de propósito: é para uso imediato. */
 export const VALIDADE_MINUTOS = 15;
@@ -23,7 +22,7 @@ function hashear(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export type LinkGerado = { url: string; expiraEm: Date; id: string };
+export type LinkGerado = { caminho: string; expiraEm: Date; id: string };
 
 /**
  * Cria um link de uso único para o admin entrar como `alvoId`.
@@ -59,9 +58,13 @@ export async function gerarLinkAcesso(opcoes: {
     select: { id: true },
   });
 
+  // Devolvemos só o caminho; quem chama monta a URL com o domínio de onde a
+  // requisição veio. Uma base fixa aqui apontaria para o domínio errado quando
+  // o app responde por mais de um — e um redirect entre domínios queimaria o
+  // token na primeira requisição, deixando a segunda sem link válido.
   return {
     id: link.id,
-    url: `${BASE_URL}/acesso/${token}`,
+    caminho: `/acesso/${token}`,
     expiraEm,
   };
 }

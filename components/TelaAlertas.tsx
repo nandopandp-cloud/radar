@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { IconeAlerta, IconeOlho } from '@/components/icones';
 import { formatarDiaCurto, formatarDiaExtenso } from '@/lib/datas';
 import { ROTULO_PRIORIDADE, type Prioridade } from '@/lib/dominio';
+import { useDialogo } from '@/components/Dialogo';
 import type { Notificar, SessaoUI } from '@/lib/tipos';
 
 type Grupo = {
@@ -36,6 +37,7 @@ export function TelaAlertas({
   notificar: Notificar;
   aoDisparar: () => Promise<void> | void;
 }) {
+  const { confirmar } = useDialogo();
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -64,9 +66,17 @@ export function TelaAlertas({
   async function disparar(alvo?: { id: string; nome: string }) {
     if (!previa?.totalAutores) return;
 
-    const acao = previa.modo !== 'PREVIEW' ? 'enviar o e-mail' : 'gerar a prévia';
-    const destino = alvo ? `para ${alvo.nome}` : `para ${previa.totalAutores} analista(s)`;
-    if (!confirm(`Confirmar ${acao} ${destino}?`)) return;
+    const envioReal = previa.modo !== 'PREVIEW';
+    const destino = alvo ? alvo.nome : `${previa.totalAutores} analista(s)`;
+    const segue = await confirmar({
+      titulo: envioReal ? `Enviar o alerta para ${destino}?` : `Gerar a prévia para ${destino}?`,
+      mensagem: envioReal
+        ? 'O e-mail sai imediatamente para a caixa de entrada de quem tem demanda pendente.'
+        : 'Nada será enviado: a prévia serve para conferir o conteúdo antes.',
+      confirmar: envioReal ? 'Enviar agora' : 'Gerar prévia',
+      tom: envioReal ? 'aviso' : 'neutro',
+    });
+    if (!segue) return;
 
     setEnviando(alvo?.id ?? 'TODOS');
     try {

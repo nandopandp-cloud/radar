@@ -73,6 +73,16 @@ export async function POST(req: Request) {
 
   const link = await gerarLinkAcesso({ adminId: check.sessao.sub, alvoId: alvo.id });
 
+  /*
+   * A URL é montada com a origem desta requisição, não com uma base fixa: o
+   * app responde por mais de um domínio na Vercel, e um link apontando para o
+   * domínio "errado" sofreria um 307 entre domínios. Como a página de resgate
+   * queima o token ao ser lida, esse redirect consumiria o link antes de a
+   * pessoa chegar — o sintoma de "gerei o link e ele não funciona".
+   */
+  const origem = new URL(req.url).origin;
+  const url = `${origem}${link.caminho}`;
+
   // O token em claro aparece só aqui, nesta resposta. Depois disso, o banco
   // guarda apenas o hash e não há como recuperá-lo.
   console.warn(
@@ -81,7 +91,7 @@ export async function POST(req: Request) {
   );
 
   return NextResponse.json(
-    { url: link.url, expiraEm: link.expiraEm, validadeMinutos: VALIDADE_MINUTOS, alvo: alvo.nome },
+    { url, expiraEm: link.expiraEm, validadeMinutos: VALIDADE_MINUTOS, alvo: alvo.nome },
     { status: 201 },
   );
 }
