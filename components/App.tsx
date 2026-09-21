@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Casca, type Aba } from '@/components/Casca';
 import { TelaPainel } from '@/components/TelaPainel';
 import { TelaCalendario } from '@/components/TelaCalendario';
@@ -19,13 +19,45 @@ import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
 
+/** Abas que existem na URL. Vale conferir: ?aba= vem de fora e pode vir torto. */
+const ABAS: Aba[] = ['painel', 'calendario', 'demandas', 'alertas', 'equipe', 'perfil'];
+
 export function App({ sessao }: { sessao: SessaoUI }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const hoje = paraDiaISO();
   const inicio = new Date(`${hoje}T00:00:00Z`);
 
   // Admin entra pelo painel, que é sua primeira aba; analista, pelo calendário.
-  const [aba, setAba] = useState<Aba>(sessao.perfil === 'ADMIN' ? 'painel' : 'calendario');
+  const abaPadrao: Aba = sessao.perfil === 'ADMIN' ? 'painel' : 'calendario';
+
+  /*
+   * A aba vive na URL (?aba=), não só em memória: assim recarregar a página
+   * mantém onde a pessoa estava, e voltar/avançar do navegador funciona.
+   * Guardar em localStorage resolveria só o reload, e ainda faria duas abas
+   * do mesmo Radar disputarem o mesmo valor.
+   */
+  const abaDaUrl = searchParams.get('aba');
+  const aba: Aba =
+    abaDaUrl && (ABAS as string[]).includes(abaDaUrl)
+      // Abas restritas a admin não valem para analista, nem vindas da URL.
+      && !(['painel', 'alertas', 'equipe'].includes(abaDaUrl) && sessao.perfil !== 'ADMIN')
+      ? (abaDaUrl as Aba)
+      : abaPadrao;
+
+  const setAba = useCallback(
+    (proxima: Aba) => {
+      if (proxima === aba) return;
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('aba', proxima);
+      // `push`, e não `replace`: como a aba está na URL, o esperado é que o
+      // botão Voltar leve à aba anterior. O guarda acima evita empilhar
+      // entradas idênticas quando se clica duas vezes na mesma aba.
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams, aba],
+  );
   const [ano, setAno] = useState(inicio.getUTCFullYear());
   const [mes, setMes] = useState(inicio.getUTCMonth());
   const [diaSelecionado, setDiaSelecionado] = useState(hoje);

@@ -55,17 +55,6 @@ export type SessaoUI = {
   personificadoPor?: { id: string; nome: string } | null;
 };
 
-/** Um link de acesso no histórico do admin. */
-export type LinkAcesso = {
-  id: string;
-  criadoEm: string;
-  expiraEm: string;
-  usadoEm: string | null;
-  usadoIp: string | null;
-  revogadoEm: string | null;
-  admin: { id: string; nome: string };
-  alvo: { id: string; nome: string };
-};
 
 /** Metadados de um anexo. O conteúdo fica em /api/anexos/<id>. */
 export type Anexo = {

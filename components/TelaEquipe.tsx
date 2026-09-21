@@ -1,32 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { IconeMais } from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
 import { useDialogo } from '@/components/Dialogo';
-import type { LinkAcesso, Notificar, SessaoUI, Usuario } from '@/lib/tipos';
-
-/** "em 14 min", "expirado" — quanto ainda resta de um link. */
-function restante(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return 'expirado';
-  const min = Math.ceil(ms / 60_000);
-  return min === 1 ? 'expira em 1 min' : `expira em ${min} min`;
-}
-
-function quandoCurto(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(iso));
-}
-
-/** O estado de um link, para o histórico. */
-function situacao(l: LinkAcesso): { texto: string; classe: string } {
-  if (l.usadoEm) return { texto: `usado ${quandoCurto(l.usadoEm)}`, classe: 'selo-CONCLUIDA' };
-  if (l.revogadoEm) return { texto: 'revogado', classe: 'selo-CANCELADA' };
-  if (new Date(l.expiraEm) < new Date()) return { texto: 'expirado', classe: 'selo-neutro' };
-  return { texto: restante(l.expiraEm), classe: 'selo-categoria' };
-}
+import type { Notificar, SessaoUI, Usuario } from '@/lib/tipos';
 
 export function TelaEquipe({
   sessao,
@@ -40,30 +18,10 @@ export function TelaEquipe({
   notificar: Notificar;
 }) {
   const admin = sessao.perfil === 'ADMIN';
-  const { confirmar, pedirTexto } = useDialogo();
+  const { confirmar, pedirTexto, mostrarValor } = useDialogo();
   const [form, setForm] = useState({ nome: '', email: '', senha: '', equipe: '', perfil: 'ANALISTA' });
   const [salvando, setSalvando] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
-  const [links, setLinks] = useState<LinkAcesso[]>([]);
-  /** Link recém-gerado. O token só existe aqui — recarregar a página o perde. */
-  const [novoLink, setNovoLink] = useState<{ url: string; alvo: string; expiraEm: string } | null>(null);
-  const [copiado, setCopiado] = useState(false);
-
-  async function carregarLinks() {
-    if (!admin) return;
-    try {
-      const res = await fetch('/api/links-acesso');
-      if (res.ok) setLinks(await res.json());
-    } catch {
-      // Histórico é acessório: falhar aqui não atrapalha o resto da tela.
-    }
-  }
-
-  useEffect(() => {
-    carregarLinks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin]);
-
   async function gerarLink(u: Usuario) {
     const segue = await confirmar({
       titulo: `Acessar a conta de ${u.nome}?`,
@@ -87,37 +45,22 @@ export function TelaEquipe({
       });
       const corpo = await res.json();
       if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível gerar.');
-      setNovoLink({ url: corpo.url, alvo: corpo.alvo, expiraEm: corpo.expiraEm });
-      setCopiado(false);
-      await carregarLinks();
+
+      // O link aparece no mesmo fluxo do clique. Ele existe só aqui: o banco
+      // guarda apenas o hash, então fechar sem copiar significa gerar outro.
+      await mostrarValor({
+        titulo: `Link para a conta de ${corpo.alvo}`,
+        mensagem: 'Cole no navegador para entrar como esta pessoa.',
+        valor: corpo.url,
+        detalhes: [
+          `Vale ${corpo.validadeMinutos} minutos e abre uma única vez.`,
+          'Copie agora — por segurança, ele não será mostrado de novo.',
+        ],
+      });
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro.', 'erro');
     } finally {
       setOcupado(null);
-    }
-  }
-
-  async function copiarLink() {
-    if (!novoLink) return;
-    try {
-      await navigator.clipboard.writeText(novoLink.url);
-      setCopiado(true);
-      notificar('Link copiado.', 'ok');
-    } catch {
-      notificar('Não foi possível copiar — selecione e copie manualmente.', 'erro');
-    }
-  }
-
-  async function revogar(l: LinkAcesso) {
-    try {
-      const res = await fetch(`/api/links-acesso/${l.id}`, { method: 'DELETE' });
-      const corpo = await res.json();
-      if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível revogar.');
-      notificar('Link revogado.', 'ok');
-      if (novoLink && l.alvo.id) setNovoLink(null);
-      await carregarLinks();
-    } catch (e) {
-      notificar(e instanceof Error ? e.message : 'Erro.', 'erro');
     }
   }
 
@@ -366,87 +309,6 @@ export function TelaEquipe({
         )}
       </div>
 
-      {admin && (
-        <div className="cartao" style={{ marginTop: 22 }}>
-          <div className="cartao-cabecalho com-linha">
-            <div>
-              <div className="cartao-titulo">Links de acesso</div>
-              <div className="cartao-desc">
-                Entrar na conta de um analista para dar suporte. Use o botão
-                “Acessar” na lista acima.
-              </div>
-            </div>
-          </div>
-          <div className="cartao-corpo">
-            {/* O token aparece uma única vez. Saiu daqui, não há como recuperá-lo. */}
-            {novoLink && (
-              <div className="link-gerado">
-                <div className="link-gerado-topo">
-                  <strong>Link para a conta de {novoLink.alvo}</strong>
-                  <span className="selo selo-categoria">{restante(novoLink.expiraEm)}</span>
-                </div>
-                <p className="link-gerado-aviso">
-                  Copie agora — por segurança, ele não será mostrado de novo. Vale
-                  uma única vez e some ao ser usado.
-                </p>
-                <div className="link-gerado-campo">
-                  <input className="entrada" readOnly value={novoLink.url} onFocus={(e) => e.target.select()} />
-                  <button className="btn btn-primario" onClick={copiarLink}>
-                    {copiado ? 'Copiado' : 'Copiar'}
-                  </button>
-                </div>
-                <button className="btn btn-mini btn-secundario" onClick={() => setNovoLink(null)}>
-                  Ocultar
-                </button>
-              </div>
-            )}
-
-            {links.length === 0 ? (
-              <p className="anexo-vazio">Nenhum link gerado ainda.</p>
-            ) : (
-              <div className="tabela-envolvente">
-                <table className="tabela">
-                  <thead>
-                    <tr>
-                      <th>Conta acessada</th>
-                      <th className="col-estreita">Gerado por</th>
-                      <th className="col-estreita">Quando</th>
-                      <th className="col-estreita">Situação</th>
-                      <th className="col-estreita" style={{ textAlign: 'right' }}>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {links.map((l) => {
-                      const st = situacao(l);
-                      const pendente = !l.usadoEm && !l.revogadoEm && new Date(l.expiraEm) > new Date();
-                      return (
-                        <tr key={l.id}>
-                          <td className="celula-titulo">{l.alvo.nome}</td>
-                          <td className="col-estreita texto-suave">{l.admin.nome}</td>
-                          <td className="col-estreita texto-suave">{quandoCurto(l.criadoEm)}</td>
-                          <td className="col-estreita">
-                            <span className={`selo ${st.classe}`}>{st.texto}</span>
-                            {l.usadoIp && (
-                              <div className="celula-sub">IP {l.usadoIp}</div>
-                            )}
-                          </td>
-                          <td className="col-estreita" style={{ textAlign: 'right' }}>
-                            {pendente && (
-                              <button className="btn btn-mini btn-perigo" onClick={() => revogar(l)}>
-                                Revogar
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }

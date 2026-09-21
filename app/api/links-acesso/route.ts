@@ -24,7 +24,14 @@ async function exigirAdminReal() {
   return { ok: true as const, sessao };
 }
 
-/** Histórico recente, para o admin ver o que gerou e revogar o que ainda vale. */
+/**
+ * Histórico recente dos links gerados.
+ *
+ * Sem tela própria hoje — o painel que a consumia saiu da Equipe por ser ruído
+ * no dia a dia. A rota fica porque a auditoria continua sendo gravada e este é
+ * o caminho para lê-la quando for preciso investigar um acesso (junto com o
+ * DELETE ao lado, que revoga um link que tenha vazado).
+ */
 export async function GET() {
   const check = await exigirAdminReal();
   if ('erro' in check) return NextResponse.json({ erro: check.erro }, { status: check.codigo });

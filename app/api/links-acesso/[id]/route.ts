@@ -6,7 +6,12 @@ export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** Revoga um link ainda não usado — o botão de arrependimento. */
+/**
+ * Revoga um link ainda não usado.
+ *
+ * Sem botão na interface hoje (o painel de histórico saiu da Equipe), mas é a
+ * saída para um link que tenha vazado antes de expirar.
+ */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const sessao = await sessaoAtual();
   if (!sessao) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 });

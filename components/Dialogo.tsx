@@ -43,11 +43,26 @@ type PedidoTexto = {
   validar?: (valor: string) => string | null;
 };
 
-type Pedido = PedidoConfirmacao | PedidoTexto;
+/**
+ * Mostra um valor pronto para copiar — um link, um código. Diferente dos
+ * outros dois, não pergunta nada: informa e oferece o botão de cópia.
+ */
+type PedidoValor = {
+  tipo: 'valor';
+  titulo: string;
+  mensagem?: string;
+  detalhes?: string[];
+  valor: string;
+  /** Texto do botão que fecha. */
+  fechar?: string;
+};
+
+type Pedido = PedidoConfirmacao | PedidoTexto | PedidoValor;
 
 type Contexto = {
   confirmar: (p: Omit<PedidoConfirmacao, 'tipo'>) => Promise<boolean>;
   pedirTexto: (p: Omit<PedidoTexto, 'tipo'>) => Promise<string | null>;
+  mostrarValor: (p: Omit<PedidoValor, 'tipo'>) => Promise<void>;
 };
 
 const CtxDialogo = createContext<Contexto | null>(null);
@@ -59,10 +74,18 @@ export function useDialogo(): Contexto {
   return ctx;
 }
 
+/** O que a Promise devolve quando a pessoa fecha sem confirmar. */
+function resultadoAoFechar(p: Pedido): unknown {
+  if (p.tipo === 'texto') return null;
+  if (p.tipo === 'valor') return undefined;
+  return false;
+}
+
 export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [valor, setValor] = useState('');
   const [erro, setErro] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
   /** Resolve a Promise de quem chamou; trocado a cada novo pedido. */
   const resolver = useRef<((r: unknown) => void) | null>(null);
   const campoRef = useRef<HTMLInputElement>(null);
@@ -91,21 +114,50 @@ export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const mostrarValor = useCallback((p: Omit<PedidoValor, 'tipo'>) => {
+    return new Promise<void>((res) => {
+      resolver.current = res as (r: unknown) => void;
+      setCopiado(false);
+      setPedido({ ...p, tipo: 'valor' });
+    });
+  }, []);
+
   // Foco vai para o campo (ou para o botão) ao abrir, e Esc sempre cancela.
   useEffect(() => {
     if (!pedido) return;
-    const alvo = pedido.tipo === 'texto' ? campoRef.current : confirmarRef.current;
+    const alvo =
+      pedido.tipo === 'texto' || pedido.tipo === 'valor'
+        ? campoRef.current
+        : confirmarRef.current;
     alvo?.focus();
+    if (pedido.tipo === 'valor') {
+      // Seleciona tudo (para Ctrl+C funcionar de imediato) mas mantém a rolagem
+      // no início: é o começo da URL que a pessoa reconhece, não o fim do token.
+      campoRef.current?.select();
+      if (campoRef.current) campoRef.current.scrollLeft = 0;
+    }
 
     function aoTeclar(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        fechar(pedido!.tipo === 'texto' ? null : false);
+        fechar(resultadoAoFechar(pedido!));
       }
     }
     document.addEventListener('keydown', aoTeclar);
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [pedido, fechar]);
+
+  async function copiar() {
+    if (!pedido || pedido.tipo !== 'valor') return;
+    try {
+      await navigator.clipboard.writeText(pedido.valor);
+      setCopiado(true);
+    } catch {
+      // Sem permissão de área de transferência (http, permissão negada): o
+      // campo já está selecionado, então Ctrl+C resolve.
+      campoRef.current?.select();
+    }
+  }
 
   function enviarTexto() {
     if (!pedido || pedido.tipo !== 'texto') return;
@@ -122,13 +174,13 @@ export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
   const tom = pedido && pedido.tipo === 'confirmar' ? (pedido.tom ?? 'neutro') : 'neutro';
 
   return (
-    <CtxDialogo.Provider value={{ confirmar, pedirTexto }}>
+    <CtxDialogo.Provider value={{ confirmar, pedirTexto, mostrarValor }}>
       {children}
 
       {pedido && (
         <>
           {/* Clicar fora cancela, como no modal do dia. */}
-          <div className="veu" onClick={() => fechar(pedido.tipo === 'texto' ? null : false)} />
+          <div className="veu" onClick={() => fechar(resultadoAoFechar(pedido))} />
           <div
             className={`dialogo dialogo-${tom}`}
             role="alertdialog"
@@ -137,7 +189,7 @@ export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
           >
             <button
               className="btn-icone dialogo-fechar"
-              onClick={() => fechar(pedido.tipo === 'texto' ? null : false)}
+              onClick={() => fechar(resultadoAoFechar(pedido))}
               aria-label="Fechar"
             >
               <IconeX size={17} />
@@ -154,10 +206,28 @@ export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
                 <h2 className="dialogo-titulo" id="dialogo-titulo">{pedido.titulo}</h2>
                 {pedido.mensagem && <p className="dialogo-mensagem">{pedido.mensagem}</p>}
 
-                {pedido.tipo === 'confirmar' && pedido.detalhes && pedido.detalhes.length > 0 && (
+                {(pedido.tipo === 'confirmar' || pedido.tipo === 'valor') &&
+                  pedido.detalhes && pedido.detalhes.length > 0 && (
                   <ul className="dialogo-detalhes">
                     {pedido.detalhes.map((d, i) => <li key={i}>{d}</li>)}
                   </ul>
+                )}
+
+                {pedido.tipo === 'valor' && (
+                  <div className="dialogo-campo">
+                    <div className="dialogo-valor">
+                      <input
+                        ref={campoRef}
+                        className="entrada dialogo-valor-campo"
+                        readOnly
+                        value={pedido.valor}
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <button className="btn btn-primario" onClick={copiar}>
+                        {copiado ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {pedido.tipo === 'texto' && (
@@ -181,19 +251,27 @@ export function ProvedorDialogo({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="dialogo-acoes">
-              <button
-                className="btn btn-secundario"
-                onClick={() => fechar(pedido.tipo === 'texto' ? null : false)}
-              >
-                {pedido.cancelar ?? 'Cancelar'}
-              </button>
-              <button
-                ref={confirmarRef}
-                className={`btn ${tom === 'perigo' ? 'btn-perigo' : 'btn-primario'}`}
-                onClick={() => (pedido.tipo === 'texto' ? enviarTexto() : fechar(true))}
-              >
-                {pedido.confirmar ?? 'Confirmar'}
-              </button>
+              {pedido.tipo === 'valor' ? (
+                <button className="btn btn-secundario" onClick={() => fechar(undefined)}>
+                  {pedido.fechar ?? 'Fechar'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="btn btn-secundario"
+                    onClick={() => fechar(resultadoAoFechar(pedido))}
+                  >
+                    {pedido.cancelar ?? 'Cancelar'}
+                  </button>
+                  <button
+                    ref={confirmarRef}
+                    className={`btn ${tom === 'perigo' ? 'btn-perigo' : 'btn-primario'}`}
+                    onClick={() => (pedido.tipo === 'texto' ? enviarTexto() : fechar(true))}
+                  >
+                    {pedido.confirmar ?? 'Confirmar'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </>
