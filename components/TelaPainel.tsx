@@ -8,7 +8,7 @@ import {
 import { SeletorPeriodo } from '@/components/SeletorPeriodo';
 import { AnelScore } from '@/components/RadarScore';
 import {
-  IconeAlerta, IconeCheckCirculo, IconeDocumento, IconeRelogio, IconeTendencia,
+  IconeAlerta, IconeBaixar, IconeCheckCirculo, IconeDocumento, IconeRelogio, IconeTendencia,
 } from '@/components/icones';
 import { COR_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO, situacaoDe, type Prioridade } from '@/lib/dominio';
 import { formatarDiaCurto } from '@/lib/datas';
@@ -16,7 +16,7 @@ import {
   calcularDesempenho, calcularKpis, dentroDoIntervalo, diasNoIntervalo, faixaDoScore,
   indicadoresDesempenho, intervaloDe, porCategoria, porPrioridade, porSituacao,
   proximosPrazos, recentes, serieDiaria, calcularScore, topResponsaveis,
-  type Intervalo, type PeriodoId,
+  PERIODOS, type Intervalo, type PeriodoId,
 } from '@/lib/painel';
 import { somarDias } from '@/lib/datas';
 import type { Demanda, SessaoUI, Usuario } from '@/lib/tipos';
@@ -70,7 +70,7 @@ export function TelaPainel({
   aoAbrirDemanda: (d: Demanda) => void;
   aoVerDemandas: () => void;
 }) {
-  const [periodo, setPeriodo] = useState<PeriodoId>('30');
+  const [periodo, setPeriodo] = useState<PeriodoId>('7');
   const [personalizado, setPersonalizado] = useState<Intervalo | null>(null);
 
   const intervalo = useMemo(
@@ -121,6 +121,15 @@ export function TelaPainel({
   const maiorResponsavel = responsaveis[0]?.valor ?? 1;
   const primeiroNome = sessao.nome.trim().split(/\s+/)[0];
 
+  /** O relatório abre com o mesmo recorte que está na tela. */
+  const linkRelatorio = useMemo(() => {
+    const params = new URLSearchParams();
+    if (intervalo) { params.set('de', intervalo.de); params.set('ate', intervalo.ate); }
+    const nome = PERIODOS.find((p) => p.id === periodo)?.rotulo;
+    if (nome && periodo !== 'personalizado') params.set('rotulo', nome);
+    return `/painel/pdf?${params}`;
+  }, [intervalo, periodo]);
+
   return (
     <>
       <div className="painel-topo">
@@ -143,6 +152,17 @@ export function TelaPainel({
             hoje={hoje}
             aoMudar={(p, custom) => { setPeriodo(p); setPersonalizado(custom); }}
           />
+          {sessao.perfil === 'ADMIN' && (
+            <a
+              className="btn btn-secundario btn-pequeno"
+              href={linkRelatorio}
+              target="_blank"
+              rel="noreferrer"
+              title="Abre o relatório do período para salvar como PDF"
+            >
+              <IconeBaixar size={16} /> Baixar PDF
+            </a>
+          )}
         </div>
       </div>
 

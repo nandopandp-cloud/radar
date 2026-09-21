@@ -900,6 +900,14 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .celula-titulo { font-weight: 600; }
 .celula-sub { font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
 
+/* Rodapé de navegação das tabelas paginadas. */
+.paginacao {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  padding: 12px 16px; border-top: 1px solid var(--borda);
+}
+.paginacao-info { font-size: 12.5px; color: var(--tinta-suave); }
+
 .pilha { display: flex; flex-direction: column; gap: 18px; }
 .linha { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .espalhar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
@@ -1414,6 +1422,9 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 
 .barra-coluna { position: relative; }
 .barra-trilho { position: relative; }
+/* A barra de progresso do perfil também se chama .barra-preenchida e vem
+   depois no arquivo; dentro do gráfico a coluna precisa do topo reto. */
+.barra-trilho > .barra-preenchida { border-radius: 8px 8px 0 0; height: auto; }
 .barra-coluna .barra-preenchida { transition: height .2s, filter .14s; }
 .barra-coluna.ativa .barra-preenchida { filter: brightness(1.06) saturate(1.1); }
 .barra-coluna.ativa .barra-valor { color: var(--marca); }
@@ -2395,4 +2406,92 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 @media (max-width: 420px) {
   .foto-editor { padding: 16px; }
   .foto-editor-acoes .btn { flex: 1; justify-content: center; }
+}
+
+/* ══ Relatório do painel em PDF ═══════════════════════════════════════════
+   Página à parte, feita para o papel: A4, sem menu e sem interação. O que
+   é botão ou dica de mouse some na impressão. */
+
+.relatorio {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+  background: var(--superficie);
+  color: var(--tinta);
+}
+
+.relatorio-acoes {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.relatorio-cabecalho {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  padding-bottom: 18px; margin-bottom: 26px;
+  border-bottom: 2px solid var(--marca);
+}
+.relatorio-marca {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--marca);
+}
+.relatorio-titulo { font-size: 23px; font-weight: 700; margin: 4px 0 0; }
+.relatorio-meta { font-size: 12.5px; color: var(--tinta-media); line-height: 1.75; text-align: right; }
+
+.relatorio-secao { margin-bottom: 30px; }
+.relatorio-secao-titulo {
+  font-size: 15px; font-weight: 700; margin: 0 0 14px;
+  padding-bottom: 7px; border-bottom: 1px solid var(--borda);
+}
+
+.relatorio-indicadores {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px; margin-bottom: 12px;
+}
+.relatorio-cartao {
+  border: 1px solid var(--borda); border-radius: 10px; padding: 12px 13px;
+}
+.relatorio-rotulo {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--tinta-tenue);
+}
+.relatorio-valor { font-size: 21px; font-weight: 700; margin-top: 5px; }
+.relatorio-valor-vazio { font-size: 12px; color: var(--tinta-suave); margin-top: 6px; }
+.relatorio-sub { font-size: 11px; color: var(--tinta-suave); margin-top: 4px; line-height: 1.45; }
+.relatorio-score-numero { font-size: 30px; font-weight: 700; margin-top: 2px; }
+.relatorio-score-faixa { font-size: 11.5px; color: var(--tinta-media); font-weight: 600; }
+
+.relatorio-grafico { padding: 6px 0 2px; }
+.relatorio-grade-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px;
+}
+.relatorio-bloco { border: 1px solid var(--borda); border-radius: 10px; padding: 14px 16px; }
+.relatorio-bloco-titulo { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+
+.relatorio-tabela { font-size: 12px; }
+.relatorio-tabela th { padding: 9px 10px; }
+.relatorio-tabela td { padding: 9px 10px; }
+.relatorio-nota { font-size: 11.5px; color: var(--tinta-suave); margin-top: 10px; }
+
+.relatorio-rodape {
+  margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--borda);
+  font-size: 11px; color: var(--tinta-tenue); text-align: center;
+}
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  body { background: #fff; }
+  .relatorio { max-width: none; margin: 0; padding: 0; }
+
+  /* Os controles são da tela; no papel só atrapalhariam. */
+  .relatorio-acoes { display: none; }
+  .dica-grafico { display: none !important; }
+
+  /* Sem isto o navegador descarta os fundos coloridos dos gráficos. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .relatorio-quebra { break-before: page; }
+  .relatorio-secao, .relatorio-bloco { break-inside: avoid; }
+  .relatorio-tabela tr { break-inside: avoid; }
 }

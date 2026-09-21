@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IconeAlerta, IconeOlho } from '@/components/icones';
 import { formatarDiaCurto, formatarDiaExtenso } from '@/lib/datas';
 import { ROTULO_PRIORIDADE, type Prioridade } from '@/lib/dominio';
@@ -28,6 +28,9 @@ type Historico = {
   qtdDemandas: number; status: string; enviadoEm: string; temPrevia: boolean;
 };
 
+/** Linhas por página no histórico de envios. */
+const POR_PAGINA = 5;
+
 export function TelaAlertas({
   sessao,
   notificar,
@@ -40,6 +43,7 @@ export function TelaAlertas({
   const { confirmar } = useDialogo();
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
+  const [pagina, setPagina] = useState(1);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState<string | null>(null);
   const [forcar, setForcar] = useState(false);
@@ -49,7 +53,10 @@ export function TelaAlertas({
     try {
       const [rp, rh] = await Promise.all([fetch('/api/disparo'), fetch('/api/alertas?limite=25')]);
       if (rp.ok) setPrevia(await rp.json());
-      if (rh.ok) setHistorico(await rh.json());
+      if (rh.ok) {
+        setHistorico(await rh.json());
+        setPagina(1);
+      }
     } catch {
       notificar('Falha ao carregar os alertas.', 'erro');
     } finally {
@@ -102,6 +109,19 @@ export function TelaAlertas({
       setEnviando(null);
     }
   }
+
+  /**
+   * O histórico chega inteiro da API; a tabela mostra uma página de cada vez
+   * para a tela não crescer sem limite.
+   */
+  const totalPaginas = Math.max(1, Math.ceil(historico.length / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const naPagina = useMemo(
+    () => historico.slice((paginaAtual - 1) * POR_PAGINA, paginaAtual * POR_PAGINA),
+    [historico, paginaAtual],
+  );
+  const primeiroDaPagina = historico.length === 0 ? 0 : (paginaAtual - 1) * POR_PAGINA + 1;
+  const ultimoDaPagina = (paginaAtual - 1) * POR_PAGINA + naPagina.length;
 
   return (
     <>
@@ -245,7 +265,9 @@ export function TelaAlertas({
             <div className="cartao-cabecalho com-linha">
               <div>
                 <div className="cartao-titulo">Histórico de envios</div>
-                <div className="cartao-desc">Últimos {historico.length} alertas</div>
+                <div className="cartao-desc">
+                  {historico.length} alerta(s) · mostrando {primeiroDaPagina}–{ultimoDaPagina}
+                </div>
               </div>
             </div>
             <div className="tabela-envolvente">
@@ -260,7 +282,7 @@ export function TelaAlertas({
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.map((a) => (
+                  {naPagina.map((a) => (
                     <tr key={a.id}>
                       <td>
                         <div className="celula-titulo">{a.nome}</div>
@@ -296,6 +318,32 @@ export function TelaAlertas({
                 </tbody>
               </table>
             </div>
+
+            {totalPaginas > 1 && (
+              <div className="paginacao">
+                <span className="paginacao-info">
+                  Página {paginaAtual} de {totalPaginas}
+                </span>
+                <div className="linha" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-mini btn-secundario"
+                    disabled={paginaAtual === 1}
+                    onClick={() => setPagina(paginaAtual - 1)}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-mini btn-secundario"
+                    disabled={paginaAtual === totalPaginas}
+                    onClick={() => setPagina(paginaAtual + 1)}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
