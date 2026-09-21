@@ -23,6 +23,11 @@ model Usuario {
   /// Foto de perfil como data URI (data:image/...;base64,...), redimensionada
   /// no navegador antes do envio. Nulo = avatar de iniciais.
   avatar    String?
+  /// Libera os recursos ainda em avaliação para esta conta — hoje, a área
+  /// "Meus arquivos" e o anexar a partir do Google Drive. Fica por pessoa
+  /// porque são telas em validação, mostradas primeiro na conta de
+  /// demonstração antes de valerem para todo o time.
+  recursosExperimentais Boolean @default(false)
   criadoEm  DateTime @default(now())
 
   demandas  Demanda[]

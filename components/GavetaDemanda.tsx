@@ -270,6 +270,7 @@ export function GavetaDemanda({
               podeMexer={podeEditar}
               aoMudar={setAnexos}
               notificar={notificar}
+              mostrarDrive={sessao.recursosExperimentais === true}
             />
           )}
 

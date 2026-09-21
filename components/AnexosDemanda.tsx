@@ -2,6 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { IconeBaixar, IconeClipe, IconeEnviar, IconeLixeira } from '@/components/icones';
+import { LogoDrive } from '@/components/LogoDrive';
+import { SeletorDrive } from '@/components/SeletorDrive';
+import { tamanhoLegivel, type ArquivoDrive } from '@/lib/drive-demo';
 import {
   dividirEmLotes, formatarTamanho, MAXIMO_POR_DEMANDA, TAMANHO_MAXIMO,
 } from '@/lib/anexos';
@@ -52,15 +55,47 @@ async function prepararArquivos(
   );
 }
 
+/**
+ * Um arquivo do Drive vira um anexo-referência: enquanto a integração não
+ * existe, não há bytes para copiar, então o que fica na demanda é um cartão
+ * que aponta para o arquivo no Drive. É deliberadamente um texto legível —
+ * quem abrir entende que é um vínculo, não uma cópia do documento.
+ */
+function referenciaDoDrive(a: ArquivoDrive): AnexoPendente {
+  const texto = [
+    'Referência a um arquivo do Google Drive.',
+    '',
+    `Arquivo: ${a.nome}`,
+    `Proprietário: ${a.proprietario}`,
+    `Tamanho no Drive: ${tamanhoLegivel(a.tamanho)}`,
+    '',
+    'O conteúdo continua no Drive. A cópia para dentro do Radar acontece',
+    'quando a conexão com o Google estiver ativa.',
+  ].join('\n');
+
+  return {
+    nome: `${a.nome}.link.txt`,
+    tipo: 'text/plain',
+    tamanho: new TextEncoder().encode(texto).length,
+    conteudo: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(texto)))}`,
+  };
+}
+
 /** Área de escolher/arrastar arquivos, comum aos dois modos. */
 function AreaDeEnvio({
   enviando,
   aoEscolher,
+  aoEscolherDoDrive,
+  mostrarDrive,
 }: {
   enviando: boolean;
   aoEscolher: (arquivos: FileList | File[]) => void;
+  aoEscolherDoDrive: (arquivos: ArquivoDrive[]) => void;
+  /** O Drive só aparece para quem está com os recursos em avaliação liberados. */
+  mostrarDrive: boolean;
 }) {
   const [arrastando, setArrastando] = useState(false);
+  const [drive, setDrive] = useState(false);
   const entrada = useRef<HTMLInputElement>(null);
 
   return (
@@ -100,6 +135,27 @@ function AreaDeEnvio({
           </>
         )}
       </button>
+
+      {mostrarDrive && (
+        <button
+          type="button"
+          className="btn btn-secundario btn-bloco anexo-drive"
+          disabled={enviando}
+          onClick={() => setDrive(true)}
+        >
+          <LogoDrive size={17} /> Escolher do Google Drive
+        </button>
+      )}
+
+      {drive && (
+        <SeletorDrive
+          aoFechar={() => setDrive(false)}
+          aoConfirmar={(escolhidos) => {
+            setDrive(false);
+            aoEscolherDoDrive(escolhidos);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -112,10 +168,12 @@ export function AnexosPendentes({
   anexos,
   aoMudar,
   notificar,
+  mostrarDrive = false,
 }: {
   anexos: AnexoPendente[];
   aoMudar: (anexos: AnexoPendente[]) => void;
   notificar: Notificar;
+  mostrarDrive?: boolean;
 }) {
   const [lendo, setLendo] = useState(false);
 
@@ -159,7 +217,23 @@ export function AnexosPendentes({
         </ul>
       )}
 
-      <AreaDeEnvio enviando={lendo} aoEscolher={escolher} />
+      <AreaDeEnvio
+        enviando={lendo}
+        aoEscolher={escolher}
+        mostrarDrive={mostrarDrive}
+        aoEscolherDoDrive={(arquivos) => {
+          if (anexos.length + arquivos.length > MAXIMO_POR_DEMANDA) {
+            return notificar(`Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.`, 'erro');
+          }
+          aoMudar([...anexos, ...arquivos.map(referenciaDoDrive)]);
+          notificar(
+            arquivos.length === 1
+              ? 'Arquivo do Drive vinculado à demanda.'
+              : `${arquivos.length} arquivos do Drive vinculados.`,
+            'ok',
+          );
+        }}
+      />
     </div>
   );
 }
@@ -171,6 +245,7 @@ export function AnexosDemanda({
   podeMexer,
   aoMudar,
   notificar,
+  mostrarDrive = false,
 }: {
   demandaId: string;
   anexos: Anexo[];
@@ -178,6 +253,7 @@ export function AnexosDemanda({
   podeMexer: boolean;
   aoMudar: (anexos: Anexo[]) => void;
   notificar: Notificar;
+  mostrarDrive?: boolean;
 }) {
   const { confirmar } = useDialogo();
   const [enviando, setEnviando] = useState(false);
@@ -207,6 +283,32 @@ export function AnexosDemanda({
       );
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro ao anexar.', 'erro');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  /** Sobe os vínculos do Drive pelo mesmo caminho dos arquivos comuns. */
+  async function enviarReferencias(arquivos: ArquivoDrive[]) {
+    if (arquivos.length === 0) return;
+    setEnviando(true);
+    try {
+      const res = await fetch(`/api/demandas/${demandaId}/anexos`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ anexos: arquivos.map(referenciaDoDrive) }),
+      });
+      const corpo = await res.json();
+      if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível vincular.');
+      aoMudar(corpo);
+      notificar(
+        arquivos.length === 1
+          ? 'Arquivo do Drive vinculado à demanda.'
+          : `${arquivos.length} arquivos do Drive vinculados.`,
+        'ok',
+      );
+    } catch (e) {
+      notificar(e instanceof Error ? e.message : 'Erro ao vincular.', 'erro');
     } finally {
       setEnviando(false);
     }
@@ -278,7 +380,14 @@ export function AnexosDemanda({
         </ul>
       )}
 
-      {podeMexer && <AreaDeEnvio enviando={enviando} aoEscolher={enviar} />}
+      {podeMexer && (
+        <AreaDeEnvio
+          enviando={enviando}
+          aoEscolher={enviar}
+          mostrarDrive={mostrarDrive}
+          aoEscolherDoDrive={(arquivos) => void enviarReferencias(arquivos)}
+        />
+      )}
 
       {anexos.length === 0 && !podeMexer && (
         <p className="anexo-vazio"><IconeClipe size={16} /> Nenhum arquivo anexado.</p>

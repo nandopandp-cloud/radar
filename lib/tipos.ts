@@ -53,6 +53,8 @@ export type SessaoUI = {
   avatar?: string | null;
   /** Presente só quando um admin entrou nesta conta por link de acesso. */
   personificadoPor?: { id: string; nome: string } | null;
+  /** Libera as telas ainda em avaliação — hoje, "Meus arquivos". */
+  recursosExperimentais?: boolean;
 };
 
 

@@ -8,6 +8,7 @@ import { TelaCalendario } from '@/components/TelaCalendario';
 import { TelaDemandas } from '@/components/TelaDemandas';
 import { TelaAlertas } from '@/components/TelaAlertas';
 import { TelaEquipe } from '@/components/TelaEquipe';
+import { TelaArquivos } from '@/components/TelaArquivos';
 import { TelaPerfil } from '@/components/TelaPerfil';
 import { GavetaDemanda } from '@/components/GavetaDemanda';
 import { ModalNovaDemanda } from '@/components/ModalNovaDemanda';
@@ -20,7 +21,9 @@ import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
 
 /** Abas que existem na URL. Vale conferir: ?aba= vem de fora e pode vir torto. */
-const ABAS: Aba[] = ['painel', 'calendario', 'demandas', 'alertas', 'equipe', 'perfil'];
+const ABAS: Aba[] = [
+  'painel', 'calendario', 'demandas', 'arquivos', 'alertas', 'equipe', 'perfil',
+];
 
 export function App({ sessao }: { sessao: SessaoUI }) {
   const searchParams = useSearchParams();
@@ -43,6 +46,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
     abaDaUrl && (ABAS as string[]).includes(abaDaUrl)
       // Abas restritas a admin não valem para analista, nem vindas da URL.
       && !(['painel', 'alertas', 'equipe'].includes(abaDaUrl) && sessao.perfil !== 'ADMIN')
+      // "Meus arquivos" ainda está em avaliação: vale só para quem foi liberado.
+      && !(abaDaUrl === 'arquivos' && !sessao.recursosExperimentais)
       ? (abaDaUrl as Aba)
       : abaPadrao;
 
@@ -226,6 +231,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoNovaDemanda={abrirNova}
           aoMoverDemanda={moverDemanda}
         />
+      ) : aba === 'arquivos' && sessao.recursosExperimentais ? (
+        <TelaArquivos sessao={sessao} notificar={notificar} />
       ) : aba === 'alertas' && sessao.perfil === 'ADMIN' ? (
         <TelaAlertas sessao={sessao} notificar={notificar} aoDisparar={carregar} />
       ) : aba === 'perfil' ? (

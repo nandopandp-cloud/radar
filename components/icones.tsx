@@ -611,3 +611,115 @@ export const IconeQuadro = ({ size = 19, className }: P) => (
     <rect x="14" y="3.5" width="7" height="11" rx="2" />
   </svg>
 );
+
+export const IconePasta = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 7.5a2 2 0 0 1 2-2h3.6a2 2 0 0 1 1.4.6l1 1a2 2 0 0 0 1.4.6H19a2 2 0 0 1 2 2v8.8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </svg>
+);
+
+export const IconeArquivo = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z" />
+    <path d="M14 3.5V8.5h5" />
+  </svg>
+);
+
+export const IconePlanilha = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M4 10h16M4 15h16M10 10v10" />
+  </svg>
+);
+
+export const IconeApresentacao = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="4" width="18" height="12" rx="2" />
+    <path d="M12 16v4M9 20h6" />
+  </svg>
+);
+
+export const IconeImagem = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M4 17l4.5-4.5a1.8 1.8 0 0 1 2.5 0L20 20" />
+  </svg>
+);
+
+export const IconeBusca = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="M16 16l4 4" />
+  </svg>
+);
+
+export const IconeFiltro = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 5.5h16l-6.2 7.3v5.4l-3.6 1.8v-7.2z" />
+  </svg>
+);
+
+export const IconeMaisTres = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const IconeBaixo = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}><path d="M6 9.5l6 6 6-6" /></svg>
+);
+
+export const IconeCima = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}><path d="M6 14.5l6-6 6 6" /></svg>
+);
+
+export const IconeLink = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M10 13.5a3.6 3.6 0 0 0 5.3.4l2.6-2.6a3.6 3.6 0 0 0-5.1-5.1l-1.5 1.5" />
+    <path d="M14 10.5a3.6 3.6 0 0 0-5.3-.4l-2.6 2.6a3.6 3.6 0 0 0 5.1 5.1l1.5-1.5" />
+  </svg>
+);
+
+export const IconeAbrirFora = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M14 4.5h5.5V10" />
+    <path d="M19.5 4.5L11 13" />
+    <path d="M18 14v4.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2h4.5" />
+  </svg>
+);
+
+export const IconeCopiar = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2" />
+    <path d="M15.5 8.5v-3a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h3" />
+  </svg>
+);
+
+export const IconeMover = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 7.5a2 2 0 0 1 2-2h3.6a2 2 0 0 1 1.4.6l1 1a2 2 0 0 0 1.4.6H19a2 2 0 0 1 2 2v8.8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <path d="M10 13.5h5M13 11.5l2 2-2 2" />
+  </svg>
+);
+
+export const IconeOrdenar = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M7 4.5v15M7 19.5l-3-3M7 19.5l3-3" />
+    <path d="M17 19.5v-15M17 4.5l-3 3M17 4.5l3 3" />
+  </svg>
+);
+
+export const IconeNuvem = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M7 18.5a3.8 3.8 0 0 1-.3-7.6 5.2 5.2 0 0 1 10-1.3 3.9 3.9 0 0 1 .6 7.7z" />
+  </svg>
+);
+
+export const IconeMarcador = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M6.5 4.5h11a1 1 0 0 1 1 1v14l-6.5-4-6.5 4v-14a1 1 0 0 1 1-1z" />
+  </svg>
+);

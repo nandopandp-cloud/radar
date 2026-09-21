@@ -4,21 +4,26 @@ import { useEffect, useState } from 'react';
 import { LogoRadar, MarcaRadar } from '@/components/Logo';
 import {
   IconeCalendario, IconeDuploEsquerda, IconeEquipe, IconeGrafico, IconeLampada,
-  IconeLista, IconeMenu, IconeSair, IconeSino,
+  IconeLista, IconeMenu, IconePasta, IconeSair, IconeSino,
 } from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
 import { RodapeCreditos } from '@/components/RodapeCreditos';
 import type { SessaoUI } from '@/lib/tipos';
 
-export type Aba = 'painel' | 'calendario' | 'demandas' | 'alertas' | 'equipe' | 'perfil';
+export type Aba =
+  | 'painel' | 'calendario' | 'demandas' | 'arquivos' | 'alertas' | 'equipe' | 'perfil';
 
 /** Preferência de barra recolhida, para reabrir o app do mesmo jeito. */
 const CHAVE_RECOLHIDA = 'radar_barra_recolhida';
 
-const ITENS: { id: Aba; rotulo: string; Icone: typeof IconeCalendario; soAdmin?: boolean }[] = [
+const ITENS: {
+  id: Aba; rotulo: string; Icone: typeof IconeCalendario;
+  soAdmin?: boolean; soExperimental?: boolean;
+}[] = [
   { id: 'painel', rotulo: 'Dashboard', Icone: IconeGrafico, soAdmin: true },
   { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
   { id: 'demandas', rotulo: 'Minhas demandas', Icone: IconeLista },
+  { id: 'arquivos', rotulo: 'Meus arquivos', Icone: IconePasta, soExperimental: true },
   { id: 'alertas', rotulo: 'Alertas', Icone: IconeSino, soAdmin: true },
   { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe, soAdmin: true },
 ];
@@ -63,7 +68,10 @@ export function Casca({
     });
   }
 
-  const itens = ITENS.filter((i) => !i.soAdmin || sessao.perfil === 'ADMIN');
+  const itens = ITENS.filter((i) => (
+    (!i.soAdmin || sessao.perfil === 'ADMIN')
+    && (!i.soExperimental || sessao.recursosExperimentais === true)
+  ));
   const cargo = sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA';
 
   const personificando = sessao.personificadoPor ?? null;

@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "scheduler": "node --experimental-strip-types scripts/scheduler.ts",
     "db:seed-admin": "node --experimental-strip-types scripts/seed-admin.ts",
-    "db:popular-gamificacao": "node --experimental-strip-types scripts/popular-gamificacao.ts"
+    "db:popular-gamificacao": "node --experimental-strip-types scripts/popular-gamificacao.ts",
+    "db:liberar-arquivos-demo": "node --experimental-strip-types scripts/liberar-arquivos-demo.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

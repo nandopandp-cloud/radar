@@ -15,7 +15,7 @@ export default async function Pagina() {
    */
   const usuario = await prisma.usuario.findUnique({
     where: { id: sessao.sub },
-    select: { avatar: true },
+    select: { avatar: true, recursosExperimentais: true },
   });
 
   return (
@@ -26,6 +26,7 @@ export default async function Pagina() {
         email: sessao.email,
         perfil: sessao.perfil,
         avatar: usuario?.avatar ?? null,
+        recursosExperimentais: usuario?.recursosExperimentais ?? false,
         personificadoPor: sessao.personificadoPor ?? null,
       }}
     />

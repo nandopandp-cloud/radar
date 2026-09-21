@@ -504,7 +504,12 @@ export function ModalNovaDemanda({
                     Os arquivos são copiados para cada demanda criada pela recorrência.
                   </p>
                 )}
-                <AnexosPendentes anexos={anexos} aoMudar={setAnexos} notificar={notificar} />
+                <AnexosPendentes
+                  anexos={anexos}
+                  aoMudar={setAnexos}
+                  notificar={notificar}
+                  mostrarDrive={sessao.recursosExperimentais === true}
+                />
               </div>
             </div>
 
