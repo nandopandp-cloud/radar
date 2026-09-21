@@ -74,6 +74,13 @@ export type AnexoPendente = {
   conteudo: string;
 };
 
+/** Pessoa que pode ser marcada com @ — o recorte de /api/usuarios/mencionaveis. */
+export type Mencionavel = {
+  id: string;
+  nome: string;
+  avatar?: string | null;
+};
+
 export type Comentario = {
   id: string;
   texto: string;
@@ -81,6 +88,8 @@ export type Comentario = {
   autorNome: string;
   criadoEm: string;
   autor?: { avatar?: string | null } | null;
+  /** Quem foi marcado com @ neste comentário. */
+  mencoes?: { usuario: { id: string; nome: string } }[];
 };
 
 export type Toast = { id: number; texto: string; tipo: 'ok' | 'erro' | 'info' };

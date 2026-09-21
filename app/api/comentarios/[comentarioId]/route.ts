@@ -27,6 +27,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     return NextResponse.json({ erro: 'Você não pode remover este comentário.' }, { status: 403 });
   }
 
+  // As menções caem junto por cascade. É intencional: se o comentário que
+  // marcava alguém deixou de existir, o convite que ele representava também
+  // deixou — e com ele o acesso à demanda, a menos que outro comentário
+  // ainda mencione a mesma pessoa.
   await prisma.comentario.delete({ where: { id: comentarioId } });
   return NextResponse.json({ ok: true });
 }

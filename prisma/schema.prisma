@@ -34,6 +34,7 @@ model Usuario {
   progresso  Progresso?
   conquistas Conquista[]
   missoes    Missao[]
+  mencoes    Mencao[]
 
   @@index([ativo])
 }
@@ -209,7 +210,36 @@ model Comentario {
 
   criadoEm  DateTime @default(now())
 
+  mencoes   Mencao[]
+
   @@index([demandaId, criadoEm])
+}
+
+/// Alguém marcado com @ dentro de um comentário.
+///
+/// Existe como tabela, e não como texto dentro do comentário, por dois
+/// motivos: é ela que dá à pessoa mencionada acesso à demanda (ver
+/// `lib/acesso.ts`), e é o que permite responder "quem já foi avisado" sem
+/// reinterpretar o texto a cada leitura.
+///
+/// Apagado o comentário, a menção cai junto — e com ela o acesso que
+/// concedia, a menos que outra menção na mesma demanda ainda exista.
+model Mencao {
+  id           String     @id @default(cuid())
+  comentarioId String
+  comentario   Comentario @relation(fields: [comentarioId], references: [id], onDelete: Cascade)
+
+  /// Quem foi mencionado. Removida a conta, a menção some com ela: sem
+  /// usuário não há acesso a conceder nem e-mail a enviar.
+  usuarioId    String
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  criadoEm     DateTime   @default(now())
+
+  /// A mesma pessoa não é marcada duas vezes no mesmo comentário, mesmo que
+  /// o nome dela apareça repetido no texto.
+  @@unique([comentarioId, usuarioId])
+  @@index([usuarioId])
 }
 
 /// Registro de cada disparo, para auditoria e para evitar envio duplicado no mesmo dia.

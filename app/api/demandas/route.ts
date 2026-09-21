@@ -8,9 +8,10 @@ import { registrarAtividade } from '@/lib/registrar-atividade';
 export const dynamic = 'force-dynamic';
 
 /**
- * Lista demandas. Analista vê só as próprias; admin vê as de todos e pode
- * filtrar por autor com ?autorId=. O recorte por mês (?de=&ate=) alimenta o
- * calendário sem trazer o histórico inteiro.
+ * Lista demandas. Analista vê as próprias e aquelas em que foi mencionado num
+ * comentário; admin vê as de todos e pode filtrar por autor com ?autorId=.
+ * O recorte por mês (?de=&ate=) alimenta o calendário sem trazer o histórico
+ * inteiro.
  */
 export async function GET(req: Request) {
   const sessao = await sessaoAtual();
@@ -21,17 +22,25 @@ export async function GET(req: Request) {
   const ate = searchParams.get('ate');
   const autorFiltro = searchParams.get('autorId');
 
-  // O escopo é a regra de segurança: analista nunca escapa do próprio id.
-  const autorId =
+  // O escopo é a regra de segurança: analista nunca escapa do próprio id —
+  // exceto pelas demandas em que foi mencionado, que o convidam explicitamente.
+  // É o mesmo recorte de lib/acesso.ts; as duas regras precisam andar juntas,
+  // senão o e-mail de menção abre uma demanda que a lista não mostra.
+  const escopo =
     sessao.perfil === 'ADMIN'
       ? autorFiltro && autorFiltro !== 'TODOS'
-        ? autorFiltro
-        : undefined
-      : sessao.sub;
+        ? { autorId: autorFiltro }
+        : {}
+      : {
+          OR: [
+            { autorId: sessao.sub },
+            { comentarios: { some: { mencoes: { some: { usuarioId: sessao.sub } } } } },
+          ],
+        };
 
   const demandas = await prisma.demanda.findMany({
     where: {
-      ...(autorId ? { autorId } : {}),
+      ...escopo,
       ...(de && ate
         ? { prazo: { gte: diaParaDate(de), lte: diaParaDate(ate) } }
         : {}),

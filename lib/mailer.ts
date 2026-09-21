@@ -116,7 +116,9 @@ export async function enviarEmail(opcoes: {
   assunto: string;
   html: string;
   texto: string;
-  diaReferencia: string;
+  /// Contexto do alerta diário. Não afeta o envio; os avisos de comentário
+  /// simplesmente não o informam.
+  diaReferencia?: string;
 }): Promise<ResultadoEnvio> {
   const remetenteBruto = process.env.MAIL_FROM?.trim() || 'Radar <radar@localhost>';
 

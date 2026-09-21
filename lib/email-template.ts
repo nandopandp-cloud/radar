@@ -7,20 +7,18 @@ import {
   type Status,
 } from '@/lib/dominio';
 import type { GrupoAutor } from '@/lib/vencidas';
+import {
+  BASE_URL,
+  BORDA,
+  MARCA,
+  MARCA_ESCURA,
+  TINTA,
+  TINTA_SUAVE,
+  escapar,
+  linkDemanda,
+  primeiroNome,
+} from '@/lib/email-base';
 
-/** Base pública, para links e imagens do e-mail resolverem fora do app. */
-const BASE_URL = (
-  process.env.APP_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : 'https://radar-mu-seven.vercel.app')
-).replace(/\/$/, '');
-
-const MARCA = '#2563eb';
-const MARCA_ESCURA = '#1d4ed8';
-const TINTA = '#0f172a';
-const TINTA_SUAVE = '#64748b';
-const BORDA = '#e2e8f0';
 const ATRASADA = '#ef4444';
 const ATRASADA_FUNDO = '#fef2f2';
 const ATRASADA_BORDA = '#fecaca';
@@ -28,25 +26,8 @@ const HOJE_COR = '#2563eb';
 const HOJE_FUNDO = '#eff6ff';
 const HOJE_BORDA = '#bfdbfe';
 
-function escapar(texto: string): string {
-  return texto
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function primeiroNome(nome: string): string {
-  return nome.trim().split(/\s+/)[0] ?? nome;
-}
-
 function selo(texto: string, cores: { fundo: string; texto: string; borda: string }): string {
   return `<span style="display:inline-block;padding:4px 11px;border-radius:999px;background:${cores.fundo};color:${cores.texto};border:1px solid ${cores.borda};font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap;">${escapar(texto)}</span>`;
-}
-
-/** Link direto para a demanda dentro do Radar. */
-function linkDemanda(id: string): string {
-  return `${BASE_URL}/?demanda=${id}`;
 }
 
 function cartaoDemanda(d: GrupoAutor['demandas'][number]): string {

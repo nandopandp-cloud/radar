@@ -4,9 +4,14 @@ import { sessaoAtual, type Sessao } from '@/lib/auth';
 export type Negado = { erro: string; codigo: 401 | 403 | 404 };
 
 /**
- * Quem pode abrir uma demanda: o autor e qualquer admin — o mesmo recorte que
- * a listagem já aplica. Anexos e comentários herdam essa regra, para nada
- * ficar visível por um caminho que a lista não mostraria.
+ * Quem pode abrir uma demanda: o autor, qualquer admin e quem foi mencionado
+ * em algum comentário dela — o mesmo recorte que a listagem já aplica, mais
+ * o convite implícito que a menção representa. Anexos e comentários herdam
+ * essa regra, para nada ficar visível por um caminho que a lista não mostraria.
+ *
+ * A menção concede acesso porque o e-mail de "você foi mencionado" leva a um
+ * link da demanda; sem isso ele terminaria num 403. Apagado o comentário que
+ * continha a menção, o acesso vai junto.
  */
 export async function acessoADemanda(
   id: string,
@@ -21,7 +26,11 @@ export async function acessoADemanda(
   if (!demanda) return { erro: 'Demanda não encontrada.', codigo: 404 };
 
   if (sessao.perfil !== 'ADMIN' && demanda.autorId !== sessao.sub) {
-    return { erro: 'Esta demanda não é sua.', codigo: 403 };
+    const mencionado = await prisma.mencao.findFirst({
+      where: { usuarioId: sessao.sub, comentario: { demandaId: id } },
+      select: { id: true },
+    });
+    if (!mencionado) return { erro: 'Esta demanda não é sua.', codigo: 403 };
   }
   return { ok: true, sessao, autorId: demanda.autorId };
 }
