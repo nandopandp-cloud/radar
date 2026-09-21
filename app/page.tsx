@@ -26,6 +26,7 @@ export default async function Pagina() {
         email: sessao.email,
         perfil: sessao.perfil,
         avatar: usuario?.avatar ?? null,
+        personificadoPor: sessao.personificadoPor ?? null,
       }}
     />
   );

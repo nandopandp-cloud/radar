@@ -35,6 +35,8 @@ model Usuario {
   conquistas Conquista[]
   missoes    Missao[]
   mencoes    Mencao[]
+  linksGerados      LinkAcesso[] @relation("AdminDoLink")
+  linksRecebidos    LinkAcesso[] @relation("AlvoDoLink")
 
   @@index([ativo])
 }
@@ -240,6 +242,45 @@ model Mencao {
   /// o nome dela apareça repetido no texto.
   @@unique([comentarioId, usuarioId])
   @@index([usuarioId])
+}
+
+/// Link de uso único que deixa um admin entrar como outra pessoa.
+///
+/// Serve ao suporte: ver e agir no Radar exatamente como o analista vê, para
+/// reproduzir um problema. Como é um desvio da autenticação normal, cada link
+/// é rastreado de ponta a ponta — quem gerou, para quem, quando foi usado e
+/// de onde. Sem esse registro a personificação apagaria a autoria das ações.
+///
+/// O token nunca é guardado em claro: gravamos só o hash SHA-256. Vazado o
+/// banco, os links não podem ser reaproveitados.
+model LinkAcesso {
+  id        String   @id @default(cuid())
+
+  /// SHA-256 do token que vai na URL. O token em si só existe no momento da
+  /// criação, quando é mostrado uma única vez ao admin.
+  tokenHash String   @unique
+
+  /// Quem gerou o link.
+  adminId   String
+  admin     Usuario  @relation("AdminDoLink", fields: [adminId], references: [id], onDelete: Cascade)
+  /// Conta que será personificada.
+  alvoId    String
+  alvo      Usuario  @relation("AlvoDoLink", fields: [alvoId], references: [id], onDelete: Cascade)
+
+  /// Prazo curto: o link morre sozinho mesmo que ninguém o use.
+  expiraEm  DateTime
+  /// Preenchido no primeiro uso. Não nulo = queimado, não serve mais.
+  usadoEm   DateTime?
+  /// IP de quem resgatou, para a trilha de auditoria.
+  usadoIp   String?
+  /// Revogado manualmente pelo admin antes de expirar.
+  revogadoEm DateTime?
+
+  criadoEm  DateTime @default(now())
+
+  @@index([alvoId])
+  @@index([adminId, criadoEm])
+  @@index([expiraEm])
 }
 
 /// Registro de cada disparo, para auditoria e para evitar envio duplicado no mesmo dia.

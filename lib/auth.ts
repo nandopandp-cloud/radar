@@ -19,14 +19,34 @@ function segredo(): Uint8Array {
   return new TextEncoder().encode(valor);
 }
 
-export type Sessao = { sub: string; email: string; nome: string; perfil: 'ANALISTA' | 'ADMIN' };
+export type Sessao = {
+  sub: string;
+  email: string;
+  nome: string;
+  perfil: 'ANALISTA' | 'ADMIN';
+  /**
+   * Preenchido só em sessão aberta por link de acesso: quem é o admin por trás
+   * da personificação. A sessão continua sendo a do usuário personificado —
+   * `sub`, `perfil` e tudo mais são dele —, mas isto permite que a interface
+   * avise e que a auditoria saiba quem realmente está agindo.
+   */
+  personificadoPor?: { id: string; nome: string };
+};
 
-export async function criarToken(sessao: Sessao): Promise<string> {
-  return new SignJWT({ email: sessao.email, nome: sessao.nome, perfil: sessao.perfil })
+export async function criarToken(
+  sessao: Sessao,
+  opcoes: { duracaoHoras?: number } = {},
+): Promise<string> {
+  return new SignJWT({
+    email: sessao.email,
+    nome: sessao.nome,
+    perfil: sessao.perfil,
+    ...(sessao.personificadoPor ? { pp: sessao.personificadoPor } : {}),
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(sessao.sub)
     .setIssuedAt()
-    .setExpirationTime(`${DURACAO_HORAS}h`)
+    .setExpirationTime(`${opcoes.duracaoHoras ?? DURACAO_HORAS}h`)
     .sign(segredo());
 }
 
@@ -34,11 +54,15 @@ export async function lerToken(token: string): Promise<Sessao | null> {
   try {
     const { payload } = await jwtVerify(token, segredo(), { algorithms: ['HS256'] });
     if (!payload.sub) return null;
+    const pp = payload.pp as { id?: unknown; nome?: unknown } | undefined;
     return {
       sub: payload.sub,
       email: String(payload.email ?? ''),
       nome: String(payload.nome ?? ''),
       perfil: payload.perfil === 'ADMIN' ? 'ADMIN' : 'ANALISTA',
+      ...(pp && typeof pp.id === 'string'
+        ? { personificadoPor: { id: pp.id, nome: String(pp.nome ?? '') } }
+        : {}),
     };
   } catch {
     return null;
@@ -62,6 +86,13 @@ export function opcoesCookie(maxAgeSegundos: number) {
 }
 
 export const DURACAO_SEGUNDOS = DURACAO_HORAS * 3600;
+
+/**
+ * Sessão de personificação dura bem menos que a normal: é para uma tarefa de
+ * suporte pontual, não para o dia de trabalho. Expirada, o admin gera outro link.
+ */
+export const PERSONIFICACAO_HORAS = 1;
+export const PERSONIFICACAO_SEGUNDOS = PERSONIFICACAO_HORAS * 3600;
 
 /** Sessão exigida em rotas de API; lança 401 implicitamente ao retornar null. */
 export async function exigirSessao(): Promise<Sessao | null> {

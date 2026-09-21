@@ -66,8 +66,33 @@ export function Casca({
   const itens = ITENS.filter((i) => !i.soAdmin || sessao.perfil === 'ADMIN');
   const cargo = sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA';
 
+  const personificando = sessao.personificadoPor ?? null;
+
+  async function encerrarAcesso() {
+    await fetch('/api/auth/encerrar-acesso', { method: 'POST' });
+    window.location.href = '/login';
+  }
+
   return (
-    <div className={`casca${recolhida ? ' barra-recolhida' : ''}`}>
+    <div
+      className={`casca${recolhida ? ' barra-recolhida' : ''}${
+        personificando ? ' com-faixa-acesso' : ''
+      }`}
+    >
+      {/* Faixa fixa no topo: enquanto ela estiver visível, tudo que for feito
+          será registrado com o nome da pessoa personificada. */}
+      {personificando && (
+        <div className="faixa-acesso" role="status">
+          <span className="faixa-acesso-texto">
+            <strong>Você está na conta de {sessao.nome}.</strong> Acesso aberto por{' '}
+            {personificando.nome}. Tudo que você fizer aqui será registrado como
+            sendo desta pessoa.
+          </span>
+          <button className="faixa-acesso-sair" onClick={encerrarAcesso}>
+            Encerrar acesso
+          </button>
+        </div>
+      )}
       <aside className={`barra-lateral${menuAberto ? ' aberta' : ''}`}>
         <div className="barra-topo">
           {recolhida ? <LogoRadar size={34} /> : <MarcaRadar />}

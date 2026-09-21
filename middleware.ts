@@ -6,8 +6,12 @@ import { COOKIE_SESSAO, lerToken } from '@/lib/auth';
  *
  * O endpoint de disparo é exceção porque o agendador externo o chama sem
  * cookie — ele tem sua própria proteção por CRON_SECRET.
+ *
+ * /acesso/<token> também fica aberta: é o resgate do link de personificação,
+ * que por definição é aberto sem sessão válida. A proteção dela é o próprio
+ * token — 256 bits, uso único e validade curta, conferidos na página.
  */
-const PUBLICAS = ['/login', '/api/auth/login'];
+const PUBLICAS = ['/login', '/api/auth/login', '/acesso'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

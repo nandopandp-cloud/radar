@@ -51,6 +51,20 @@ export type SessaoUI = {
   email: string;
   perfil: 'ANALISTA' | 'ADMIN';
   avatar?: string | null;
+  /** Presente só quando um admin entrou nesta conta por link de acesso. */
+  personificadoPor?: { id: string; nome: string } | null;
+};
+
+/** Um link de acesso no histórico do admin. */
+export type LinkAcesso = {
+  id: string;
+  criadoEm: string;
+  expiraEm: string;
+  usadoEm: string | null;
+  usadoIp: string | null;
+  revogadoEm: string | null;
+  admin: { id: string; nome: string };
+  alvo: { id: string; nome: string };
 };
 
 /** Metadados de um anexo. O conteúdo fica em /api/anexos/<id>. */
