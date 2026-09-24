@@ -38,6 +38,8 @@ export type Demanda = {
   prazo: string;
   concluidaEm: string | null;
   vezesAlertada: number;
+  /** Quantas vezes um analista adiou o prazo. Admin vê como selo no cartão. */
+  reagendamentos?: number;
   autorId: string;
   autor: UsuarioResumo;
   criadoEm: string;
@@ -95,6 +97,19 @@ export type Comentario = {
   autor?: { avatar?: string | null } | null;
   /** Quem foi marcado com @ neste comentário. */
   mencoes?: { usuario: { id: string; nome: string } }[];
+};
+
+/** Uma troca da data de entrega — o histórico que só o admin vê. */
+export type Reagendamento = {
+  id: string;
+  prazoAnterior: string;
+  prazoNovo: string;
+  /** Dias que faltavam para o prazo anterior quando ele foi trocado. */
+  diasAntes: number;
+  usuarioNome: string;
+  perfil: string;
+  personificadoPor: string | null;
+  criadoEm: string;
 };
 
 export type Toast = { id: number; texto: string; tipo: 'ok' | 'erro' | 'info' };

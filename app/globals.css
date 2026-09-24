@@ -494,6 +494,10 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .selo-prazo.ok { background: #f1f5f9; color: var(--tinta-suave); border-color: var(--borda); }
 .selo-neutro { background: #f8fafc; color: var(--tinta-suave); border-color: var(--borda); }
 .selo-categoria { background: var(--marca-clara); color: var(--marca); border-color: var(--marca-borda); }
+/* Prazo adiado pelo responsável — sinal para o admin, não uma situação. */
+.selo-reagendada { background: var(--andamento-fundo); color: #b45309; border-color: #fde68a; }
+.selo-vespera { background: var(--atrasada-fundo); color: #b91c1c; border-color: var(--atrasada-borda); }
+.texto-reagendada { color: #b45309; font-weight: 600; }
 
 /* ══ Botões ═════════════════════════════════════════════ */
 .btn {
@@ -912,6 +916,22 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .linha { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .espalhar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .texto-suave { color: var(--tinta-suave); font-size: 13px; }
+
+/* ══ Prazo travado e trocas de prazo (gaveta) ═══════════ */
+.aviso-prazo-travado {
+  margin: -6px 0 14px; padding: 9px 12px; border-radius: 10px;
+  background: var(--andamento-fundo); border: 1px solid #fde68a;
+  font-size: 12.5px; line-height: 1.5; color: #92400e;
+}
+.reagendamentos { list-style: none; margin: 0 0 18px; padding: 0; display: flex; flex-direction: column; }
+.reagendamentos li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+}
+.reagendamentos li:last-child { border-bottom: none; }
+.reagendamento-datas { font-weight: 600; font-variant-numeric: tabular-nums; }
+.reagendamento-quem { color: var(--tinta-suave); font-size: 12.5px; }
+.reagendamentos li .selo-vespera { margin-left: auto; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 
 .girando { animation: girar .8s linear infinite; display: inline-block; }

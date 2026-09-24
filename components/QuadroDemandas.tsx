@@ -96,6 +96,11 @@ function Cartao({
           <IconeCalendarioMini />
           {atrasada ? `Venceu em ${formatarDiaCurto(prazo)}` : formatarDiaCurto(prazo)}
         </span>
+        {mostrarAutor && (demanda.reagendamentos ?? 0) > 0 && (
+          <span className="selo selo-reagendada" title="Vezes que o responsável adiou o prazo">
+            Adiada {demanda.reagendamentos}×
+          </span>
+        )}
       </div>
 
       {mostrarAutor && (

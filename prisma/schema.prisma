@@ -85,6 +85,9 @@ model Demanda {
   concluidaEm  DateTime?
   /// Quantos alertas de vencimento já foram enviados para esta demanda.
   vezesAlertada Int      @default(0)
+  /// Quantas vezes um analista adiou o prazo. Adiamentos feitos por admin não
+  /// contam: são decisão da gestão, não sinal de que o prazo está sendo empurrado.
+  reagendamentos Int     @default(0)
 
   /// Quem lançou a demanda — e quem recebe o alerta.
   autorId      String
@@ -95,6 +98,7 @@ model Demanda {
 
   anexos       Anexo[]
   comentarios  Comentario[]
+  historicoPrazo Reagendamento[]
 
   /// Preenchido quando a demanda nasceu de uma regra de recorrência.
   recorrenciaId String?
@@ -103,6 +107,36 @@ model Demanda {
   @@index([status, prazo])
   @@index([autorId, prazo])
   @@index([recorrenciaId])
+}
+
+/// Cada troca da data de entrega de uma demanda, feita por qualquer pessoa.
+///
+/// Existe para o admin enxergar quem vive empurrando prazo: o analista não
+/// pode mais mexer na entrega no dia do vencimento, mas ainda pode adiar na
+/// véspera, todo dia, e nunca ter nada atrasado. `diasAntes` é o que denuncia
+/// esse padrão — adiamento com 1 dia de antecedência é o sinal de alerta.
+model Reagendamento {
+  id            String   @id @default(cuid())
+  demandaId     String
+  demanda       Demanda  @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+
+  prazoAnterior DateTime
+  prazoNovo     DateTime
+  /// Quantos dias faltavam para o prazo anterior quando ele foi trocado.
+  diasAntes     Int
+
+  /// Mesmo critério do comentário: removida a conta, o registro fica e
+  /// `usuarioNome` preserva a autoria.
+  usuarioId     String?
+  usuarioNome   String
+  /// Perfil de quem trocou, no momento da troca — admin pode mudar livremente.
+  perfil        String
+  /// Admin por trás da troca, quando ela foi feita por link de acesso.
+  personificadoPor String?
+
+  criadoEm      DateTime @default(now())
+
+  @@index([demandaId, criadoEm])
 }
 
 /// Regra que repete uma demanda no tempo. Guarda o molde (título, responsável,

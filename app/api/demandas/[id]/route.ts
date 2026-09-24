@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sessaoAtual } from '@/lib/auth';
-import { diaParaDate } from '@/lib/datas';
+import { diaParaDate, paraDiaISO } from '@/lib/datas';
+import { diasEntre, prazoTravado } from '@/lib/prazo';
 import { ehPrioridade, ehStatus } from '@/lib/dominio';
 import { registrarAtividade } from '@/lib/registrar-atividade';
 
@@ -67,13 +68,50 @@ export async function PATCH(req: Request, { params }: Ctx) {
     );
   }
 
-  const demanda = await prisma.demanda.update({
-    where: { id },
-    data: dados,
-    include: {
-      autor: { select: { id: true, nome: true, email: true, equipe: true } },
-      recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
-    },
+  // Troca de data de entrega: travada para o analista no dia do prazo e
+  // registrada sempre, para o admin enxergar quem vive adiando.
+  const hoje = paraDiaISO();
+  const prazoAnterior = check.demanda.prazo.toISOString().slice(0, 10);
+  const prazoNovo = 'prazo' in dados ? (dados.prazo as Date).toISOString().slice(0, 10) : prazoAnterior;
+  const trocouPrazo = prazoNovo !== prazoAnterior;
+  if (trocouPrazo && prazoTravado(prazoAnterior, hoje, check.sessao.perfil)) {
+    return NextResponse.json(
+      {
+        erro: prazoAnterior === hoje
+          ? 'A demanda vence hoje: a data de entrega não pode mais ser alterada. Fale com um admin da equipe.'
+          : 'O prazo desta demanda já venceu: a data de entrega não pode mais ser alterada. Fale com um admin da equipe.',
+      },
+      { status: 403 },
+    );
+  }
+  // Adiamento de analista soma no contador que o admin vê no cartão.
+  if (trocouPrazo && check.sessao.perfil !== 'ADMIN' && prazoNovo > prazoAnterior) {
+    dados.reagendamentos = { increment: 1 };
+  }
+
+  const demanda = await prisma.$transaction(async (tx) => {
+    if (trocouPrazo) {
+      await tx.reagendamento.create({
+        data: {
+          demandaId: id,
+          prazoAnterior: check.demanda.prazo,
+          prazoNovo: dados.prazo as Date,
+          diasAntes: diasEntre(hoje, prazoAnterior),
+          usuarioId: check.sessao.sub,
+          usuarioNome: check.sessao.nome,
+          perfil: check.sessao.perfil,
+          personificadoPor: check.sessao.personificadoPor?.nome ?? null,
+        },
+      });
+    }
+    return tx.demanda.update({
+      where: { id },
+      data: dados,
+      include: {
+        autor: { select: { id: true, nome: true, email: true, equipe: true } },
+        recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+      },
+    });
   });
   await registrarAtividade(check.sessao.sub);
   return NextResponse.json(demanda);

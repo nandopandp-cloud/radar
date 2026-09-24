@@ -13,9 +13,10 @@ import {
   CATEGORIAS, PRIORIDADES, ROTULO_PRIORIDADE, ROTULO_SITUACAO, STATUS,
   ROTULO_STATUS, situacaoDe, type Prioridade, type Status,
 } from '@/lib/dominio';
-import { formatarDiaExtenso } from '@/lib/datas';
+import { formatarDiaCurto, formatarDiaExtenso } from '@/lib/datas';
+import { adiadoNaVespera, prazoTravado } from '@/lib/prazo';
 import { useDialogo } from '@/components/Dialogo';
-import type { Anexo, Comentario, Demanda, Notificar, SessaoUI } from '@/lib/tipos';
+import type { Anexo, Comentario, Demanda, Notificar, Reagendamento, SessaoUI } from '@/lib/tipos';
 
 export function GavetaDemanda({
   demanda,
@@ -40,6 +41,8 @@ export function GavetaDemanda({
   const [aba, setAba] = useState<'detalhes' | 'anexos' | 'comentarios'>('detalhes');
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
+  const [reagendamentos, setReagendamentos] = useState<Reagendamento[]>([]);
+  const ehAdmin = sessao.perfil === 'ADMIN';
   const [form, setForm] = useState({
     titulo: demanda.titulo,
     descricao: demanda.descricao ?? '',
@@ -70,16 +73,23 @@ export function GavetaDemanda({
       ]);
       if (ra.ok) setAnexos(await ra.json());
       if (rc.ok) setComentarios(await rc.json());
+      // O histórico de prazos é ferramenta do admin; o analista nem pede.
+      if (ehAdmin) {
+        const rr = await fetch(`/api/demandas/${demanda.id}/reagendamentos`);
+        if (rr.ok) setReagendamentos(await rr.json());
+      }
     } catch {
       // Silencioso de propósito: um aviso aqui atrapalharia mais que ajudaria.
     }
-  }, [demanda.id]);
+  }, [demanda.id, ehAdmin]);
 
   useEffect(() => { carregarExtras(); }, [carregarExtras]);
 
   const prazo = demanda.prazo.slice(0, 10);
   const inicio = demanda.inicio?.slice(0, 10) ?? null;
   const situacao = situacaoDe(demanda.status, prazo, hoje);
+  // No dia do prazo o analista não mexe mais na entrega — ver lib/prazo.ts.
+  const travado = prazoTravado(prazo, hoje, sessao.perfil);
   const diasVencido = Math.round(
     (Date.parse(`${hoje}T00:00:00Z`) - Date.parse(`${prazo}T00:00:00Z`)) / 86_400_000,
   );
@@ -198,6 +208,11 @@ export function GavetaDemanda({
             Criada em {formatarDiaExtenso(demanda.criadoEm.slice(0, 10))}
             {demanda.vezesAlertada > 0 &&
               ` · ${demanda.vezesAlertada} ${demanda.vezesAlertada === 1 ? 'aviso enviado' : 'avisos enviados'}`}
+            {ehAdmin && (demanda.reagendamentos ?? 0) > 0 && (
+              <> · <span className="texto-reagendada">
+                adiada {demanda.reagendamentos}× pelo responsável
+              </span></>
+            )}
           </div>
 
           {/* Nasceu de uma regra: o selo diz qual, e deixa parar a série. */}
@@ -316,11 +331,12 @@ export function GavetaDemanda({
                     max={form.prazo || undefined}
                     onChange={(e) => {
                       const valor = e.target.value;
-                      // Empurra a entrega junto se o início passar dela.
+                      // Empurra a entrega junto se o início passar dela —
+                      // exceto com o prazo travado, quando o `max` já segura.
                       setForm((f) => ({
                         ...f,
                         inicio: valor,
-                        prazo: valor && valor > f.prazo ? valor : f.prazo,
+                        prazo: !travado && valor && valor > f.prazo ? valor : f.prazo,
                       }));
                     }}
                   />
@@ -330,10 +346,20 @@ export function GavetaDemanda({
                   <input
                     type="date" className="entrada" value={form.prazo}
                     min={form.inicio || undefined}
+                    disabled={travado}
+                    title={travado ? 'Só um admin da equipe pode alterar' : undefined}
                     onChange={(e) => setForm({ ...form, prazo: e.target.value })}
                   />
                 </div>
               </div>
+              {travado && (
+                <p className="aviso-prazo-travado">
+                  {prazo === hoje
+                    ? 'A demanda vence hoje, então a data de entrega não pode mais ser alterada. Se não for concluída hoje, passa a contar como atrasada amanhã.'
+                    : 'O prazo já venceu, então a data de entrega não pode mais ser alterada.'}
+                  {' '}Só um admin da equipe pode mudar esta data.
+                </p>
+              )}
               <div className="campo">
                 <label className="rotulo">Categoria</label>
                 <select
@@ -423,6 +449,39 @@ export function GavetaDemanda({
                   </div>
                 )}
               </div>
+
+              {ehAdmin && reagendamentos.length > 0 && (
+                <>
+                  <div className="secao-titulo"><IconeCalendario size={18} /> Trocas de prazo</div>
+                  <ul className="reagendamentos">
+                    {reagendamentos.map((r) => {
+                      const adiou = r.prazoNovo > r.prazoAnterior;
+                      const vespera = r.perfil !== 'ADMIN' && adiou && adiadoNaVespera(r.diasAntes);
+                      return (
+                        <li key={r.id} className={vespera ? 'vespera' : undefined}>
+                          <span className="reagendamento-datas">
+                            {formatarDiaCurto(r.prazoAnterior.slice(0, 10))} → {formatarDiaCurto(r.prazoNovo.slice(0, 10))}
+                          </span>
+                          <span className="reagendamento-quem">
+                            {r.usuarioNome}
+                            {r.perfil === 'ADMIN' && ' (admin)'}
+                            {r.personificadoPor && ` · via ${r.personificadoPor}`}
+                            {' · '}
+                            {r.diasAntes < 0
+                              ? `${-r.diasAntes} ${r.diasAntes === -1 ? 'dia' : 'dias'} após vencer`
+                              : r.diasAntes === 0
+                                ? 'no dia do vencimento'
+                                : r.diasAntes === 1
+                                  ? 'na véspera do vencimento'
+                                  : `${r.diasAntes} dias antes do vencimento`}
+                          </span>
+                          {vespera && <span className="selo selo-vespera">Adiada na véspera</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
 
               {demanda.descricao && (
                 <>

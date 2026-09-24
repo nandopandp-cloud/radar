@@ -357,7 +357,18 @@ export function TelaDemandas({
                         <span className="texto-suave">—</span>
                       )}
                     </td>
-                    <td className="col-estreita">{formatarDiaCurto(d.prazo.slice(0, 10))}</td>
+                    <td className="col-estreita">
+                      {formatarDiaCurto(d.prazo.slice(0, 10))}
+                      {sessao.perfil === 'ADMIN' && (d.reagendamentos ?? 0) > 0 && (
+                        <span
+                          className="selo selo-reagendada"
+                          style={{ marginLeft: 6 }}
+                          title="Vezes que o responsável adiou o prazo"
+                        >
+                          {d.reagendamentos}×
+                        </span>
+                      )}
+                    </td>
                     <td className="col-estreita">
                       <span className={`selo selo-${situacao}`}>
                         {ROTULO_SITUACAO[situacao as Situacao]}
