@@ -200,15 +200,17 @@ model AnexoRecorrencia {
   nome          String
   tipo          String
   tamanho       Int
-  conteudo      String
+  /// Caminho do arquivo no bucket do R2, dividido com as demandas geradas.
+  chave         String
 
   criadoEm      DateTime    @default(now())
 
   @@index([recorrenciaId])
+  @@index([chave])
 }
 
-/// Arquivo anexado a uma demanda (até 1MB), guardado no banco como data URI —
-/// mesmo caminho já usado pelo avatar, que dispensa serviço de storage externo.
+/// Arquivo anexado a uma demanda (até 10MB). O conteúdo fica no Cloudflare R2;
+/// aqui ficam só os metadados e a chave do objeto no bucket.
 model Anexo {
   id        String   @id @default(cuid())
   demandaId String
@@ -219,8 +221,9 @@ model Anexo {
   tipo      String
   /// Tamanho em bytes do arquivo original, para exibir na lista.
   tamanho   Int
-  /// Conteúdo completo em data URI (data:<tipo>;base64,...).
-  conteudo  String
+  /// Caminho do arquivo no bucket do R2. Pode repetir em outras linhas: as
+  /// demandas de uma recorrência dividem o arquivo do molde.
+  chave     String
 
   /// Quem anexou. Removida a conta, o anexo fica e `autorId` vira nulo —
   /// `autorNome` é quem preserva a autoria. (Se a conta removida for a do dono
@@ -232,6 +235,7 @@ model Anexo {
   criadoEm  DateTime @default(now())
 
   @@index([demandaId, criadoEm])
+  @@index([chave])
 }
 
 /// Comentário deixado numa demanda por quem tem acesso a ela.

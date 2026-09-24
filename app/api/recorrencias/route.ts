@@ -4,7 +4,8 @@ import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate } from '@/lib/datas';
 import { ehPrioridade } from '@/lib/dominio';
 import { ehFrequencia, proximasDatas, validarRegra, type Regra } from '@/lib/recorrencia';
-import { MAXIMO_POR_DEMANDA, validarAnexo } from '@/lib/anexos';
+import { MAXIMO_POR_DEMANDA } from '@/lib/anexos';
+import { confirmarAnexos, type AnexoConfirmado } from '@/lib/anexos-servidor';
 import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
@@ -66,20 +67,18 @@ export async function POST(req: Request) {
       ? corpo.autorId
       : sessao.sub;
 
-  // Anexos do molde: validados aqui, copiados em cada demanda gerada.
-  const anexosMolde = [];
-  if (Array.isArray(corpo.anexos)) {
+  // Anexos do molde, já no R2: cada demanda gerada aponta para os mesmos arquivos.
+  let anexosMolde: AnexoConfirmado[] = [];
+  if (Array.isArray(corpo.anexos) && corpo.anexos.length > 0) {
     if (corpo.anexos.length > MAXIMO_POR_DEMANDA) {
       return NextResponse.json(
         { erro: `Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.` },
         { status: 400 },
       );
     }
-    for (const entrada of corpo.anexos) {
-      const resultado = validarAnexo(entrada);
-      if (!resultado.ok) return NextResponse.json({ erro: resultado.erro }, { status: 400 });
-      anexosMolde.push(resultado.valor);
-    }
+    const confirmados = await confirmarAnexos(corpo.anexos, sessao.sub);
+    if (!confirmados.ok) return NextResponse.json({ erro: confirmados.erro }, { status: 400 });
+    anexosMolde = confirmados.valor;
   }
 
   const recorrencia = await prisma.recorrencia.create({

@@ -5,21 +5,12 @@ import { IconeBaixar, IconeClipe, IconeEnviar, IconeLixeira } from '@/components
 import { LogoDrive } from '@/components/LogoDrive';
 import { SeletorDrive } from '@/components/SeletorDrive';
 import { tamanhoLegivel, type ArquivoDrive } from '@/lib/drive-demo';
-import {
-  dividirEmLotes, formatarTamanho, MAXIMO_POR_DEMANDA, TAMANHO_MAXIMO,
-} from '@/lib/anexos';
+import { formatarTamanho, MAXIMO_POR_DEMANDA, TAMANHO_MAXIMO, TAMANHO_MAXIMO_TEXTO } from '@/lib/anexos';
 import { useDialogo } from '@/components/Dialogo';
-import type { Anexo, AnexoPendente, Notificar } from '@/lib/tipos';
+import type { Anexo, Notificar } from '@/lib/tipos';
 
-/** Lê um arquivo como data URI, o formato que a API grava. */
-function lerComoDataURI(arquivo: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const leitor = new FileReader();
-    leitor.onload = () => resolve(String(leitor.result));
-    leitor.onerror = () => reject(new Error(`Não foi possível ler "${arquivo.name}".`));
-    leitor.readAsDataURL(arquivo);
-  });
-}
+/** O que a API precisa para registrar um arquivo que já subiu para o R2. */
+export type AnexoEnviado = { chave: string; nome: string; tipo: string };
 
 /** Extensão em caixa alta para o quadradinho da lista: PDF, DOCX, CSV. */
 function extensao(nome: string): string {
@@ -28,30 +19,45 @@ function extensao(nome: string): string {
   return partes.pop()!.slice(0, 4).toUpperCase();
 }
 
-/**
- * Converte os arquivos escolhidos, barrando o que passa de 1MB antes de ler —
- * evita torrar memória e subir só para receber 400 de volta.
- */
-async function prepararArquivos(
-  arquivos: FileList | File[],
-  notificar: Notificar,
-): Promise<AnexoPendente[] | null> {
-  const lista = Array.from(arquivos);
-  if (lista.length === 0) return null;
-
-  const grande = lista.find((a) => a.size > TAMANHO_MAXIMO);
-  if (grande) {
-    notificar(`"${grande.name}" passa de 1MB. Envie um arquivo menor.`, 'erro');
-    return null;
+/** Barra antes de subir o que o servidor recusaria de qualquer forma. */
+function cabeNoLimite(arquivos: File[], jaTem: number, notificar: Notificar): boolean {
+  if (arquivos.length === 0) return false;
+  if (jaTem + arquivos.length > MAXIMO_POR_DEMANDA) {
+    notificar(`Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.`, 'erro');
+    return false;
   }
+  const grande = arquivos.find((a) => a.size > TAMANHO_MAXIMO);
+  if (grande) {
+    notificar(`"${grande.name}" passa de ${TAMANHO_MAXIMO_TEXTO}. Envie um arquivo menor.`, 'erro');
+    return false;
+  }
+  const vazio = arquivos.find((a) => a.size === 0);
+  if (vazio) {
+    notificar(`"${vazio.name}" está vazio.`, 'erro');
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Sobe os arquivos direto no R2, por links que o Radar assina. Sem passar pela
+ * Vercel, o limite de 4,5MB por requisição deixa de valer.
+ */
+export async function subirArquivos(arquivos: File[]): Promise<AnexoEnviado[]> {
+  const res = await fetch('/api/anexos/envio', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ arquivos: arquivos.map((a) => ({ nome: a.name, tamanho: a.size })) }),
+  });
+  const links = await res.json();
+  if (!res.ok) throw new Error(links.erro ?? 'Não foi possível preparar o envio.');
 
   return Promise.all(
-    lista.map(async (a) => ({
-      nome: a.name,
-      tipo: a.type || 'application/octet-stream',
-      tamanho: a.size,
-      conteudo: await lerComoDataURI(a),
-    })),
+    arquivos.map(async (arquivo, i) => {
+      const r = await fetch(links[i].url, { method: 'PUT', body: arquivo }).catch(() => null);
+      if (!r?.ok) throw new Error(`Não foi possível enviar "${arquivo.name}". Tente novamente.`);
+      return { chave: links[i].chave, nome: arquivo.name, tipo: arquivo.type };
+    }),
   );
 }
 
@@ -61,7 +67,7 @@ async function prepararArquivos(
  * que aponta para o arquivo no Drive. É deliberadamente um texto legível —
  * quem abrir entende que é um vínculo, não uma cópia do documento.
  */
-function referenciaDoDrive(a: ArquivoDrive): AnexoPendente {
+function referenciaDoDrive(a: ArquivoDrive): File {
   const texto = [
     'Referência a um arquivo do Google Drive.',
     '',
@@ -73,12 +79,7 @@ function referenciaDoDrive(a: ArquivoDrive): AnexoPendente {
     'quando a conexão com o Google estiver ativa.',
   ].join('\n');
 
-  return {
-    nome: `${a.nome}.link.txt`,
-    tipo: 'text/plain',
-    tamanho: new TextEncoder().encode(texto).length,
-    conteudo: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(texto)))}`,
-  };
+  return new File([texto], `${a.nome}.link.txt`, { type: 'text/plain' });
 }
 
 /** Área de escolher/arrastar arquivos, comum aos dois modos. */
@@ -130,7 +131,7 @@ function AreaDeEnvio({
             <IconeEnviar size={17} />
             <span>
               <strong>Escolha um arquivo</strong> ou arraste aqui
-              <span className="anexo-dica">Qualquer formato, até 1MB cada</span>
+              <span className="anexo-dica">Qualquer formato, até {TAMANHO_MAXIMO_TEXTO} cada</span>
             </span>
           </>
         )}
@@ -170,26 +171,14 @@ export function AnexosPendentes({
   notificar,
   mostrarDrive = false,
 }: {
-  anexos: AnexoPendente[];
-  aoMudar: (anexos: AnexoPendente[]) => void;
+  anexos: File[];
+  aoMudar: (anexos: File[]) => void;
   notificar: Notificar;
   mostrarDrive?: boolean;
 }) {
-  const [lendo, setLendo] = useState(false);
-
-  async function escolher(arquivos: FileList | File[]) {
-    if (anexos.length + Array.from(arquivos).length > MAXIMO_POR_DEMANDA) {
-      return notificar(`Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.`, 'erro');
-    }
-    setLendo(true);
-    try {
-      const prontos = await prepararArquivos(arquivos, notificar);
-      if (prontos) aoMudar([...anexos, ...prontos]);
-    } catch (e) {
-      notificar(e instanceof Error ? e.message : 'Erro ao ler o arquivo.', 'erro');
-    } finally {
-      setLendo(false);
-    }
+  function escolher(arquivos: FileList | File[]) {
+    const lista = Array.from(arquivos);
+    if (cabeNoLimite(lista, anexos.length, notificar)) aoMudar([...anexos, ...lista]);
   }
 
   return (
@@ -197,18 +186,18 @@ export function AnexosPendentes({
       {anexos.length > 0 && (
         <ul className="anexo-lista">
           {anexos.map((a, i) => (
-            <li key={`${a.nome}-${i}`} className="anexo-item">
-              <span className="anexo-ext" aria-hidden="true">{extensao(a.nome)}</span>
+            <li key={`${a.name}-${i}`} className="anexo-item">
+              <span className="anexo-ext" aria-hidden="true">{extensao(a.name)}</span>
               <span className="anexo-texto">
-                <span className="anexo-nome" title={a.nome}>{a.nome}</span>
-                <span className="anexo-meta">{formatarTamanho(a.tamanho)}</span>
+                <span className="anexo-nome" title={a.name}>{a.name}</span>
+                <span className="anexo-meta">{formatarTamanho(a.size)}</span>
               </span>
               <button
                 type="button"
                 className="btn-icone anexo-acao"
                 onClick={() => aoMudar(anexos.filter((_, j) => j !== i))}
                 title="Remover"
-                aria-label={`Remover ${a.nome}`}
+                aria-label={`Remover ${a.name}`}
               >
                 <IconeLixeira size={16} />
               </button>
@@ -218,13 +207,11 @@ export function AnexosPendentes({
       )}
 
       <AreaDeEnvio
-        enviando={lendo}
+        enviando={false}
         aoEscolher={escolher}
         mostrarDrive={mostrarDrive}
         aoEscolherDoDrive={(arquivos) => {
-          if (anexos.length + arquivos.length > MAXIMO_POR_DEMANDA) {
-            return notificar(`Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.`, 'erro');
-          }
+          if (!cabeNoLimite(arquivos.map(referenciaDoDrive), anexos.length, notificar)) return;
           aoMudar([...anexos, ...arquivos.map(referenciaDoDrive)]);
           notificar(
             arquivos.length === 1
@@ -258,57 +245,29 @@ export function AnexosDemanda({
   const { confirmar } = useDialogo();
   const [enviando, setEnviando] = useState(false);
 
-  async function enviar(arquivos: FileList | File[]) {
+  /** Arquivos comuns e vínculos do Drive sobem pelo mesmo caminho. */
+  async function enviar(arquivos: File[], doDrive = false) {
+    if (!cabeNoLimite(arquivos, anexos.length, notificar)) return;
     setEnviando(true);
     try {
-      const prontos = await prepararArquivos(arquivos, notificar);
-      if (!prontos) return;
-
-      // Em lotes: vários arquivos de 1MB em base64 estouram o corpo da requisição.
-      let atualizados: Anexo[] = anexos;
-      for (const lote of dividirEmLotes(prontos)) {
-        const res = await fetch(`/api/demandas/${demandaId}/anexos`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ anexos: lote }),
-        });
-        const corpo = await res.json();
-        if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível anexar.');
-        atualizados = corpo;
-      }
-      aoMudar(atualizados);
+      const enviados = await subirArquivos(arquivos);
+      const res = await fetch(`/api/demandas/${demandaId}/anexos`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ anexos: enviados }),
+      });
+      const corpo = await res.json();
+      if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível anexar.');
+      aoMudar(corpo);
+      const n = arquivos.length;
       notificar(
-        prontos.length === 1 ? 'Arquivo anexado.' : `${prontos.length} arquivos anexados.`,
+        doDrive
+          ? n === 1 ? 'Arquivo do Drive vinculado à demanda.' : `${n} arquivos do Drive vinculados.`
+          : n === 1 ? 'Arquivo anexado.' : `${n} arquivos anexados.`,
         'ok',
       );
     } catch (e) {
       notificar(e instanceof Error ? e.message : 'Erro ao anexar.', 'erro');
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  /** Sobe os vínculos do Drive pelo mesmo caminho dos arquivos comuns. */
-  async function enviarReferencias(arquivos: ArquivoDrive[]) {
-    if (arquivos.length === 0) return;
-    setEnviando(true);
-    try {
-      const res = await fetch(`/api/demandas/${demandaId}/anexos`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ anexos: arquivos.map(referenciaDoDrive) }),
-      });
-      const corpo = await res.json();
-      if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível vincular.');
-      aoMudar(corpo);
-      notificar(
-        arquivos.length === 1
-          ? 'Arquivo do Drive vinculado à demanda.'
-          : `${arquivos.length} arquivos do Drive vinculados.`,
-        'ok',
-      );
-    } catch (e) {
-      notificar(e instanceof Error ? e.message : 'Erro ao vincular.', 'erro');
     } finally {
       setEnviando(false);
     }
@@ -383,9 +342,9 @@ export function AnexosDemanda({
       {podeMexer && (
         <AreaDeEnvio
           enviando={enviando}
-          aoEscolher={enviar}
+          aoEscolher={(arquivos) => void enviar(Array.from(arquivos))}
           mostrarDrive={mostrarDrive}
-          aoEscolherDoDrive={(arquivos) => void enviarReferencias(arquivos)}
+          aoEscolherDoDrive={(arquivos) => void enviar(arquivos.map(referenciaDoDrive), true)}
         />
       )}
 

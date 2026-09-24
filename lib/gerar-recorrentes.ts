@@ -68,8 +68,8 @@ export async function gerarRecorrentes(ate = paraDiaISO()): Promise<ResultadoGer
           recorrenciaId: r.id,
         },
       });
-      // Cada ocorrência recebe a própria cópia dos anexos do molde, para
-      // apagar uma demanda não afetar as outras nem a regra.
+      // Cada ocorrência tem as próprias linhas de anexo, mas aponta para os
+      // arquivos do molde no R2 — apagar uma não apaga o arquivo das outras.
       if (r.anexos.length > 0) {
         await prisma.anexo.createMany({
           data: r.anexos.map((a) => ({
@@ -77,7 +77,7 @@ export async function gerarRecorrentes(ate = paraDiaISO()): Promise<ResultadoGer
             nome: a.nome,
             tipo: a.tipo,
             tamanho: a.tamanho,
-            conteudo: a.conteudo,
+            chave: a.chave,
             autorId: r.autorId,
             autorNome: r.autor.nome,
           })),

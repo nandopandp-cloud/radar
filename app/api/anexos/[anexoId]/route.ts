@@ -2,23 +2,23 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { acessoADemanda } from '@/lib/acesso';
 import { ehTipoPerigoso } from '@/lib/anexos';
+import { apagarSeOrfao } from '@/lib/anexos-servidor';
+import { linkDeLeitura } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ anexoId: string }> };
 
 /**
- * Entrega o arquivo. Como qualquer formato é aceito, o conteúdo nunca é
- * servido de um jeito que o navegador possa executar na origem do Radar:
- * tipos ativos (html, svg, xml, js) descem como octet-stream, e tudo vai com
- * Content-Disposition e nosniff. Sem isso, um .html anexado viraria XSS.
+ * Confere a permissão e redireciona para um link curto do R2. Tipos ativos
+ * (html, svg, xml, js) descem como octet-stream e sempre como download.
  */
 export async function GET(req: Request, { params }: Ctx) {
   const { anexoId } = await params;
 
   const anexo = await prisma.anexo.findUnique({
     where: { id: anexoId },
-    select: { demandaId: true, nome: true, tipo: true, conteudo: true },
+    select: { demandaId: true, nome: true, tipo: true, chave: true },
   });
   if (!anexo) return NextResponse.json({ erro: 'Anexo não encontrado.' }, { status: 404 });
 
@@ -26,28 +26,20 @@ export async function GET(req: Request, { params }: Ctx) {
   const check = await acessoADemanda(anexo.demandaId);
   if ('erro' in check) return NextResponse.json({ erro: check.erro }, { status: check.codigo });
 
-  const base64 = anexo.conteudo.slice(anexo.conteudo.indexOf(',') + 1);
-  const bytes = Buffer.from(base64, 'base64');
-
-  const seguro = ehTipoPerigoso(anexo.tipo) ? 'application/octet-stream' : anexo.tipo;
+  const perigoso = ehTipoPerigoso(anexo.tipo);
   // ?baixar=1 força o download; sem ele, tipos inertes podem abrir em nova aba.
   const baixar = new URL(req.url).searchParams.get('baixar') === '1';
-  const disposicao = baixar || ehTipoPerigoso(anexo.tipo) ? 'attachment' : 'inline';
+  const disposicao = baixar || perigoso ? 'attachment' : 'inline';
 
-  // RFC 5987: o nome pode ter acento, que não cabe no cabeçalho em latin-1.
-  const nomeCodificado = encodeURIComponent(anexo.nome);
-
-  return new NextResponse(new Uint8Array(bytes), {
-    headers: {
-      'content-type': seguro,
-      'content-length': String(bytes.length),
-      'content-disposition': `${disposicao}; filename*=UTF-8''${nomeCodificado}`,
-      'x-content-type-options': 'nosniff',
-      'content-security-policy': "default-src 'none'; sandbox",
-      // Conteúdo privado: não pode ficar em cache compartilhado.
-      'cache-control': 'private, max-age=0, must-revalidate',
-    },
+  const url = await linkDeLeitura(anexo.chave, {
+    tipo: perigoso ? 'application/octet-stream' : anexo.tipo,
+    // RFC 5987: o nome pode ter acento, que não cabe no cabeçalho em latin-1.
+    disposicao: `${disposicao}; filename*=UTF-8''${encodeURIComponent(anexo.nome)}`,
   });
+
+  const resposta = NextResponse.redirect(url, 302);
+  resposta.headers.set('cache-control', 'private, no-store');
+  return resposta;
 }
 
 export async function DELETE(_req: Request, { params }: Ctx) {
@@ -55,7 +47,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
   const anexo = await prisma.anexo.findUnique({
     where: { id: anexoId },
-    select: { demandaId: true, autorId: true },
+    select: { demandaId: true, autorId: true, chave: true },
   });
   if (!anexo) return NextResponse.json({ erro: 'Anexo não encontrado.' }, { status: 404 });
 
@@ -72,5 +64,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   }
 
   await prisma.anexo.delete({ where: { id: anexoId } });
+  // Se o R2 falhar aqui, a limpeza diária do cron apaga o arquivo depois.
+  await apagarSeOrfao(anexo.chave).catch((e) => console.error('[anexos] R2:', e));
   return NextResponse.json({ ok: true });
 }

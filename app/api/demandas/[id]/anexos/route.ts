@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { acessoADemanda } from '@/lib/acesso';
-import { MAXIMO_POR_DEMANDA, validarAnexo } from '@/lib/anexos';
+import { MAXIMO_POR_DEMANDA } from '@/lib/anexos';
+import { confirmarAnexos } from '@/lib/anexos-servidor';
 import { registrarAtividade } from '@/lib/registrar-atividade';
 
 export const dynamic = 'force-dynamic';
@@ -34,34 +35,30 @@ export async function POST(req: Request, { params }: Ctx) {
   const corpo = await req.json().catch(() => null);
   if (!corpo) return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 });
 
-  // Aceita um anexo ou vários de uma vez, para o envio múltiplo da gaveta.
-  const lista = Array.isArray(corpo.anexos) ? corpo.anexos : [corpo];
+  // Os arquivos já estão no R2 (via /api/anexos/envio); aqui só são registrados.
+  const lista: unknown[] = Array.isArray(corpo.anexos) ? corpo.anexos : [];
   if (lista.length === 0) {
     return NextResponse.json({ erro: 'Nenhum arquivo enviado.' }, { status: 400 });
   }
 
-  const validos = [];
-  for (const entrada of lista) {
-    const resultado = validarAnexo(entrada);
-    if (!resultado.ok) return NextResponse.json({ erro: resultado.erro }, { status: 400 });
-    validos.push(resultado.valor);
-  }
-
   const jaTem = await prisma.anexo.count({ where: { demandaId: id } });
-  if (jaTem + validos.length > MAXIMO_POR_DEMANDA) {
+  if (jaTem + lista.length > MAXIMO_POR_DEMANDA) {
     return NextResponse.json(
       { erro: `Cada demanda aceita no máximo ${MAXIMO_POR_DEMANDA} anexos.` },
       { status: 400 },
     );
   }
 
+  const confirmados = await confirmarAnexos(lista, check.sessao.sub);
+  if (!confirmados.ok) return NextResponse.json({ erro: confirmados.erro }, { status: 400 });
+
   await prisma.anexo.createMany({
-    data: validos.map((a) => ({
+    data: confirmados.valor.map((a) => ({
       demandaId: id,
       nome: a.nome,
       tipo: a.tipo,
       tamanho: a.tamanho,
-      conteudo: a.conteudo,
+      chave: a.chave,
       autorId: check.sessao.sub,
       autorNome: check.sessao.nome,
     })),

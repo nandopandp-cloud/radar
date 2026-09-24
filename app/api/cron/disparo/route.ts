@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { dispararAlertas } from '@/lib/disparo';
 import { gerarRecorrentes } from '@/lib/gerar-recorrentes';
+import { limparOrfaos } from '@/lib/anexos-servidor';
 
 export const dynamic = 'force-dynamic';
 // A apuração percorre todos os analistas e envia um e-mail por pessoa;
@@ -69,5 +70,11 @@ export async function GET(req: Request) {
       `${resultado.ignorados} ignorado(s)`,
   );
 
-  return NextResponse.json({ ...resultado, recorrentes });
+  const anexosOrfaos = await limparOrfaos().catch((e) => {
+    console.error('[cron] limpeza de anexos no R2 falhou:', e);
+    return 0;
+  });
+  if (anexosOrfaos > 0) console.log(`[cron] ${anexosOrfaos} arquivo(s) órfão(s) removido(s) do R2`);
+
+  return NextResponse.json({ ...resultado, recorrentes, anexosOrfaos });
 }

@@ -5,16 +5,15 @@ import {
   IconeAjustes, IconeCalendario, IconeCalendarioRepetir, IconeClipe,
   IconeDocumento, IconeInfo, IconeMais, IconeRepetir, IconeX,
 } from '@/components/icones';
-import { AnexosPendentes } from '@/components/AnexosDemanda';
+import { AnexosPendentes, subirArquivos } from '@/components/AnexosDemanda';
 import { Avatar } from '@/components/Avatar';
-import { dividirEmLotes } from '@/lib/anexos';
 import { CATEGORIAS, COR_SITUACAO, PRIORIDADES, ROTULO_PRIORIDADE } from '@/lib/dominio';
 import {
   DESCRICAO_FREQUENCIA, FREQUENCIAS, NOMES_SEMANA, ROTULO_FREQUENCIA,
   proximasDatas, type Frequencia, type Regra,
 } from '@/lib/recorrencia';
 import { diaParaDate } from '@/lib/datas';
-import type { AnexoPendente, Notificar, SessaoUI, Usuario } from '@/lib/tipos';
+import type { Notificar, SessaoUI, Usuario } from '@/lib/tipos';
 
 const ICONE_FREQUENCIA: Record<Frequencia, typeof IconeCalendario> = {
   DIARIA: IconeCalendario,
@@ -55,7 +54,7 @@ export function ModalNovaDemanda({
 }) {
   const [aba, setAba] = useState<'unica' | 'recorrente'>('unica');
   const [salvando, setSalvando] = useState(false);
-  const [anexos, setAnexos] = useState<AnexoPendente[]>([]);
+  const [anexos, setAnexos] = useState<File[]>([]);
 
   const [form, setForm] = useState({
     titulo: '',
@@ -117,11 +116,11 @@ export function ModalNovaDemanda({
     setSalvando(true);
     try {
       /*
-       * Os anexos vão em lotes: vários arquivos de 1MB em base64 estouram o
-       * corpo da requisição. Na recorrente o primeiro lote viaja junto da
-       * criação, para a regra já nascer com o molde.
+       * Os arquivos sobem para o R2 antes de a demanda existir: se o envio
+       * falhar, nada é criado e o formulário continua aberto. Na recorrente
+       * eles viajam junto da criação, para a regra já nascer com o molde.
        */
-      const lotes = dividirEmLotes(anexos);
+      const enviados = anexos.length > 0 ? await subirArquivos(anexos) : [];
       const rota = aba === 'unica' ? '/api/demandas' : '/api/recorrencias';
       const corpo = aba === 'unica'
         ? form
@@ -133,7 +132,7 @@ export function ModalNovaDemanda({
             autorId: form.autorId,
             ...regra,
             fim: temFim ? regra.fim : null,
-            anexos: lotes[0] ?? [],
+            anexos: enviados,
           };
 
       const res = await fetch(rota, {
@@ -145,31 +144,21 @@ export function ModalNovaDemanda({
       if (!res.ok) throw new Error(resposta.erro ?? 'Não foi possível salvar.');
 
       let anexosFalharam = false;
-      // Na única, todos os lotes sobem depois; na recorrente, só os restantes.
-      const pendentes = aba === 'unica' ? lotes : lotes.slice(1);
-      const destino = aba === 'unica'
-        ? `/api/demandas/${resposta.id}/anexos`
-        : `/api/recorrencias/${resposta.id}/anexos`;
-      for (const lote of pendentes) {
+      if (aba === 'unica' && enviados.length > 0) {
         try {
-          const r = await fetch(destino, {
+          const r = await fetch(`/api/demandas/${resposta.id}/anexos`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ anexos: lote }),
+            body: JSON.stringify({ anexos: enviados }),
           });
-          if (!r.ok) anexosFalharam = true;
+          anexosFalharam = !r.ok;
         } catch {
           anexosFalharam = true;
         }
       }
 
       if (anexosFalharam) {
-        notificar(
-          aba === 'unica'
-            ? 'Demanda criada, mas os anexos não subiram. Tente anexá-los na demanda.'
-            : 'Recorrência criada, mas alguns anexos não subiram.',
-          'erro',
-        );
+        notificar('Demanda criada, mas os anexos não subiram. Tente anexá-los na demanda.', 'erro');
       } else {
         notificar(aba === 'unica' ? 'Demanda registrada.' : 'Recorrência criada.', 'ok');
       }
