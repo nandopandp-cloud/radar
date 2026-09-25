@@ -25,6 +25,16 @@ function IconeEscudo() {
   );
 }
 
+function IconeCadeado() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="10.5" width="14" height="10.5" rx="2.5" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      <path d="M12 15v2" />
+    </svg>
+  );
+}
+
 function Formulario() {
   const router = useRouter();
   const params = useSearchParams();
@@ -92,7 +102,9 @@ function Formulario() {
             </div>
 
             <div className="campo login-campo-icone">
-              <span className="login-campo-icone-simbolo"><IconeEscudo /></span>
+              {/* No celular o campo escuro pede o cadeado; no desktop fica o escudo. */}
+              <span className="login-campo-icone-simbolo so-desktop"><IconeEscudo /></span>
+              <span className="login-campo-icone-simbolo so-celular"><IconeCadeado /></span>
               <CampoSenha
                 id="senha"
                 placeholder="Sua senha"
