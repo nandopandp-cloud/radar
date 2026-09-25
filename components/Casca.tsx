@@ -137,13 +137,13 @@ export function Casca({
           })}
         </nav>
 
-        <div className="dica">
+        {/* <div className="dica">
           <div className="dica-icone"><IconeLampada size={17} /></div>
           <div className="dica-titulo">Mantenha suas demandas em dia</div>
           <div className="dica-texto">
             Organização hoje, menos preocupações amanhã.
           </div>
-        </div>
+        </div> */}
 
         <div className="barra-rodape">
           <button
