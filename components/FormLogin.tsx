@@ -103,8 +103,8 @@ function Formulario() {
 
             <div className="campo login-campo-icone">
               {/* No celular o campo escuro pede o cadeado; no desktop fica o escudo. */}
-              <span className="login-campo-icone-simbolo so-desktop"><IconeEscudo /></span>
-              <span className="login-campo-icone-simbolo so-celular"><IconeCadeado /></span>
+              <span className="login-campo-icone-simbolo login-icone-desktop"><IconeEscudo /></span>
+              <span className="login-campo-icone-simbolo login-icone-celular"><IconeCadeado /></span>
               <CampoSenha
                 id="senha"
                 placeholder="Sua senha"

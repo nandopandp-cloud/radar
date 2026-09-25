@@ -356,6 +356,8 @@ export type FaixaScore = {
   rotulo: string;
   descricao: string;
   cor: string;
+  /** Tom claro do rótulo, para o cartão escuro do celular. */
+  corNoEscuro: string;
   fundo: string;
 };
 
@@ -365,27 +367,27 @@ export function faixaDoScore(score: number): FaixaScore {
     return {
       rotulo: 'Boa performance',
       descricao: 'Sua operação está saudável.',
-      cor: '#16a34a', fundo: '#22c55e',
+      cor: '#16a34a', corNoEscuro: '#4ade80', fundo: '#22c55e',
     };
   }
   if (score >= 70) {
     return {
       rotulo: 'Desempenho regular',
       descricao: 'Há espaço para reduzir atrasos.',
-      cor: '#0369a1', fundo: '#3b82f6',
+      cor: '#0369a1', corNoEscuro: '#fde047', fundo: '#3b82f6',
     };
   }
   if (score >= 50) {
     return {
       rotulo: 'Atenção',
       descricao: 'Os atrasos estão pesando no período.',
-      cor: '#b45309', fundo: '#f59e0b',
+      cor: '#b45309', corNoEscuro: '#fb923c', fundo: '#f59e0b',
     };
   }
   return {
     rotulo: 'Crítico',
     descricao: 'A maior parte das entregas saiu do prazo.',
-    cor: '#b91c1c', fundo: '#ef4444',
+    cor: '#b91c1c', corNoEscuro: '#f87171', fundo: '#ef4444',
   };
 }
 

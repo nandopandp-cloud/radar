@@ -189,7 +189,13 @@ export function App({ sessao }: { sessao: SessaoUI }) {
 
   return (
     <ProvedorDialogo>
-    <Casca sessao={sessao} aba={aba} aoTrocarAba={setAba} atrasadas={atrasadas}>
+    <Casca
+      sessao={sessao}
+      aba={aba}
+      aoTrocarAba={setAba}
+      atrasadas={atrasadas}
+      aoNovaDemanda={() => abrirNova(hoje)}
+    >
       {carregando ? (
         <div className="cartao">
           <div className="vazio"><span className="girando">⏳</span> Carregando…</div>
@@ -202,6 +208,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           hoje={hoje}
           aoAbrirDemanda={setDetalhe}
           aoVerDemandas={() => setAba('demandas')}
+          aoVerEquipe={() => setAba('equipe')}
         />
       ) : aba === 'calendario' ? (
         <TelaCalendario

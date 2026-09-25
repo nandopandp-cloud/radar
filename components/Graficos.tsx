@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Situacao } from '@/lib/dominio';
 import type { Barra, Fatia, PontoSerie } from '@/lib/painel';
 
@@ -46,21 +46,47 @@ function rotuloDiaLongo(dia: string): string {
 }
 
 /** Área empilhada da evolução no tempo. */
-export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
+export function GraficoEvolucao({
+  serie,
+  visiveis,
+}: {
+  serie: PontoSerie[];
+  /** Situações desenhadas; sem isso, todas. */
+  visiveis?: Situacao[];
+}) {
   const idBase = useId();
   // Dia sob o cursor. Antes do early return: hook não pode ficar condicional.
   const [indice, setIndice] = useState<number | null>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  const [larguraReal, setLarguraReal] = useState<number | null>(null);
 
+  /*
+   * Abaixo de 620px o viewBox fixo encolheria o texto dos eixos para 6–7px.
+   * Nesses casos o desenho usa a largura real, e o texto fica no tamanho certo.
+   */
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const medir = () => setLarguraReal(el.clientWidth || null);
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, []);
+
+  const estreito = larguraReal !== null && larguraReal < 620;
   const L = 34, R = 8, T = 10, B = 26;   // margens internas
-  const largura = 620, altura = 250;
+  const largura = estreito ? larguraReal : 620;
+  const altura = estreito ? 210 : 250;
+  const camadasVisiveis = visiveis ? CAMADAS.filter((c) => visiveis.includes(c.situacao)) : CAMADAS;
   const areaL = largura - L - R;
   const areaA = altura - T - B;
 
   if (serie.length === 0) {
-    return <p className="grafico-vazio">Sem demandas no período.</p>;
+    return <div ref={caixa}><p className="grafico-vazio">Sem demandas no período.</p></div>;
   }
 
-  const totais = serie.map((p) => CAMADAS.reduce((s, c) => s + p.valores[c.situacao], 0));
+  const totais = serie.map((p) => camadasVisiveis.reduce((s, c) => s + p.valores[c.situacao], 0));
   const teto = tetoDoEixo(Math.max(...totais, 1));
 
   const x = (i: number) => L + (serie.length === 1 ? areaL / 2 : (i / (serie.length - 1)) * areaL);
@@ -88,7 +114,7 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
 
   // Empilha de baixo para cima, guardando o topo de cada camada.
   const acumulado = new Array(serie.length).fill(0);
-  const camadas = CAMADAS.map((camada) => {
+  const camadas = camadasVisiveis.map((camada) => {
     const base = [...acumulado];
     for (let i = 0; i < serie.length; i++) acumulado[i] += serie[i].valores[camada.situacao];
     const topo = [...acumulado];
@@ -104,14 +130,15 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
     };
   });
 
-  // Quatro marcas no eixo X, sem amontoar rótulos.
-  const marcas = serie.length <= 1 ? [0] : [0, 1, 2, 3, 4].map((k) =>
-    Math.round((k / 4) * (serie.length - 1)),
-  );
-  const riscos = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(teto * f));
+  // Poucas marcas no eixo X, sem amontoar rótulos; no estreito, menos ainda.
+  const passos = estreito ? 3 : 4;
+  const marcas = serie.length <= 1 ? [0] : [...new Set(
+    Array.from({ length: passos + 1 }, (_, k) => Math.round((k / passos) * (serie.length - 1))),
+  )];
+  const riscos = (estreito ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1]).map((f) => Math.round(teto * f));
 
   /** Índice do ponto mais próximo do cursor, em coordenadas do SVG. */
-  function pontoSobOCursor(e: React.MouseEvent<SVGSVGElement>): number | null {
+  function pontoSobOCursor(e: React.PointerEvent<SVGSVGElement>): number | null {
     const svg = e.currentTarget;
     const caixa = svg.getBoundingClientRect();
     if (caixa.width === 0) return null;
@@ -125,18 +152,20 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
 
   const ativo = indice === null ? null : serie[indice];
   const totalAtivo = ativo
-    ? CAMADAS.reduce((s, c) => s + ativo.valores[c.situacao], 0)
+    ? camadasVisiveis.reduce((s, c) => s + ativo.valores[c.situacao], 0)
     : 0;
 
   return (
-    <div className="grafico-caixa">
+    <div className="grafico-caixa" ref={caixa}>
       <svg
         viewBox={`0 0 ${largura} ${altura}`}
         className="grafico"
         role="img"
         aria-label="Evolução das demandas por situação ao longo do período"
-        onMouseMove={(e) => setIndice(pontoSobOCursor(e))}
-        onMouseLeave={() => setIndice(null)}
+        onPointerMove={(e) => setIndice(pontoSobOCursor(e))}
+        onPointerDown={(e) => setIndice(pontoSobOCursor(e))}
+        // No toque, a dica fica até o próximo toque; só o mouse a esconde ao sair.
+        onPointerLeave={(e) => { if (e.pointerType === 'mouse') setIndice(null); }}
       >
         {riscos.map((v) => (
           <g key={v}>
@@ -164,7 +193,8 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
           <g className="grafico-guia">
             <line x1={x(indice)} x2={x(indice)} y1={T} y2={T + areaA} />
             {camadas.map((c) => {
-              const acumuladoAte = CAMADAS.slice(0, CAMADAS.findIndex((k) => k.situacao === c.situacao) + 1)
+              const acumuladoAte = camadasVisiveis
+                .slice(0, camadasVisiveis.findIndex((k) => k.situacao === c.situacao) + 1)
                 .reduce((s, k) => s + serie[indice].valores[k.situacao], 0);
               if (serie[indice].valores[c.situacao] === 0) return null;
               return (
@@ -196,7 +226,7 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
         >
           <div className="dica-titulo-g">{rotuloDiaLongo(ativo.dia)}</div>
           <ul className="dica-linhas">
-            {CAMADAS.map((c) => (
+            {camadasVisiveis.map((c) => (
               <li key={c.situacao}>
                 <span className="ponto" style={{ background: c.cor }} />
                 <span className="dica-rotulo">{c.rotulo}</span>
@@ -214,11 +244,14 @@ export function GraficoEvolucao({ serie }: { serie: PontoSerie[] }) {
   );
 }
 
-export function LegendaEvolucao() {
+export function LegendaEvolucao({ visiveis }: { visiveis?: Situacao[] } = {}) {
   return (
     <div className="grafico-legenda">
       {CAMADAS.map((c) => (
-        <span className="legenda-item" key={c.situacao}>
+        <span
+          className={`legenda-item${visiveis && !visiveis.includes(c.situacao) ? ' apagada' : ''}`}
+          key={c.situacao}
+        >
           <span className="ponto" style={{ background: c.cor }} />
           {c.rotulo}
         </span>

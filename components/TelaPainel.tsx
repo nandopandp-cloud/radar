@@ -8,9 +8,12 @@ import {
 import { SeletorPeriodo } from '@/components/SeletorPeriodo';
 import { AnelScore } from '@/components/RadarScore';
 import {
-  IconeAlerta, IconeBaixar, IconeCheckCirculo, IconeDocumento, IconeRelogio, IconeTendencia,
+  IconeAlerta, IconeBaixar, IconeCalendario, IconeCheckCirculo, IconeDireita, IconeDocumento,
+  IconeRelogio, IconeTendencia,
 } from '@/components/icones';
-import { COR_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO, situacaoDe, type Prioridade } from '@/lib/dominio';
+import {
+  COR_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO, situacaoDe, type Prioridade, type Situacao,
+} from '@/lib/dominio';
 import { formatarDiaCurto } from '@/lib/datas';
 import {
   calcularDesempenho, calcularKpis, dentroDoIntervalo, diasNoIntervalo, faixaDoScore,
@@ -34,6 +37,23 @@ const ICONE_KPI: Record<string, typeof IconeDocumento> = {
   concluidas: IconeCheckCirculo,
   atrasadas: IconeAlerta,
 };
+
+/** Abas do gráfico de evolução: todas as situações ou uma só. */
+const FILTROS_EVOLUCAO: { id: string; rotulo: string; situacoes?: Situacao[] }[] = [
+  { id: 'todos', rotulo: 'Todos' },
+  { id: 'aberto', rotulo: 'Em aberto', situacoes: ['PENDENTE'] },
+  { id: 'concluidas', rotulo: 'Concluídas', situacoes: ['CONCLUIDA'] },
+  { id: 'atrasadas', rotulo: 'Atrasadas', situacoes: ['ATRASADA'] },
+];
+
+/** Seta dos cabeçalhos no celular: leva à lista completa. */
+function Seta({ aoClicar, rotulo }: { aoClicar: () => void; rotulo: string }) {
+  return (
+    <button type="button" className="painel-seta" onClick={aoClicar} aria-label={rotulo}>
+      <IconeDireita size={17} />
+    </button>
+  );
+}
 
 /** "Hoje, 10:24" · "Ontem, 18:42" · "10 set, 14:32" */
 function quando(iso: string): string {
@@ -62,6 +82,7 @@ export function TelaPainel({
   hoje,
   aoAbrirDemanda,
   aoVerDemandas,
+  aoVerEquipe,
 }: {
   sessao: SessaoUI;
   demandas: Demanda[];
@@ -69,7 +90,10 @@ export function TelaPainel({
   hoje: string;
   aoAbrirDemanda: (d: Demanda) => void;
   aoVerDemandas: () => void;
+  aoVerEquipe: () => void;
 }) {
+  const [filtroEvolucao, setFiltroEvolucao] = useState('todos');
+  const visiveis = FILTROS_EVOLUCAO.find((f) => f.id === filtroEvolucao)?.situacoes;
   const [periodo, setPeriodo] = useState<PeriodoId>('7');
   const [personalizado, setPersonalizado] = useState<Intervalo | null>(null);
 
@@ -142,6 +166,7 @@ export function TelaPainel({
         <div className="painel-filtros">
           {intervalo && (
             <span className="painel-intervalo">
+              <IconeCalendario size={17} className="so-celular" />
               {formatarDiaCurto(intervalo.de)} → {formatarDiaCurto(intervalo.ate)}
             </span>
           )}
@@ -154,7 +179,7 @@ export function TelaPainel({
           />
           {sessao.perfil === 'ADMIN' && (
             <a
-              className="btn btn-secundario btn-pequeno"
+              className="btn btn-secundario btn-pequeno so-desktop"
               href={linkRelatorio}
               target="_blank"
               rel="noreferrer"
@@ -169,7 +194,12 @@ export function TelaPainel({
       {/* Faixa de desempenho: o score e os indicadores que o compõem. */}
       <div className="faixa-score">
         <div className="cartao score-cartao">
-          <div className="score-titulo">Radar Score</div>
+          <div className="score-titulo">
+            Radar Score
+            <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/radar-simbolo.png" alt="" className="score-radar so-celular" />
           {score === null ? (
             <p className="score-vazio">
               Ainda não há demandas concluídas ou vencidas no período para calcular.
@@ -178,7 +208,13 @@ export function TelaPainel({
             <div className="score-corpo">
               <AnelScore score={score} />
               <div className="score-texto">
-                <div className="score-faixa" style={{ color: faixaDoScore(score).cor }}>
+                <div
+                  className="score-faixa"
+                  style={{
+                    '--faixa-cor': faixaDoScore(score).cor,
+                    '--faixa-cor-escuro': faixaDoScore(score).corNoEscuro,
+                  } as React.CSSProperties}
+                >
                   {faixaDoScore(score).rotulo}
                 </div>
                 <p className="score-desc">{faixaDoScore(score).descricao}</p>
@@ -188,6 +224,11 @@ export function TelaPainel({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="painel-secao so-celular">
+          <h2>Resumo do período</h2>
+          <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
         </div>
 
         {indicadores.map((ind) => {
@@ -240,167 +281,214 @@ export function TelaPainel({
         })}
       </div>
 
-      <div className="painel-grade painel-grade-2">
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div>
-              <div className="cartao-titulo">Evolução de demandas</div>
-              <div className="cartao-desc">Total por situação ao longo do tempo</div>
+      <div className="painel-corpo">
+        <div className="painel-grade painel-grade-2">
+          <div className="cartao cartao-evolucao">
+            <div className="cartao-cabecalho">
+              <div>
+                <div className="cartao-titulo">Evolução de demandas</div>
+                <div className="cartao-desc so-desktop">Total por situação ao longo do tempo</div>
+              </div>
+              <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
             </div>
-          </div>
-          <div className="cartao-corpo cartao-corpo-grafico">
-            <GraficoEvolucao serie={serie} />
-            <LegendaEvolucao />
-          </div>
-        </div>
-
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div className="cartao-titulo">Demandas por categoria</div>
-          </div>
-          <div className="cartao-corpo">
-            <BlocoRosca fatias={categorias} total={noPeriodo.length} />
-          </div>
-        </div>
-      </div>
-
-      <div className="painel-grade painel-grade-3">
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div>
-              <div className="cartao-titulo">Top responsáveis</div>
-              <div className="cartao-desc">Demandas atribuídas no período</div>
-            </div>
-          </div>
-          <div className="cartao-corpo">
-            {responsaveis.length === 0 ? (
-              <p className="grafico-vazio">Sem demandas no período.</p>
-            ) : (
-              <ul className="ranking">
-                {responsaveis.map((r) => (
-                  <li key={r.id}>
-                    <Avatar nome={r.nome} avatar={r.avatar} tamanho="sm" />
-                    <span className="ranking-nome">{r.nome}</span>
-                    <span className="ranking-trilho">
-                      <span
-                        className="ranking-barra"
-                        style={{ width: `${(r.valor / maiorResponsavel) * 100}%` }}
-                      />
-                    </span>
-                    <span className="ranking-valor">{r.valor}</span>
-                  </li>
+            <div className="cartao-corpo cartao-corpo-grafico">
+              <div className="evolucao-filtros so-celular" role="tablist">
+                {FILTROS_EVOLUCAO.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={filtroEvolucao === f.id}
+                    className={filtroEvolucao === f.id ? 'ativo' : undefined}
+                    onClick={() => setFiltroEvolucao(f.id)}
+                  >
+                    {f.rotulo}
+                  </button>
                 ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div className="cartao-titulo">Status das demandas</div>
-          </div>
-          <div className="cartao-corpo">
-            <BlocoRosca fatias={situacoes} total={noPeriodo.length} />
-          </div>
-        </div>
-
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div className="cartao-titulo">Prioridade</div>
-          </div>
-          <div className="cartao-corpo">
-            <GraficoBarras barras={prioridades} />
-          </div>
-        </div>
-      </div>
-
-      <div className="painel-grade painel-grade-baixo">
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div>
-              <div className="cartao-titulo">Demandas recentes</div>
-              <div className="cartao-desc">Últimas demandas criadas</div>
+              </div>
+              <GraficoEvolucao serie={serie} visiveis={visiveis} />
+              <LegendaEvolucao visiveis={visiveis} />
             </div>
-            <button className="btn btn-secundario btn-pequeno" onClick={aoVerDemandas}>
-              Ver todas
-            </button>
           </div>
-          <div className="tabela-envolvente">
-            <table className="tabela tabela-painel">
-              <thead>
-                <tr>
-                  <th>Demanda</th>
-                  <th>Responsável</th>
-                  <th>Status</th>
-                  <th>Prioridade</th>
-                  <th>Criada</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listaRecentes.length === 0 ? (
-                  <tr><td colSpan={5} className="vazio">Nenhuma demanda no período.</td></tr>
-                ) : listaRecentes.map((d) => {
-                  const situacao = situacaoDe(d.status, d.prazo.slice(0, 10), hoje);
-                  return (
-                    <tr key={d.id} className="linha-clicavel" onClick={() => aoAbrirDemanda(d)}>
-                      <td>
-                        <span className="celula-titulo">
-                          <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
-                          {d.titulo}
-                        </span>
-                      </td>
-                      <td className="texto-suave">{d.autor.nome}</td>
-                      <td><span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span></td>
-                      <td>
-                        <span className={`selo selo-${d.prioridade}`}>
-                          {ROTULO_PRIORIDADE[d.prioridade as Prioridade] ?? d.prioridade}
-                        </span>
-                      </td>
-                      <td className="texto-suave">{quando(d.criadoEm)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+          <div className="cartao cartao-categoria">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Demandas por categoria</div>
+              <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
+            </div>
+            <div className="cartao-corpo">
+              <BlocoRosca fatias={categorias} total={noPeriodo.length} />
+            </div>
           </div>
         </div>
 
-        <div className="cartao">
-          <div className="cartao-cabecalho">
-            <div className="cartao-titulo">Próximos prazos</div>
-            <button className="btn btn-secundario btn-pequeno" onClick={aoVerDemandas}>
-              Ver todas
-            </button>
-          </div>
-          <div className="cartao-corpo">
-            {prazos.length === 0 ? (
-              <p className="grafico-vazio">Nenhum prazo em aberto.</p>
-            ) : (
-              <ul className="prazos">
-                {prazos.map((d) => {
-                  const dia = d.prazo.slice(0, 10);
-                  const situacao = situacaoDe(d.status, dia, hoje);
-                  const numero = dia.slice(8, 10);
-                  const mesCurto = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' })
-                    .format(new Date(`${dia}T00:00:00Z`)).replace('.', '').toUpperCase();
-                  return (
-                    <li key={d.id}>
-                      <button className="prazo-item" onClick={() => aoAbrirDemanda(d)}>
-                        <span className={`prazo-data${situacao === 'ATRASADA' ? ' atrasada' : ''}`}>
-                          <span className="prazo-dia">{Number(numero)}</span>
-                          <span className="prazo-mes">{mesCurto}</span>
-                        </span>
-                        <span className="prazo-texto">
-                          <span className="prazo-titulo">{d.titulo}</span>
-                          <span className="prazo-autor">{d.autor.nome}</span>
-                        </span>
-                        <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
-                      </button>
+        <div className="painel-grade painel-grade-3">
+          <div className="cartao cartao-responsaveis">
+            <div className="cartao-cabecalho">
+              <div>
+                <div className="cartao-titulo">Top responsáveis</div>
+                <div className="cartao-desc">Demandas atribuídas no período</div>
+              </div>
+              <Seta aoClicar={aoVerEquipe} rotulo="Ver equipe" />
+            </div>
+            <div className="cartao-corpo">
+              {responsaveis.length === 0 ? (
+                <p className="grafico-vazio">Sem demandas no período.</p>
+              ) : (
+                <ul className="ranking">
+                  {responsaveis.map((r) => (
+                    <li key={r.id}>
+                      <Avatar nome={r.nome} avatar={r.avatar} tamanho="sm" />
+                      <span className="ranking-nome">{r.nome}</span>
+                      <span className="ranking-trilho">
+                        <span
+                          className="ranking-barra"
+                          style={{ width: `${(r.valor / maiorResponsavel) * 100}%` }}
+                        />
+                      </span>
+                      <span className="ranking-valor">{r.valor}</span>
                     </li>
-                  );
-                })}
-              </ul>
-            )}
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="cartao cartao-status">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Status das demandas</div>
+              <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
+            </div>
+            <div className="cartao-corpo">
+              <BlocoRosca fatias={situacoes} total={noPeriodo.length} />
+            </div>
+          </div>
+
+          <div className="cartao cartao-prioridade">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Prioridade</div>
+              <Seta aoClicar={aoVerDemandas} rotulo="Ver demandas" />
+            </div>
+            <div className="cartao-corpo">
+              <GraficoBarras barras={prioridades} />
+            </div>
+          </div>
+        </div>
+
+        <div className="painel-grade painel-grade-baixo">
+          <div className="cartao cartao-recentes">
+            <div className="cartao-cabecalho">
+              <div>
+                <div className="cartao-titulo">Demandas recentes</div>
+                <div className="cartao-desc">Últimas demandas criadas</div>
+              </div>
+              <button className="btn btn-secundario btn-pequeno" onClick={aoVerDemandas}>
+                Ver todas
+              </button>
+            </div>
+            {/* No celular a tabela vira lista: cinco colunas não cabem na largura. */}
+            <ul className="recentes-lista so-celular">
+              {listaRecentes.length === 0 ? (
+                <li className="grafico-vazio">Nenhuma demanda no período.</li>
+              ) : listaRecentes.map((d) => {
+                const situacao = situacaoDe(d.status, d.prazo.slice(0, 10), hoje);
+                return (
+                  <li key={d.id}>
+                    <button type="button" className="recente-item" onClick={() => aoAbrirDemanda(d)}>
+                      <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                      <span className="recente-texto">
+                        <span className="recente-titulo">{d.titulo}</span>
+                        <span className="recente-meta">{d.autor.nome} • {quando(d.criadoEm)}</span>
+                      </span>
+                      <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
+                      <IconeDireita size={16} className="recente-seta" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="tabela-envolvente so-desktop">
+              <table className="tabela tabela-painel">
+                <thead>
+                  <tr>
+                    <th>Demanda</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th>Prioridade</th>
+                    <th>Criada</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listaRecentes.length === 0 ? (
+                    <tr><td colSpan={5} className="vazio">Nenhuma demanda no período.</td></tr>
+                  ) : listaRecentes.map((d) => {
+                    const situacao = situacaoDe(d.status, d.prazo.slice(0, 10), hoje);
+                    return (
+                      <tr key={d.id} className="linha-clicavel" onClick={() => aoAbrirDemanda(d)}>
+                        <td>
+                          <span className="celula-titulo">
+                            <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                            {d.titulo}
+                          </span>
+                        </td>
+                        <td className="texto-suave">{d.autor.nome}</td>
+                        <td><span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span></td>
+                        <td>
+                          <span className={`selo selo-${d.prioridade}`}>
+                            {ROTULO_PRIORIDADE[d.prioridade as Prioridade] ?? d.prioridade}
+                          </span>
+                        </td>
+                        <td className="texto-suave">{quando(d.criadoEm)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="cartao cartao-prazos">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Próximos prazos</div>
+              <button className="btn btn-secundario btn-pequeno" onClick={aoVerDemandas}>
+                Ver todas
+              </button>
+            </div>
+            <div className="cartao-corpo">
+              {prazos.length === 0 ? (
+                <p className="grafico-vazio">Nenhum prazo em aberto.</p>
+              ) : (
+                <ul className="prazos">
+                  {prazos.map((d) => {
+                    const dia = d.prazo.slice(0, 10);
+                    const situacao = situacaoDe(d.status, dia, hoje);
+                    const numero = dia.slice(8, 10);
+                    const mesCurto = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' })
+                      .format(new Date(`${dia}T00:00:00Z`)).replace('.', '').toUpperCase();
+                    return (
+                      <li key={d.id}>
+                        <button className="prazo-item" onClick={() => aoAbrirDemanda(d)}>
+                          <span className={`prazo-data${situacao === 'ATRASADA' ? ' atrasada' : ''}`}>
+                            <span className="prazo-dia">{Number(numero)}</span>
+                            <span className="prazo-mes">{mesCurto}</span>
+                          </span>
+                          <span className="prazo-texto">
+                            <span className="prazo-titulo">{d.titulo}</span>
+                            <span className="prazo-autor">
+                              {d.autor.nome}
+                              {dia === hoje && ' • Hoje'}
+                              {dia === somarDias(hoje, 1) && ' • Amanhã'}
+                            </span>
+                          </span>
+                          <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
+                          <IconeDireita size={16} className="recente-seta so-celular" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>

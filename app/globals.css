@@ -1033,7 +1033,7 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 .login-seguranca svg { flex-shrink: 0; width: 18px; height: 18px; color: var(--tinta-tenue); }
 .login-seguranca a { color: var(--marca); text-decoration: underline; }
 
-.login-campo-icone-simbolo.so-celular { display: none; }
+.login-campo-icone-simbolo.login-icone-celular { display: none; }
 
 /*
  * Celular e tablet: uma coluna só, tudo sobre o azul. A vitrine perde o
@@ -1096,8 +1096,8 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
     caret-color: #fff;
   }
   .login-campo-icone-simbolo { color: #c7d2ea; }
-  .login-campo-icone-simbolo.so-desktop { display: none; }
-  .login-campo-icone-simbolo.so-celular { display: block; }
+  .login-campo-icone-simbolo.login-icone-desktop { display: none; }
+  .login-campo-icone-simbolo.login-icone-celular { display: block; }
   .login-formulario .campo-senha-olho { color: #c7d2ea; right: 8px; }
   .login-formulario .campo-senha-olho:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 
@@ -1145,22 +1145,6 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .resumo-grade { grid-template-columns: 1fr; }
   .cal-celula { min-height: 74px; }
   .linha-campos { grid-template-columns: 1fr; }
-}
-/*
- * Sem barra de topo, o botão da gaveta flutua sobre o conteúdo — só no
- * celular, onde a sidebar fica escondida. No desktop ela está sempre à vista.
- */
-.abre-menu { display: none; }
-@media (max-width: 900px) {
-  .abre-menu {
-    display: grid; position: fixed; top: 12px; left: 12px; z-index: 30;
-    width: 40px; height: 40px;
-    background: var(--superficie); border: 1px solid var(--borda);
-    border-radius: var(--raio); box-shadow: var(--sombra-md);
-  }
-  .abre-menu:hover { background: #f8fafc; }
-  /* Abre espaço para o botão não cobrir o título da tela. */
-  .conteudo { padding-top: 64px; }
 }
 
 /* Ações em tabela: mantém os botões numa linha só. */
@@ -1820,7 +1804,7 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 }
 .anel-score-base { font-size: 11px; fill: var(--tinta-tenue); }
 .score-texto { min-width: 0; }
-.score-faixa { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; }
+.score-faixa { font-size: 14.5px; font-weight: 800; letter-spacing: -.01em; color: var(--faixa-cor); }
 .score-desc { font-size: 12.5px; color: var(--tinta-suave); margin-top: 3px; line-height: 1.45; }
 .score-link {
   margin-top: 9px; padding: 0; border: none; background: none;
@@ -2979,4 +2963,195 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .arq-corpo, .arq-corpo.com-painel { grid-template-columns: minmax(0, 1fr); }
   .arq-busca .entrada { width: 100%; }
   .arq-topo-direita { width: 100%; }
+}
+
+/* ══ Celular: casca e home ══════════════════════════════════════════════
+ * Até 900px a sidebar vira gaveta: entram a barra de topo e a barra
+ * inferior, e a home se reorganiza numa coluna só.
+ */
+@media (min-width: 901px) {
+  .so-celular, .topo-celular, .barra-inferior, .painel-seta { display: none !important; }
+}
+@media (max-width: 900px) {
+  .so-desktop { display: none !important; }
+
+  .principal { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .conteudo { padding: 6px 16px 24px; }
+  .toast-area { bottom: calc(100px + env(safe-area-inset-bottom)); right: 16px; left: 16px; }
+
+  .topo-celular {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 12px;
+  }
+  .topo-celular .marca {
+    position: absolute; left: 50%; transform: translateX(-50%); gap: 9px;
+  }
+  .topo-celular .marca-nome { font-size: 23px; }
+  .topo-celular-acoes { display: flex; align-items: center; gap: 10px; }
+  .topo-celular-botao {
+    position: relative; width: 46px; height: 46px; display: grid; place-items: center;
+    background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px;
+    box-shadow: var(--sombra-sm); color: var(--tinta);
+  }
+  .topo-celular-ponto {
+    position: absolute; top: 10px; right: 11px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--atrasada); border: 2px solid var(--superficie);
+  }
+  .topo-celular-avatar { padding: 0; border: none; background: none; border-radius: 50%; }
+  .topo-celular-avatar .avatar { width: 46px; height: 46px; font-size: 15px; }
+
+  .barra-inferior {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: end;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    background: var(--superficie); border-top: 1px solid var(--borda);
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, .06);
+  }
+  .barra-inferior-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 0 2px; border: none; background: none;
+    font-size: 12px; font-weight: 500; color: var(--tinta-suave);
+  }
+  .barra-inferior-item[aria-current='true'] { color: var(--marca); font-weight: 600; }
+  .barra-inferior-nova {
+    justify-self: center; width: 60px; height: 60px; margin-top: -30px;
+    display: grid; place-items: center; border: none; border-radius: 50%;
+    background: var(--marca); color: #fff;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, .4);
+  }
+
+  /* Topo da home: filtros em cima, saudação embaixo. */
+  .painel-topo { flex-direction: column; align-items: stretch; gap: 20px; margin-bottom: 18px; }
+  .painel-filtros { order: -1; flex-wrap: nowrap; gap: 12px; }
+  .painel-filtros > * { flex: 1; min-width: 0; }
+  .painel-intervalo, .periodo-botao {
+    width: 100%; height: 52px; padding: 0 12px; gap: 8px; border-radius: 14px;
+    font-size: 14.5px; font-weight: 500; color: var(--tinta);
+  }
+  .painel-intervalo svg, .periodo-botao > svg:first-child { color: var(--tinta-suave); flex-shrink: 0; }
+  .periodo-rotulo { overflow: hidden; text-overflow: ellipsis; }
+  .periodo-seta { margin-left: auto; flex-shrink: 0; }
+  .saudacao { font-size: 34px; letter-spacing: -.03em; }
+  .saudacao-sub { font-size: 17px; line-height: 1.4; margin-top: 6px; }
+
+  /* Radar Score escuro, com o radar decorando o canto. */
+  .faixa-score { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .score-cartao {
+    grid-column: 1 / -1; position: relative; overflow: hidden; border: none;
+    padding: 20px; border-radius: 20px; color: #fff;
+    background:
+      radial-gradient(70% 90% at 100% 100%, rgba(37, 99, 235, .55) 0%, rgba(37, 99, 235, 0) 70%),
+      linear-gradient(135deg, #0b2a7a 0%, #081c56 55%, #06133d 100%);
+    box-shadow: 0 14px 30px rgba(8, 28, 86, .25);
+  }
+  .score-titulo {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 18px; color: #fff; position: relative; z-index: 1;
+  }
+  .score-cartao .painel-seta { background: none; border: none; box-shadow: none; color: #fff; }
+  .score-corpo { gap: 20px; position: relative; z-index: 1; }
+  .anel-score { width: 124px; height: 124px; }
+  .anel-score-valor { fill: #fff; }
+  .anel-score-base { fill: #b9c9ef; }
+  .score-faixa { font-size: 17px; color: var(--faixa-cor-escuro); }
+  .score-desc { font-size: 14.5px; color: #c7d4f2; margin-top: 6px; }
+  .score-link { font-size: 15px; color: #60a5fa; margin-top: 12px; }
+  .score-vazio { color: #c7d4f2; position: relative; z-index: 1; }
+  .score-radar {
+    position: absolute; right: -40px; bottom: -58px; width: 140px; height: 140px;
+    opacity: .75; pointer-events: none;
+  }
+
+  .painel-secao {
+    grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+    margin: 12px 0 2px;
+  }
+  .painel-secao h2 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+
+  .painel-seta {
+    width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center;
+    border: 1px solid var(--borda); border-radius: 50%;
+    background: var(--superficie); color: var(--marca); box-shadow: var(--sombra-sm);
+  }
+
+  /* Resumo em duas colunas: quatro indicadores + total e em aberto. */
+  .indicador, .kpi { gap: 10px; padding: 14px 12px; border-radius: 18px; }
+  .indicador-icone, .kpi-icone { width: 40px; height: 40px; border-radius: 13px; }
+  .indicador-rotulo, .kpi-rotulo { font-size: 12.5px; white-space: normal; line-height: 1.3; }
+  .indicador-valor, .kpi-valor { font-size: 22px; margin: 3px 0 6px; }
+  .indicador-rodape, .kpi-versus, .kpi-sem { font-size: 12px; line-height: 1.35; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .kpi-concluidas, .kpi-atrasadas { display: none; }
+
+  /* Cartões numa coluna, na ordem da referência. */
+  .painel-corpo { display: flex; flex-direction: column; gap: 14px; }
+  .painel-corpo .painel-grade { display: contents; }
+  .cartao-evolucao { order: 1; }
+  .cartao-categoria { order: 2; }
+  .cartao-prioridade { order: 3; }
+  .cartao-responsaveis { order: 4; }
+  .cartao-status { order: 5; }
+  .cartao-recentes { order: 6; }
+  .cartao-prazos { order: 7; }
+  .painel-corpo .cartao { border-radius: 20px; min-width: 0; }
+  .painel-corpo .cartao-cabecalho { padding: 18px 18px 8px; flex-wrap: nowrap; }
+  .painel-corpo .cartao-titulo { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+  .painel-corpo .cartao-desc { font-size: 14px; }
+  .painel-corpo .cartao-corpo { padding: 10px 18px 18px; }
+
+  .evolucao-filtros { display: flex; gap: 8px; margin-bottom: 14px; }
+  .evolucao-filtros button {
+    flex: 1; min-width: 0; height: 38px; padding: 0 6px; border: none; border-radius: 10px;
+    background: #f1f5f9; color: var(--tinta-suave); font-size: 13.5px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .evolucao-filtros button.ativo { background: var(--marca); color: #fff; font-weight: 600; }
+  .grafico-legenda { justify-content: space-between; gap: 8px 10px; }
+  .grafico-legenda .legenda-item { font-size: 12px; gap: 6px; white-space: nowrap; }
+
+  .rosca-bloco { flex-wrap: nowrap; gap: 16px; justify-content: flex-start; }
+  .rosca { width: 124px; height: 124px; }
+  .rosca-legenda { min-width: 0; }
+  .rosca-legenda li { gap: 8px; font-size: 13.5px; }
+
+  .barras { height: 112px; }
+  .ranking-nome { width: 112px; font-size: 14px; }
+
+  .recentes-lista { list-style: none; margin: 4px 0 0; padding: 0 0 6px; }
+  .recentes-lista li { border-top: 1px solid var(--borda); }
+  .recente-item {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 12px 18px; border: none; background: none; text-align: left;
+  }
+  .recente-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .recente-titulo {
+    font-size: 13.5px; font-weight: 700; color: var(--tinta);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .recente-meta { font-size: 12.5px; color: var(--tinta-suave); }
+  .recente-item .selo, .prazo-item .selo { flex-shrink: 0; }
+  .recente-seta { color: var(--tinta-tenue); flex-shrink: 0; }
+
+  .cartao-prazos .prazos { gap: 0; }
+  .cartao-prazos .prazos li + li { border-top: 1px solid var(--borda); }
+  .cartao-prazos .prazo-item { padding: 10px 0; border-radius: 0; }
+}
+.legenda-item.apagada { opacity: .4; }
+
+/* Celulares estreitos (360–400px): o mesmo layout, um pouco mais compacto. */
+@media (max-width: 400px) {
+  .topo-celular-botao, .topo-celular-avatar .avatar { width: 42px; height: 42px; }
+  .topo-celular .marca img { width: 28px; height: 28px; }
+  .topo-celular .marca-nome { font-size: 20px; }
+  .painel-filtros { gap: 10px; }
+  .painel-intervalo, .periodo-botao { padding: 0 10px; gap: 6px; font-size: 13.5px; }
+  .periodo-botao > svg:first-child { display: none; }
+  .indicador, .kpi { gap: 8px; padding: 13px 10px; }
+  .indicador-icone, .kpi-icone { width: 36px; height: 36px; border-radius: 12px; }
+  .indicador-valor, .kpi-valor { font-size: 20px; }
+  .evolucao-filtros { gap: 6px; }
+  .evolucao-filtros button { font-size: 12.5px; padding: 0 4px; }
+  .grafico-legenda { justify-content: flex-start; }
+  .grafico-legenda .legenda-item { font-size: 11.5px; }
+  .saudacao { font-size: 30px; }
 }

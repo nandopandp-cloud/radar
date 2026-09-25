@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { LogoRadar, MarcaRadar } from '@/components/Logo';
 import {
   IconeCalendario, IconeDuploEsquerda, IconeEquipe, IconeGrafico, IconeLampada,
-  IconeLista, IconeMenu, IconePasta, IconeSair, IconeSino,
+  IconeLista, IconeMais, IconeMenu, IconePasta, IconeSair, IconeSino, IconeUsuario,
 } from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
 import { RodapeCreditos } from '@/components/RodapeCreditos';
@@ -33,12 +33,14 @@ export function Casca({
   aba,
   aoTrocarAba,
   atrasadas,
+  aoNovaDemanda,
   children,
 }: {
   sessao: SessaoUI;
   aba: Aba;
   aoTrocarAba: (a: Aba) => void;
   atrasadas: number;
+  aoNovaDemanda: () => void;
   children: React.ReactNode;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -75,6 +77,41 @@ export function Casca({
   const cargo = sessao.perfil === 'ADMIN' ? 'Administrador' : 'Analista da MSA';
 
   const personificando = sessao.personificadoPor ?? null;
+
+  /*
+   * Barra inferior do celular: o botão de nova demanda fica no meio, com as
+   * abas divididas dos dois lados. Admin tem as mesmas abas da sidebar;
+   * analista, as dele e o perfil.
+   */
+  const abasInferiores: { id: Aba; rotulo: string; Icone: typeof IconeCalendario }[] =
+    sessao.perfil === 'ADMIN'
+      ? [
+          { id: 'painel', rotulo: 'Dashboard', Icone: IconeGrafico },
+          { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
+          { id: 'demandas', rotulo: 'Demandas', Icone: IconeLista },
+          { id: 'equipe', rotulo: 'Equipe', Icone: IconeEquipe },
+        ]
+      : [
+          { id: 'calendario', rotulo: 'Calendário', Icone: IconeCalendario },
+          { id: 'demandas', rotulo: 'Demandas', Icone: IconeLista },
+          ...(sessao.recursosExperimentais
+            ? [{ id: 'arquivos' as Aba, rotulo: 'Arquivos', Icone: IconePasta }]
+            : []),
+          { id: 'perfil', rotulo: 'Perfil', Icone: IconeUsuario },
+        ];
+  const meio = Math.ceil(abasInferiores.length / 2);
+
+  const abaInferior = ({ id, rotulo, Icone }: (typeof abasInferiores)[number]) => (
+    <button
+      key={id}
+      className="barra-inferior-item"
+      aria-current={aba === id}
+      onClick={() => aoTrocarAba(id)}
+    >
+      <Icone size={22} />
+      <span>{rotulo}</span>
+    </button>
+  );
 
   async function encerrarAcesso() {
     await fetch('/api/auth/encerrar-acesso', { method: 'POST' });
@@ -177,18 +214,36 @@ export function Casca({
       )}
 
       <div className="principal">
-        {/*
-          A barra de topo saiu: só repetia o perfil, que já está na sidebar, e
-          comia altura útil. No celular a sidebar é gaveta, então o botão de
-          menu continua — agora solto sobre o conteúdo.
-        */}
-        <button
-          className="btn-icone abre-menu"
-          onClick={() => setMenuAberto(true)}
-          aria-label="Abrir menu"
-        >
-          <IconeMenu size={21} />
-        </button>
+        {/* Só no celular, onde a sidebar vira gaveta aberta pelo menu. */}
+        <header className="topo-celular">
+          <button
+            className="topo-celular-botao"
+            onClick={() => setMenuAberto(true)}
+            aria-label="Abrir menu"
+          >
+            <IconeMenu size={21} />
+          </button>
+          <MarcaRadar size={34} />
+          <div className="topo-celular-acoes">
+            {sessao.perfil === 'ADMIN' && (
+              <button
+                className="topo-celular-botao"
+                onClick={() => aoTrocarAba('alertas')}
+                aria-label={atrasadas > 0 ? `Alertas: ${atrasadas} atrasadas` : 'Alertas'}
+              >
+                <IconeSino size={20} />
+                {atrasadas > 0 && <span className="topo-celular-ponto" />}
+              </button>
+            )}
+            <button
+              className="topo-celular-avatar"
+              onClick={() => aoTrocarAba('perfil')}
+              aria-label="Minha conta"
+            >
+              <Avatar nome={sessao.nome} avatar={sessao.avatar} />
+            </button>
+          </div>
+        </header>
 
         <main className="conteudo">
           <div className="conteudo-largo">{children}</div>
@@ -196,6 +251,14 @@ export function Casca({
 
         <RodapeCreditos />
       </div>
+
+      <nav className="barra-inferior" aria-label="Navegação principal">
+        {abasInferiores.slice(0, meio).map(abaInferior)}
+        <button className="barra-inferior-nova" onClick={aoNovaDemanda} aria-label="Nova demanda">
+          <IconeMais size={26} />
+        </button>
+        {abasInferiores.slice(meio).map(abaInferior)}
+      </nav>
     </div>
   );
 }
