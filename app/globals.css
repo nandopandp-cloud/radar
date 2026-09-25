@@ -948,76 +948,100 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 @keyframes subir { from { opacity: 0; transform: translateY(10px); } }
 
 /* ══ Login ══════════════════════════════════════════════ */
+/* Tela cheia: identidade à esquerda, formulário à direita. */
 .login-tela {
-  min-height: 100vh; display: flex; flex-direction: column;
-  padding: 28px;
-  background: var(--fundo);
-}
-.login-tela-centro {
-  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; min-height: 100dvh;
+  display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
+  background: var(--superficie);
 }
 
-.login-cartao {
-  width: 100%; max-width: 980px; min-height: 620px;
-  background: var(--superficie); border-radius: 24px; overflow: hidden;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, .22);
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
-/* Coluna esquerda: identidade visual, escura, com o radar ilustrado. */
 .login-vitrine {
+  --radar: clamp(460px, 42vw, 820px);
   position: relative; overflow: hidden;
-  background: radial-gradient(120% 130% at 15% 10%, #0f2b6b 0%, #0b1d4d 55%, #060f2e 100%);
-  padding: 44px 40px; display: flex; flex-direction: column;
+  background:
+    radial-gradient(60% 55% at 72% 78%, rgba(37, 99, 235, .45) 0%, rgba(37, 99, 235, 0) 70%),
+    radial-gradient(70% 60% at 95% 0%, #0f3fae 0%, rgba(15, 63, 174, 0) 70%),
+    linear-gradient(160deg, #0b2a7a 0%, #081c56 45%, #050f33 100%);
+  padding: clamp(40px, 5.5vw, 96px) clamp(32px, 5.8vw, 98px);
+  display: flex; flex-direction: column;
   color: #fff;
 }
-.login-vitrine-marca { display: flex; align-items: center; gap: 13px; z-index: 1; }
-.login-vitrine-marca .marca-nome { color: #fff; font-size: 26px; }
+/* Anéis tênues em volta do radar, como ondas saindo dele. */
+.login-vitrine::before {
+  content: ''; position: absolute; pointer-events: none;
+  width: calc(var(--radar) * 1.9); height: calc(var(--radar) * 1.9);
+  right: calc(var(--radar) * -.58); bottom: calc(var(--radar) * -.7);
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle,
+    rgba(147, 197, 253, 0) 0 calc(var(--radar) * .2),
+    rgba(147, 197, 253, .07) calc(var(--radar) * .2 + 1px),
+    rgba(147, 197, 253, 0) calc(var(--radar) * .2 + 2px) calc(var(--radar) * .32));
+}
+.login-vitrine-marca { display: flex; align-items: center; z-index: 1; }
+.login-vitrine-marca .marca { gap: 18px; }
+.login-vitrine-marca .marca-nome { color: #fff; font-size: clamp(30px, 2.6vw, 44px); }
+.login-vitrine-titulo {
+  margin-top: clamp(48px, 9vh, 96px); padding-left: 14px; z-index: 1;
+  font-size: clamp(32px, 2.95vw, 52px); line-height: 1.16;
+  font-weight: 800; letter-spacing: -.02em; max-width: 13ch;
+}
 .login-vitrine-slogan {
-  margin-top: 14px; font-size: 15.5px; line-height: 1.5;
-  color: #bfd3ff; z-index: 1; max-width: 260px;
+  margin-top: 14px; padding-left: 14px; z-index: 1; max-width: 32.5ch;
+  font-size: clamp(16px, 1.36vw, 22px); line-height: 1.45; color: #c7d7fb;
 }
 .login-vitrine-radar {
-  position: absolute; right: -70px; bottom: -70px;
-  width: 440px; height: 440px;
-  filter: drop-shadow(0 20px 50px rgba(37, 99, 235, .45));
-  opacity: .96;
+  position: absolute;
+  width: var(--radar); height: var(--radar);
+  right: calc(var(--radar) * -.13); bottom: calc(var(--radar) * -.23);
+  filter: drop-shadow(0 20px 60px rgba(37, 99, 235, .5));
 }
 
-/* Coluna direita: formulário. */
-.login-formulario {
-  padding: 52px 48px; display: flex; flex-direction: column; justify-content: center;
+/* Coluna direita: formulário no meio, créditos no pé. */
+.login-lado {
+  display: flex; flex-direction: column;
+  padding: 0 clamp(24px, 3.5vw, 56px);
 }
-.login-titulo { font-size: 27px; font-weight: 800; letter-spacing: -.02em; color: var(--tinta); }
-.login-sub { font-size: 14px; color: var(--tinta-suave); margin-top: 6px; margin-bottom: 30px; }
+.login-formulario {
+  flex: 1; width: 100%; max-width: 476px; margin: 0 auto;
+  padding: 48px 0; display: flex; flex-direction: column; justify-content: center;
+}
+.login-lado .rodape-creditos {
+  border-top: 1px solid var(--borda); padding: 22px 0 28px;
+}
+.login-titulo { font-size: 32px; font-weight: 800; letter-spacing: -.02em; color: var(--tinta); }
+.login-sub { font-size: 16px; color: var(--tinta-suave); margin-top: 10px; margin-bottom: 32px; }
+
+.login-formulario .entrada { height: 56px; font-size: 15px; border-radius: 10px; }
+.login-formulario .campo { margin-bottom: 18px; }
+.login-formulario .btn-primario { height: 56px; font-size: 16px; font-weight: 700; border-radius: 10px; margin-top: 8px; }
 
 .login-campo-icone {
   position: relative;
 }
-.login-campo-icone .entrada { padding-left: 42px; }
-.login-campo-icone .campo-senha .entrada { padding-left: 42px; }
+.login-campo-icone .entrada { padding-left: 50px; }
+.login-campo-icone .campo-senha .entrada { padding-left: 50px; }
 .login-campo-icone-simbolo {
-  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
   color: var(--tinta-tenue); pointer-events: none; z-index: 1;
 }
+.login-campo-icone-simbolo svg { width: 20px; height: 20px; }
 
 .login-seguranca {
-  display: flex; align-items: flex-start; gap: 10px; margin-top: 30px;
-  font-size: 12.5px; color: var(--tinta-suave); line-height: 1.5;
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 44px;
+  font-size: 13.5px; color: var(--tinta-suave); line-height: 1.5;
 }
-.login-seguranca svg { flex-shrink: 0; margin-top: 1px; color: var(--tinta-tenue); }
+.login-seguranca svg { flex-shrink: 0; width: 18px; height: 18px; color: var(--tinta-tenue); }
 .login-seguranca a { color: var(--marca); text-decoration: underline; }
 
-@media (max-width: 860px) {
-  .login-cartao { grid-template-columns: minmax(0, 1fr); max-width: 460px; min-height: 0; }
+@media (max-width: 980px) {
+  .login-tela { grid-template-columns: minmax(0, 1fr); }
   .login-vitrine { display: none; }
-  .login-formulario { padding: 40px 30px; }
 }
 
 @media (max-width: 480px) {
-  .login-tela { padding: 16px; }
-  .login-formulario { padding: 32px 22px; }
-  .login-titulo { font-size: 23px; }
+  .login-lado { padding: 0 16px; }
+  .login-titulo { font-size: 26px; }
+  .login-sub { margin-bottom: 26px; }
 }
 
 /* ══ Rodapé de créditos ═════════════════════════════════ */
