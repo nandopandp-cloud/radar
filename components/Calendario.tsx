@@ -159,8 +159,18 @@ export function Calendario({
                   {data.getUTCDate()}
                 </span>
 
+                {/* Celular: sem espaço para títulos, só pontos e a contagem do resto. */}
                 {lista.length > 0 && (
-                  <div className="cal-itens">
+                  <span className="cal-pontos so-celular">
+                    {(lista.length <= 3 ? lista : lista.slice(0, 1)).map(({ d, situacao }) => (
+                      <span key={d.id} className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                    ))}
+                    {lista.length > 3 && <span className="cal-pontos-mais">+{lista.length - 1}</span>}
+                  </span>
+                )}
+
+                {lista.length > 0 && (
+                  <div className="cal-itens so-desktop">
                     {lista.slice(0, 2).map(({ d, situacao }) => (
                       <span className="cal-item" key={d.id} title={d.titulo}>
                         <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />

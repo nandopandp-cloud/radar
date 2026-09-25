@@ -222,6 +222,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
+          aoVerDemandas={() => setAba('demandas')}
           ofensiva={ofensiva}
           aoAbrirOfensiva={() => setOfensivaAberta(true)}
           ofensivaPulsando={seloPulsando}
@@ -263,6 +264,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           aoSelecionarDia={(dia) => { setDiaSelecionado(dia); setDiaAberto(dia); }}
           aoAbrirDemanda={setDetalhe}
           aoNovaDemanda={abrirNova}
+          aoVerDemandas={() => setAba('demandas')}
           ofensiva={ofensiva}
           aoAbrirOfensiva={() => setOfensivaAberta(true)}
           ofensivaPulsando={seloPulsando}

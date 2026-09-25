@@ -5,14 +5,15 @@ import { Calendario } from '@/components/Calendario';
 import { MiniCalendario } from '@/components/MiniCalendario';
 import { SeloOfensiva } from '@/components/OfensivaRadar';
 import {
-  IconeAlerta, IconeCheckCirculo, IconeCirculo, IconeDocumento,
-  IconeMais, IconeRelogio,
+  IconeAlerta, IconeBandeira, IconeCheckCirculo, IconeCirculo, IconeDireita, IconeDocumento,
+  IconeMais, IconeRelogio, IconeUsuario,
 } from '@/components/icones';
 import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
   situacaoDe, type Situacao,
 } from '@/lib/dominio';
-import { diaParaDate } from '@/lib/datas';
+import { diaParaDate, somarDias } from '@/lib/datas';
+import { proximosPrazos } from '@/lib/painel';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
 import type { Ofensiva } from '@/lib/ofensiva';
 
@@ -22,6 +23,44 @@ import type { Ofensiva } from '@/lib/ofensiva';
  * junto com a lateral.
  */
 const MAXIMO_AGENDA = 3;
+/** No celular a lista é a única visão do dia, então mostra um pouco mais. */
+const MAXIMO_AGENDA_CELULAR = 4;
+
+/** "Hoje", "Amanhã", "Ontem", "Seg" (na semana que vem) ou "28 set". */
+function rotuloDia(dia: string, hoje: string): string {
+  if (dia === hoje) return 'Hoje';
+  if (dia === somarDias(hoje, 1)) return 'Amanhã';
+  if (dia === somarDias(hoje, -1)) return 'Ontem';
+  const data = diaParaDate(dia);
+  if (dia > hoje && dia <= somarDias(hoje, 6)) {
+    const semana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' }).format(data);
+    return semana.charAt(0).toUpperCase() + semana.slice(1, 3);
+  }
+  return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(data).replace('.', '');
+}
+
+/**
+ * Linha de demanda do celular: quem, e então a prioridade enquanto ela está
+ * em aberto ou a situação quando já andou, e o dia do prazo.
+ */
+function MetaDemanda({ d, situacao, hoje }: { d: Demanda; situacao: Situacao; hoje: string }) {
+  const andou = situacao === 'CONCLUIDA' || situacao === 'EM_ANDAMENTO';
+  return (
+    <span className="lista-dia-meta">
+      <span><IconeUsuario size={14} /> {d.autor.nome}</span>
+      {andou ? (
+        <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
+      ) : (
+        <span className={`lista-dia-prioridade prioridade-${d.prioridade}`}>
+          <IconeBandeira size={14} />
+          {ROTULO_PRIORIDADE[d.prioridade as keyof typeof ROTULO_PRIORIDADE] ?? d.prioridade}
+        </span>
+      )}
+      <span><IconeRelogio size={14} /> {rotuloDia(d.prazo.slice(0, 10), hoje)}</span>
+    </span>
+  );
+}
 
 /** Linhas do resumo do mês, na ordem em que aparecem no painel. */
 const LINHAS_RESUMO: { situacao: Situacao; rotulo: string; tom: string; Icone: typeof IconeRelogio }[] = [
@@ -42,6 +81,7 @@ export function TelaCalendario({
   aoSelecionarDia,
   aoAbrirDemanda,
   aoNovaDemanda,
+  aoVerDemandas,
   ofensiva,
   aoAbrirOfensiva,
   ofensivaPulsando,
@@ -56,6 +96,7 @@ export function TelaCalendario({
   aoSelecionarDia: (dia: string) => void;
   aoAbrirDemanda: (d: Demanda) => void;
   aoNovaDemanda: (prazo: string) => void;
+  aoVerDemandas: () => void;
   ofensiva: Ofensiva | null;
   aoAbrirOfensiva: () => void;
   ofensivaPulsando: boolean;
@@ -88,10 +129,15 @@ export function TelaCalendario({
     [demandas, diaSelecionado, hoje],
   );
 
+  const prazos = useMemo(() => proximosPrazos(demandas, hoje, 4), [demandas, hoje]);
+
   const primeiroNome = sessao.nome.trim().split(/\s+/)[0];
 
   const rotuloDiaSelecionado = new Intl.DateTimeFormat('pt-BR', {
     day: 'numeric', month: 'long', timeZone: 'UTC',
+  }).format(diaParaDate(diaSelecionado));
+  const rotuloDiaComAno = new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   }).format(diaParaDate(diaSelecionado));
 
   function irParaHoje() {
@@ -102,7 +148,7 @@ export function TelaCalendario({
 
   return (
     <>
-      <div className="espalhar" style={{ marginBottom: 22 }}>
+      <div className="espalhar cal-cabecalho" style={{ marginBottom: 22 }}>
         <div>
           <h1 className="saudacao">Olá, {primeiroNome}!</h1>
           <p className="saudacao-sub">
@@ -138,14 +184,17 @@ export function TelaCalendario({
             <div className="cartao-cabecalho">
               <div>
                 <div className="cartao-titulo">Demandas do dia</div>
-                <div className="cartao-desc primeira-maiuscula">{rotuloDiaSelecionado}</div>
+                <div className="cartao-desc primeira-maiuscula so-desktop">{rotuloDiaSelecionado}</div>
+                <div className="cartao-desc so-celular">{rotuloDiaComAno}</div>
               </div>
               {doDia.length > 0 && (
                 <button
                   className="btn btn-secundario btn-pequeno"
                   onClick={() => aoSelecionarDia(diaSelecionado)}
                 >
-                  Ver todas{doDia.length > MAXIMO_AGENDA ? ` (${doDia.length})` : ''}
+                  Ver todas
+                  <span className="so-desktop">{doDia.length > MAXIMO_AGENDA ? ` (${doDia.length})` : ''}</span>
+                  <span className="so-celular">{` (${doDia.length})`}</span>
                 </button>
               )}
             </div>
@@ -158,7 +207,30 @@ export function TelaCalendario({
                 </button>
               </div>
             ) : (
-              <div className="agenda">
+              <>
+              <ul className="lista-dia so-celular">
+                {doDia.slice(0, MAXIMO_AGENDA_CELULAR).map(({ d, situacao }) => (
+                  <li key={d.id}>
+                    <button className="lista-dia-item" onClick={() => aoAbrirDemanda(d)}>
+                      <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                      <span className="lista-dia-texto">
+                        <span className="lista-dia-titulo">{d.titulo}</span>
+                        <MetaDemanda d={d} situacao={situacao} hoje={hoje} />
+                      </span>
+                      <IconeDireita size={18} className="lista-dia-seta" />
+                    </button>
+                  </li>
+                ))}
+                {doDia.length > MAXIMO_AGENDA_CELULAR && (
+                  <li>
+                    <button className="lista-dia-mais" onClick={() => aoSelecionarDia(diaSelecionado)}>
+                      +{doDia.length - MAXIMO_AGENDA_CELULAR}{' '}
+                      {doDia.length - MAXIMO_AGENDA_CELULAR === 1 ? 'outra demanda' : 'outras demandas'}
+                    </button>
+                  </li>
+                )}
+              </ul>
+              <div className="agenda so-desktop">
                 {doDia.slice(0, MAXIMO_AGENDA).map(({ d, situacao }) => (
                   <button key={d.id} className="agenda-item" onClick={() => aoAbrirDemanda(d)}>
                     <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
@@ -180,6 +252,7 @@ export function TelaCalendario({
                   </button>
                 )}
               </div>
+              </>
             )}
           </div>
         </div>
@@ -227,6 +300,47 @@ export function TelaCalendario({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Só no celular: no desktop os prazos já estão no Dashboard. */}
+          <div className="cartao so-celular">
+            <div className="cartao-cabecalho">
+              <div className="cartao-titulo">Próximos prazos</div>
+              <button className="btn btn-secundario btn-pequeno" onClick={aoVerDemandas}>
+                Ver todos
+              </button>
+            </div>
+            {prazos.length === 0 ? (
+              <p className="agenda-vazia">Nenhum prazo em aberto.</p>
+            ) : (
+              <ul className="lista-dia">
+                {prazos.map((d) => {
+                  const dia = d.prazo.slice(0, 10);
+                  const situacao = situacaoDe(d.status, dia, hoje);
+                  const mesCurto = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' })
+                    .format(diaParaDate(dia)).replace('.', '').toUpperCase();
+                  return (
+                    <li key={d.id}>
+                      <button className="lista-dia-item" onClick={() => aoAbrirDemanda(d)}>
+                        <span className={`prazo-data${situacao === 'ATRASADA' ? ' atrasada' : ''}`}>
+                          <span className="prazo-dia">{Number(dia.slice(8, 10))}</span>
+                          <span className="prazo-mes">{mesCurto}</span>
+                        </span>
+                        <span className="lista-dia-texto">
+                          <span className="lista-dia-titulo">{d.titulo}</span>
+                          <span className="lista-dia-meta">
+                            <span><IconeUsuario size={14} /> {d.autor.nome}</span>
+                            <span><IconeRelogio size={14} /> {rotuloDia(dia, hoje)}</span>
+                          </span>
+                        </span>
+                        <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
+                        <IconeDireita size={18} className="lista-dia-seta" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </aside>
       </div>

@@ -3138,6 +3138,116 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
 }
 .legenda-item.apagada { opacity: .4; }
 
+/* ══ Celular: calendário ════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* Título e botão na mesma linha; a frase de apoio corre por baixo dos dois. */
+  .cal-cabecalho {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+    column-gap: 12px; margin-bottom: 18px !important;
+  }
+  .cal-cabecalho > div:first-child { display: contents; }
+  .cal-cabecalho .saudacao { grid-column: 1; grid-row: 1; }
+  .cal-cabecalho .cabecalho-acoes-tela { grid-column: 2; grid-row: 1; flex-wrap: nowrap; }
+  .cal-cabecalho .saudacao-sub { grid-column: 1 / -1; grid-row: 2; max-width: 34ch; }
+  .cal-cabecalho .btn-primario {
+    height: 46px; padding: 0 16px; border-radius: 12px; white-space: nowrap; font-size: 15px;
+  }
+  .coluna-calendario, .painel-lateral { gap: 14px; }
+  .coluna-calendario > .cartao, .painel-lateral > .cartao { border-radius: 20px; }
+  .coluna-calendario .cartao-cabecalho, .painel-lateral .cartao-cabecalho {
+    padding: 18px 16px 12px; flex-wrap: nowrap;
+  }
+  .coluna-calendario .cartao-titulo, .painel-lateral .cartao-titulo {
+    font-size: 18px; font-weight: 800; letter-spacing: -.02em;
+  }
+  .coluna-calendario .cartao-desc { font-size: 14px; }
+
+  .cal-topo { padding: 18px 16px 14px; gap: 8px; flex-wrap: nowrap; }
+  .cal-mes { font-size: 21px; flex: 1; min-width: 0; }
+  .cal-setas { gap: 6px; }
+  .cal-nav { width: 36px; height: 36px; border-radius: 10px; }
+  .btn-hoje { margin-left: 4px; height: 36px; padding: 0 12px; border-radius: 10px; }
+  .cal-chips { padding: 0 16px 14px; gap: 6px; }
+  .cal-chip { padding: 6px 9px; gap: 5px; font-size: 12.5px; }
+  .cal-chip-conta { padding: 1px 6px; font-size: 11.5px; min-width: 0; }
+  .cal-dia-nome { padding: 6px 0 10px; font-size: 11px; }
+  .cal-celula {
+    min-height: 52px; padding: 9px 2px 7px; align-items: center; gap: 7px; overflow: visible;
+  }
+  .cal-numero {
+    align-self: center; width: auto; height: auto; font-size: 14px; font-weight: 700;
+  }
+  .cal-numero.hoje { background: none; box-shadow: none; color: var(--marca); }
+  .cal-celula.selecionada {
+    background: var(--marca); box-shadow: 0 6px 14px rgba(37, 99, 235, .3); border-radius: 10px;
+  }
+  .cal-celula.selecionada .cal-numero { color: #fff; }
+  .cal-pontos { display: flex; align-items: center; justify-content: center; gap: 3px; min-height: 16px; }
+  .cal-pontos .ponto { width: 7px; height: 7px; }
+  .cal-celula.selecionada .cal-pontos .ponto { box-shadow: 0 0 0 1.5px #fff; }
+  .cal-pontos-mais {
+    font-size: 10.5px; font-weight: 600; line-height: 1; padding: 3px 5px; border-radius: 999px;
+    background: #f1f5f9; color: var(--tinta-suave);
+  }
+  .cal-celula.selecionada .cal-pontos-mais { background: #fff; color: var(--marca); }
+  .legenda { justify-content: space-between; flex-wrap: nowrap; gap: 8px; padding: 14px 16px 16px; margin-top: 0; }
+  .legenda .legenda-item { font-size: 12.5px; gap: 6px; white-space: nowrap; }
+
+  /* Listas do dia e dos próximos prazos. */
+  .lista-dia { list-style: none; margin: 0; padding: 0 0 4px; }
+  .lista-dia > li { border-top: 1px solid var(--borda); }
+  .lista-dia-item {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 12px 16px; border: none; background: none; text-align: left;
+  }
+  .lista-dia-item > .ponto { width: 10px; height: 10px; align-self: flex-start; margin-top: 4px; }
+  .lista-dia-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .lista-dia-titulo {
+    font-size: 13.5px; font-weight: 700; color: var(--tinta);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lista-dia-meta {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px;
+    font-size: 12.5px; color: var(--tinta-suave);
+  }
+  .lista-dia-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+  .lista-dia-meta svg { color: var(--tinta-tenue); flex-shrink: 0; }
+  .lista-dia-prioridade {
+    padding: 2px 9px; border-radius: 999px; font-weight: 500;
+    background: #f1f5f9; color: var(--tinta-suave);
+  }
+  .lista-dia-prioridade svg { color: currentColor; }
+  .lista-dia-prioridade.prioridade-MEDIA { background: #eff6ff; color: #2563eb; }
+  .lista-dia-prioridade.prioridade-ALTA,
+  .lista-dia-prioridade.prioridade-CRITICA { background: #fef2f2; color: #dc2626; }
+  .lista-dia-item .selo { flex-shrink: 0; }
+  .lista-dia-seta { color: var(--tinta-tenue); flex-shrink: 0; }
+  .lista-dia-mais {
+    display: block; width: 100%; padding: 13px 16px; text-align: left;
+    border: none; background: none; font-size: 14px; font-weight: 600; color: var(--marca);
+  }
+
+  /* Mini-calendário maior: no celular ele é um cartão da página. */
+  .mini-cartao { padding: 18px 16px 12px; }
+  .mini-topo { margin-bottom: 10px; gap: 12px; }
+  .mini-topo-icone svg { width: 22px; height: 22px; }
+  .mini-mes { font-size: 18px; font-weight: 800; }
+  .mini-nome { font-size: 12px; padding-bottom: 8px; }
+  .mini-dia { aspect-ratio: auto; height: 44px; font-size: 14.5px; color: var(--tinta); border-radius: 10px; }
+  .mini-dia.fora { color: #cbd5e1; }
+  .mini-pontos { bottom: 5px; gap: 3px; }
+  .mini-ponto { width: 5px; height: 5px; }
+
+  /* Resumo do mês em 2×2; "em andamento" fica no filtro do calendário. */
+  .resumo-linhas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .resumo-linha.ambar { display: none; }
+  .resumo-linha { padding: 14px 12px; gap: 12px; border-radius: 14px; }
+  .resumo-linha.neutro { background: #f1f5f9; }
+  .resumo-linha-icone svg { width: 22px; height: 22px; }
+  .resumo-linha-valor { font-size: 22px; }
+  .resumo-linha-rotulo { font-size: 13px; }
+}
+
 /* Celulares estreitos (360–400px): o mesmo layout, um pouco mais compacto. */
 @media (max-width: 400px) {
   .topo-celular-botao, .topo-celular-avatar .avatar { width: 42px; height: 42px; }
@@ -3154,4 +3264,13 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .grafico-legenda { justify-content: flex-start; }
   .grafico-legenda .legenda-item { font-size: 11.5px; }
   .saudacao { font-size: 30px; }
+  .cal-cabecalho .btn-primario { padding: 0 12px; font-size: 14px; }
+  .cal-mes { font-size: 17px; }
+  .cal-nav { width: 32px; height: 32px; }
+  .btn-hoje { padding: 0 10px; height: 32px; }
+  .btn-hoje svg { display: none; }
+  .cal-mes { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-chip { padding: 5px 8px; font-size: 12px; }
+  .legenda .legenda-item { font-size: 11px; gap: 4px; }
+  .legenda .ponto { width: 7px; height: 7px; }
 }
