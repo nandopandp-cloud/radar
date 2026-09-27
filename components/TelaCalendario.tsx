@@ -12,7 +12,7 @@ import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
   situacaoDe, type Situacao,
 } from '@/lib/dominio';
-import { diaParaDate, somarDias } from '@/lib/datas';
+import { diaParaDate, rotuloDiaRelativo } from '@/lib/datas';
 import { proximosPrazos } from '@/lib/painel';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
 import type { Ofensiva } from '@/lib/ofensiva';
@@ -25,20 +25,6 @@ import type { Ofensiva } from '@/lib/ofensiva';
 const MAXIMO_AGENDA = 3;
 /** No celular a lista é a única visão do dia, então mostra um pouco mais. */
 const MAXIMO_AGENDA_CELULAR = 4;
-
-/** "Hoje", "Amanhã", "Ontem", "Seg" (na semana que vem) ou "28 set". */
-function rotuloDia(dia: string, hoje: string): string {
-  if (dia === hoje) return 'Hoje';
-  if (dia === somarDias(hoje, 1)) return 'Amanhã';
-  if (dia === somarDias(hoje, -1)) return 'Ontem';
-  const data = diaParaDate(dia);
-  if (dia > hoje && dia <= somarDias(hoje, 6)) {
-    const semana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' }).format(data);
-    return semana.charAt(0).toUpperCase() + semana.slice(1, 3);
-  }
-  return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-    .format(data).replace('.', '');
-}
 
 /**
  * Linha de demanda do celular: quem, e então a prioridade enquanto ela está
@@ -57,7 +43,7 @@ function MetaDemanda({ d, situacao, hoje }: { d: Demanda; situacao: Situacao; ho
           {ROTULO_PRIORIDADE[d.prioridade as keyof typeof ROTULO_PRIORIDADE] ?? d.prioridade}
         </span>
       )}
-      <span><IconeRelogio size={14} /> {rotuloDia(d.prazo.slice(0, 10), hoje)}</span>
+      <span><IconeRelogio size={14} /> {rotuloDiaRelativo(d.prazo.slice(0, 10), hoje)}</span>
     </span>
   );
 }
@@ -330,7 +316,7 @@ export function TelaCalendario({
                           <span className="lista-dia-titulo">{d.titulo}</span>
                           <span className="lista-dia-meta">
                             <span><IconeUsuario size={14} /> {d.autor.nome}</span>
-                            <span><IconeRelogio size={14} /> {rotuloDia(dia, hoje)}</span>
+                            <span><IconeRelogio size={14} /> {rotuloDiaRelativo(dia, hoje)}</span>
                           </span>
                         </span>
                         <span className={`selo selo-${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>

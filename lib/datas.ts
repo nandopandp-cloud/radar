@@ -84,3 +84,17 @@ export function fimDoMes(dia: string): string {
   const ultimo = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
   return ultimo.toISOString().slice(0, 10);
 }
+
+/** "Hoje", "Amanhã", "Ontem", "Seg" (na semana que vem) ou "28 set". */
+export function rotuloDiaRelativo(dia: string, hoje: string): string {
+  if (dia === hoje) return 'Hoje';
+  if (dia === somarDias(hoje, 1)) return 'Amanhã';
+  if (dia === somarDias(hoje, -1)) return 'Ontem';
+  const data = diaParaDate(dia);
+  if (dia > hoje && dia <= somarDias(hoje, 6)) {
+    const semana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' }).format(data);
+    return semana.charAt(0).toUpperCase() + semana.slice(1, 3);
+  }
+  return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(data).replace('.', '');
+}

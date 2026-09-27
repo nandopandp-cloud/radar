@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { IconeLista, IconeMais, IconeQuadro } from '@/components/icones';
+import {
+  IconeBusca, IconeControles, IconeFiltro, IconeLista, IconeMais, IconeQuadro, IconeUsuario,
+} from '@/components/icones';
 import { QuadroDemandas } from '@/components/QuadroDemandas';
+import { ListaCelular, QuadroCelular } from '@/components/QuadroCelular';
 import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
   situacaoDe, type Prioridade, type Situacao,
@@ -35,6 +38,11 @@ const PERIODOS: { id: Periodo; rotulo: string }[] = [
   { id: 'MES', rotulo: 'Este mês' },
   { id: 'PERSONALIZADO', rotulo: 'Escolher período' },
 ];
+
+/** Minúsculas e sem acento, para a busca achar "rescisao" em "RESCISÃO". */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 /**
  * Converte o atalho escolhido em um intervalo de prazo (inclusivo nas pontas).
@@ -83,6 +91,10 @@ export function TelaDemandas({
   const [periodo, setPeriodo] = useState<Periodo>('SEMPRE');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
+  // Só no celular: busca, "meus itens" e o painel de filtros.
+  const [busca, setBusca] = useState('');
+  const [meus, setMeus] = useState(false);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
   // A preferência vem do navegador, então só pode ser lida depois da hidratação.
   useEffect(() => {
@@ -131,6 +143,30 @@ export function TelaDemandas({
     });
   }, [demandas, filtroAtivo, hoje, intervalo]);
 
+  /** Recorte do celular: sempre todas as situações, mais busca e "meus itens". */
+  const doCelular = useMemo(() => {
+    const termo = normalizar(busca.trim());
+    const base = demandas
+      .map((d) => ({ d, situacao: situacaoDe(d.status, d.prazo.slice(0, 10), hoje) }))
+      .filter(({ d }) => {
+        if (intervalo) {
+          const prazo = d.prazo.slice(0, 10);
+          if (prazo < intervalo.de || prazo > intervalo.ate) return false;
+        }
+        if (!termo) return true;
+        return normalizar(`${d.titulo} ${d.autor.nome} ${d.categoria ?? ''}`).includes(termo);
+      })
+      .sort((a, b) => {
+        const p = PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao];
+        return p !== 0 ? p : a.d.prazo.localeCompare(b.d.prazo);
+      });
+    const minhas = base.filter(({ d }) => d.autorId === sessao.id);
+    return { todas: base, minhas, itens: meus ? minhas : base };
+  }, [demandas, hoje, intervalo, busca, meus, sessao.id]);
+
+  const filtrosAtivos =
+    (periodo !== 'SEMPRE' ? 1 : 0) + (sessao.perfil === 'ADMIN' && autorFiltro !== 'TODOS' ? 1 : 0);
+
   /** Descrição do recorte ativo, para o cabeçalho e o estado vazio. */
   const rotuloIntervalo = useMemo(() => {
     if (!intervalo) return null;
@@ -142,8 +178,132 @@ export function TelaDemandas({
     return `até ${fim}`;
   }, [intervalo]);
 
+  const seletorPeriodo = (
+    <select
+      className="selecao"
+      value={periodo}
+      onChange={(e) => setPeriodo(e.target.value as Periodo)}
+      aria-label="Filtrar por período de prazo"
+    >
+      {PERIODOS.map((p) => (
+        <option key={p.id} value={p.id}>{p.rotulo}</option>
+      ))}
+    </select>
+  );
+  const seletorAutor = (
+    <select className="selecao" value={autorFiltro} onChange={(e) => aoMudarAutor(e.target.value)}>
+      <option value="TODOS">Todos os analistas</option>
+      {equipe.map((u) => (
+        <option key={u.id} value={u.id}>{u.nome}</option>
+      ))}
+    </select>
+  );
+
   return (
     <>
+      <div className="so-celular dm">
+        <h1 className="saudacao">{sessao.perfil === 'ADMIN' ? 'Demandas' : 'Minhas demandas'}</h1>
+        <p className="saudacao-sub">
+          {sessao.perfil === 'ADMIN'
+            ? 'Acompanhe e gerencie todas as demandas da sua equipe.'
+            : 'Tudo que você lançou, em um só lugar.'}
+        </p>
+
+        <div className="dm-barra">
+          <button className="btn btn-primario dm-nova" onClick={() => aoNovaDemanda(hoje)}>
+            <IconeMais size={18} /> Nova demanda
+          </button>
+          <label className="dm-busca">
+            <IconeBusca size={19} />
+            <input
+              type="search"
+              placeholder="Buscar..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              aria-label="Buscar demandas"
+            />
+          </label>
+          <button
+            className="dm-icone"
+            onClick={() => trocarVisao(visao === 'QUADRO' ? 'LISTA' : 'QUADRO')}
+            aria-label={visao === 'QUADRO' ? 'Ver em lista' : 'Ver em quadro'}
+            title={visao === 'QUADRO' ? 'Ver em lista' : 'Ver em quadro'}
+          >
+            <IconeControles size={21} />
+          </button>
+        </div>
+
+        <div className="dm-chips">
+          <button className={`dm-chip${meus ? '' : ' ativo'}`} onClick={() => setMeus(false)}>
+            Todas <span className="dm-chip-conta">{doCelular.todas.length}</span>
+          </button>
+          <button className={`dm-chip${meus ? ' ativo' : ''}`} onClick={() => setMeus(true)}>
+            <IconeUsuario size={17} /> Meus itens
+          </button>
+          <button
+            className={`dm-chip${filtrosAbertos || filtrosAtivos > 0 ? ' ativo' : ''}`}
+            onClick={() => setFiltrosAbertos((a) => !a)}
+            aria-expanded={filtrosAbertos}
+          >
+            <IconeFiltro size={17} /> Filtros
+            {filtrosAtivos > 0 && <span className="dm-chip-conta">{filtrosAtivos}</span>}
+          </button>
+        </div>
+
+        {filtrosAbertos && (
+          <div className="cartao dm-filtros">
+            <label className="rotulo">Prazo</label>
+            {seletorPeriodo}
+            {periodo === 'PERSONALIZADO' && (
+              <div className="dm-datas">
+                <input
+                  type="date" className="entrada" value={de} max={ate || undefined}
+                  onChange={(e) => setDe(e.target.value)} aria-label="De"
+                />
+                <input
+                  type="date" className="entrada" value={ate} min={de || undefined}
+                  onChange={(e) => setAte(e.target.value)} aria-label="Até"
+                />
+              </div>
+            )}
+            {sessao.perfil === 'ADMIN' && (
+              <>
+                <label className="rotulo">Analista</label>
+                {seletorAutor}
+              </>
+            )}
+            {filtrosAtivos > 0 && (
+              <button
+                className="btn btn-secundario btn-pequeno"
+                onClick={() => { setPeriodo('SEMPRE'); setDe(''); setAte(''); aoMudarAutor('TODOS'); }}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        )}
+
+        {doCelular.itens.length === 0 ? (
+          <div className="cartao vazio">
+            <div className="vazio-titulo">{busca ? 'Nada encontrado' : 'Nenhuma demanda aqui'}</div>
+            <p className="vazio-texto">
+              {busca ? `Nenhuma demanda com "${busca}".` : 'Ajuste os filtros ou crie uma demanda.'}
+            </p>
+          </div>
+        ) : visao === 'QUADRO' ? (
+          <QuadroCelular
+            sessao={sessao} itens={doCelular.itens} hoje={hoje}
+            aoAbrirDemanda={aoAbrirDemanda} aoMoverDemanda={aoMoverDemanda}
+          />
+        ) : (
+          <ListaCelular
+            sessao={sessao} itens={doCelular.itens} hoje={hoje}
+            aoAbrirDemanda={aoAbrirDemanda} aoMoverDemanda={aoMoverDemanda}
+          />
+        )}
+      </div>
+
+      <div className="so-desktop">
       <div className="espalhar" style={{ marginBottom: 22 }}>
         <div>
           <h1 className="saudacao">
@@ -197,30 +357,8 @@ export function TelaDemandas({
                 <IconeLista size={16} /> Lista
               </button>
             </div>
-            <select
-              className="selecao"
-              style={{ width: 'auto', minWidth: 160 }}
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value as Periodo)}
-              aria-label="Filtrar por período de prazo"
-            >
-              {PERIODOS.map((p) => (
-                <option key={p.id} value={p.id}>{p.rotulo}</option>
-              ))}
-            </select>
-            {sessao.perfil === 'ADMIN' && (
-              <select
-                className="selecao"
-                style={{ width: 'auto', minWidth: 180 }}
-                value={autorFiltro}
-                onChange={(e) => aoMudarAutor(e.target.value)}
-              >
-                <option value="TODOS">Todos os analistas</option>
-                {equipe.map((u) => (
-                  <option key={u.id} value={u.id}>{u.nome}</option>
-                ))}
-              </select>
-            )}
+            <div style={{ minWidth: 160 }}>{seletorPeriodo}</div>
+            {sessao.perfil === 'ADMIN' && <div style={{ minWidth: 180 }}>{seletorAutor}</div>}
           </div>
         </div>
 
@@ -380,6 +518,7 @@ export function TelaDemandas({
             </table>
           </div>
         )}
+      </div>
       </div>
     </>
   );

@@ -537,6 +537,24 @@ export const IconeUsuario = ({ size = 19, className }: P) => (
   </svg>
 );
 
+/** Três trilhos com botões deslizantes — "ajustes" da visualização. */
+export const IconeControles = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+    <circle cx="15" cy="6" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="17" cy="18" r="2" />
+  </svg>
+);
+
+export const IconeUsuarioMais = ({ size = 19, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M15 20v-1.8a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
+    <circle cx="9" cy="7.5" r="3.6" />
+    <path d="M19 8v6M16 11h6" />
+  </svg>
+);
+
 export const IconeEtiqueta = ({ size = 19, className }: P) => (
   <svg {...base(size)} className={className}>
     <path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" />

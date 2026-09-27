@@ -45,6 +45,7 @@ export type Demanda = {
   criadoEm: string;
   recorrenciaId?: string | null;
   recorrencia?: RecorrenciaDaDemanda | null;
+  _count?: { comentarios: number };
 };
 
 export type SessaoUI = {

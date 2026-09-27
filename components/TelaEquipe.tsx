@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { IconeMais } from '@/components/icones';
+import { useMemo, useRef, useState } from 'react';
+import {
+  IconeBusca, IconeDocumento, IconeEquipe, IconeFiltro, IconeUsuarioMais,
+} from '@/components/icones';
 import { Avatar } from '@/components/Avatar';
 import { useDialogo } from '@/components/Dialogo';
+import { MenuAcoes, type AcaoMenu } from '@/components/MenuAcoes';
 import type { Notificar, SessaoUI, Usuario } from '@/lib/tipos';
 
 export function TelaEquipe({
@@ -22,6 +25,62 @@ export function TelaEquipe({
   const [form, setForm] = useState({ nome: '', email: '', senha: '', equipe: '', perfil: 'ANALISTA' });
   const [salvando, setSalvando] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  /** "Outra…" escolhida na lista de equipes: vira campo de texto. */
+  const [outraEquipe, setOutraEquipe] = useState(false);
+  const campoNome = useRef<HTMLInputElement>(null);
+
+  // Só no celular: busca, filtros e ordenação da lista.
+  const [busca, setBusca] = useState('');
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [filtroPerfil, setFiltroPerfil] = useState<'TODOS' | 'ADMIN' | 'ANALISTA'>('TODOS');
+  const [filtroAtivo, setFiltroAtivo] = useState<'TODOS' | 'ATIVOS' | 'INATIVOS'>('TODOS');
+  const [ordem, setOrdem] = useState<'NOME' | 'DEMANDAS' | 'PERFIL'>('NOME');
+
+  const equipesExistentes = useMemo(
+    () => [...new Set(equipe.map((u) => u.equipe?.trim()).filter((e): e is string => !!e))]
+      .sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [equipe],
+  );
+
+  const listaCelular = useMemo(() => {
+    const termo = busca.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return equipe
+      .filter((u) => filtroPerfil === 'TODOS' || u.perfil === filtroPerfil)
+      .filter((u) => filtroAtivo === 'TODOS' || (filtroAtivo === 'ATIVOS') === u.ativo)
+      .filter((u) => !termo || `${u.nome} ${u.email} ${u.equipe ?? ''}`
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(termo))
+      .sort((a, b) => {
+        if (ordem === 'DEMANDAS') return (b._count?.demandas ?? 0) - (a._count?.demandas ?? 0);
+        if (ordem === 'PERFIL' && a.perfil !== b.perfil) return a.perfil === 'ADMIN' ? -1 : 1;
+        return a.nome.localeCompare(b.nome, 'pt-BR');
+      });
+  }, [equipe, busca, filtroPerfil, filtroAtivo, ordem]);
+
+  const filtrosAtivos = (filtroPerfil !== 'TODOS' ? 1 : 0) + (filtroAtivo !== 'TODOS' ? 1 : 0);
+
+  function irParaFormulario() {
+    campoNome.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    campoNome.current?.focus({ preventScroll: true });
+  }
+
+  function acoesDe(u: Usuario): AcaoMenu[] {
+    const eu = u.id === sessao.id;
+    return [
+      { rotulo: 'Redefinir senha', aoEscolher: () => void redefinirSenha(u) },
+      ...(!eu && u.ativo ? [{ rotulo: 'Acessar conta', aoEscolher: () => void gerarLink(u) }] : []),
+      ...(!eu
+        ? [
+            {
+              rotulo: u.ativo ? 'Desativar' : 'Reativar',
+              aoEscolher: () => void alterar(
+                u, { ativo: !u.ativo }, u.ativo ? 'Conta desativada.' : 'Conta reativada.',
+              ),
+            },
+            { rotulo: 'Excluir conta', aoEscolher: () => void excluir(u), perigo: true, separar: true },
+          ]
+        : []),
+    ];
+  }
   async function gerarLink(u: Usuario) {
     const segue = await confirmar({
       titulo: `Acessar a conta de ${u.nome}?`,
@@ -77,6 +136,7 @@ export function TelaEquipe({
       const corpo = await res.json();
       if (!res.ok) throw new Error(corpo.erro ?? 'Não foi possível criar.');
       setForm({ nome: '', email: '', senha: '', equipe: '', perfil: 'ANALISTA' });
+      setOutraEquipe(false);
       notificar('Analista cadastrado.', 'ok');
       await aoAtualizar();
     } catch (erro) {
@@ -147,8 +207,13 @@ export function TelaEquipe({
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
+      <div className="eq-cabecalho">
         <h1 className="saudacao">Equipe</h1>
+        {admin && (
+          <button className="btn btn-primario so-celular" onClick={irParaFormulario}>
+            <IconeUsuarioMais size={20} /> Novo analista
+          </button>
+        )}
         <p className="saudacao-sub">
           {admin
             ? 'Quem tem acesso ao Radar e recebe os alertas de prazo.'
@@ -156,8 +221,103 @@ export function TelaEquipe({
         </p>
       </div>
 
-      <div className={admin ? 'grade-calendario' : ''}>
+      <div className="so-celular eq-celular">
+        <div className="dm-barra">
+          <label className="dm-busca">
+            <IconeBusca size={19} />
+            <input
+              type="search" placeholder="Buscar analistas..." value={busca}
+              onChange={(e) => setBusca(e.target.value)} aria-label="Buscar analistas"
+            />
+          </label>
+          <button
+            className={`dm-chip eq-filtros${filtrosAbertos || filtrosAtivos > 0 ? ' ativo' : ''}`}
+            onClick={() => setFiltrosAbertos((a) => !a)}
+            aria-expanded={filtrosAbertos}
+          >
+            <IconeFiltro size={18} /> Filtros
+            {filtrosAtivos > 0 && <span className="dm-chip-conta">{filtrosAtivos}</span>}
+          </button>
+        </div>
+
+        {filtrosAbertos && (
+          <div className="cartao dm-filtros">
+            <label className="rotulo" htmlFor="eq-perfil">Perfil</label>
+            <select
+              id="eq-perfil" className="selecao" value={filtroPerfil}
+              onChange={(e) => setFiltroPerfil(e.target.value as typeof filtroPerfil)}
+            >
+              <option value="TODOS">Todos os perfis</option>
+              <option value="ADMIN">Administradores</option>
+              <option value="ANALISTA">Analistas</option>
+            </select>
+            <label className="rotulo" htmlFor="eq-ativo">Situação</label>
+            <select
+              id="eq-ativo" className="selecao" value={filtroAtivo}
+              onChange={(e) => setFiltroAtivo(e.target.value as typeof filtroAtivo)}
+            >
+              <option value="TODOS">Ativos e inativos</option>
+              <option value="ATIVOS">Só ativos</option>
+              <option value="INATIVOS">Só inativos</option>
+            </select>
+          </div>
+        )}
+
         <div className="cartao">
+          <div className="cartao-cabecalho">
+            <div>
+              <div className="cartao-titulo">Analistas</div>
+              <div className="cartao-desc">
+                {equipe.filter((u) => u.ativo).length} ativo(s) de {equipe.length}
+              </div>
+            </div>
+            <select
+              className="selecao eq-ordem" value={ordem} aria-label="Ordenar por"
+              onChange={(e) => setOrdem(e.target.value as typeof ordem)}
+            >
+              <option value="NOME">Ordenar por nome</option>
+              <option value="DEMANDAS">Mais demandas</option>
+              <option value="PERFIL">Perfil</option>
+            </select>
+          </div>
+          <ul className="eq-lista">
+            {listaCelular.length === 0 && <li className="eq-vazia">Ninguém encontrado.</li>}
+            {listaCelular.map((u) => {
+              const n = u._count?.demandas ?? 0;
+              return (
+                <li key={u.id} className="eq-item" style={ocupado === u.id ? { opacity: 0.5 } : undefined}>
+                  <Avatar nome={u.nome} avatar={u.avatar} tamanho="lg" />
+                  <div className="eq-item-texto">
+                    <div className="eq-item-nome">
+                      {u.nome}
+                      {u.id === sessao.id && <span className="eq-voce"> (você)</span>}
+                    </div>
+                    <div className="eq-item-email">{u.email}</div>
+                    <div className="eq-item-meta">
+                      <span><IconeEquipe size={15} /> {u.equipe ?? '—'}</span>
+                      <span><IconeDocumento size={15} /> {n} {n === 1 ? 'demanda' : 'demandas'}</span>
+                    </div>
+                  </div>
+                  <div className="eq-item-selos">
+                    <span className={`eq-perfil${u.perfil === 'ADMIN' ? ' admin' : ''}`}>
+                      {u.perfil === 'ADMIN' ? 'Admin' : 'Analista'}
+                    </span>
+                    {!u.ativo && <span className="selo selo-CANCELADA">Inativo</span>}
+                  </div>
+                  {admin && (
+                    <MenuAcoes
+                      acoes={acoesDe(u)} rotulo={`Ações de ${u.nome}`} desabilitado={ocupado === u.id}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+
+      <div className={admin ? 'grade-calendario' : ''}>
+        <div className="cartao so-desktop">
           <div className="cartao-cabecalho com-linha">
             <div>
               <div className="cartao-titulo">Analistas</div>
@@ -253,13 +413,14 @@ export function TelaEquipe({
             <div className="cartao-cabecalho com-linha">
               <div>
                 <div className="cartao-titulo">Novo analista</div>
-                <div className="cartao-desc">Cria o acesso e o destinatário dos alertas</div>
+                <div className="cartao-desc">Cria o acesso e o destinatário dos alertas.</div>
               </div>
             </div>
             <div className="cartao-corpo">
               <div className="campo">
                 <label className="rotulo" htmlFor="e-nome">Nome</label>
                 <input
+                  ref={campoNome}
                   id="e-nome" className="entrada" required placeholder="Ex.: Ana Ribeiro"
                   value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })}
                 />
@@ -285,10 +446,28 @@ export function TelaEquipe({
                   <label className="rotulo" htmlFor="e-equipe">
                     Equipe <span className="opcional">(opcional)</span>
                   </label>
-                  <input
-                    id="e-equipe" className="entrada" placeholder="Ex.: Operações"
-                    value={form.equipe} onChange={(e) => setForm({ ...form, equipe: e.target.value })}
-                  />
+                  <select
+                    id="e-equipe" className="selecao"
+                    value={outraEquipe ? '__outra' : form.equipe}
+                    onChange={(e) => {
+                      const outra = e.target.value === '__outra';
+                      setOutraEquipe(outra);
+                      setForm({ ...form, equipe: outra ? '' : e.target.value });
+                    }}
+                  >
+                    <option value="">Selecione uma equipe</option>
+                    {equipesExistentes.map((nome) => (
+                      <option key={nome} value={nome}>{nome}</option>
+                    ))}
+                    <option value="__outra">Outra…</option>
+                  </select>
+                  {outraEquipe && (
+                    <input
+                      className="entrada" placeholder="Nome da nova equipe" autoFocus
+                      style={{ marginTop: 8 }}
+                      value={form.equipe} onChange={(e) => setForm({ ...form, equipe: e.target.value })}
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="rotulo" htmlFor="e-perfil">Perfil</label>
@@ -302,7 +481,11 @@ export function TelaEquipe({
                 </div>
               </div>
               <button type="submit" className="btn btn-primario btn-bloco" disabled={salvando}>
-                {salvando ? <><span className="girando">⏳</span> Criando…</> : <><IconeMais size={17} /> Cadastrar</>}
+                {salvando ? <><span className="girando">⏳</span> Criando…</> : (
+                  <>
+                    <IconeUsuarioMais size={18} /> Cadastrar<span className="so-celular">analista</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

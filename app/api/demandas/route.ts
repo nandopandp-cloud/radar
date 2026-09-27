@@ -48,6 +48,7 @@ export async function GET(req: Request) {
     include: {
       autor: { select: { id: true, nome: true, email: true, equipe: true } },
       recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+      _count: { select: { comentarios: true } },
     },
     orderBy: [{ prazo: 'asc' }, { criadoEm: 'asc' }],
   });
