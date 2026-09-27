@@ -54,11 +54,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const check = await acessoADemanda(anexo.demandaId);
   if ('erro' in check) return NextResponse.json({ erro: check.erro }, { status: check.codigo });
 
-  // Remove quem anexou, o dono da demanda ou um admin.
-  const dono =
-    check.sessao.perfil === 'ADMIN' ||
-    anexo.autorId === check.sessao.sub ||
-    check.autorId === check.sessao.sub;
+  // Remove quem anexou, quem trabalha na demanda (responsável e
+  // colaboradores) ou um admin — quem só foi mencionado, não.
+  const dono = check.participa || anexo.autorId === check.sessao.sub;
   if (!dono) {
     return NextResponse.json({ erro: 'Você não pode remover este anexo.' }, { status: 403 });
   }

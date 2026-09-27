@@ -12,6 +12,7 @@ import {
 } from '@/lib/dominio';
 import { fimDoMes, formatarDiaCompleto, formatarDiaCurto, inicioDoMes, somarDias } from '@/lib/datas';
 import type { Demanda, SessaoUI, Usuario } from '@/lib/tipos';
+import { participaDaDemanda } from '@/lib/permissoes';
 
 type Filtro = 'ATRASADAS' | 'ABERTAS' | 'CONCLUIDAS' | 'TODAS';
 
@@ -160,7 +161,7 @@ export function TelaDemandas({
         const p = PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao];
         return p !== 0 ? p : a.d.prazo.localeCompare(b.d.prazo);
       });
-    const minhas = base.filter(({ d }) => d.autorId === sessao.id);
+    const minhas = base.filter(({ d }) => participaDaDemanda(d, sessao.id));
     return { todas: base, minhas, itens: meus ? minhas : base };
   }, [demandas, hoje, intervalo, busca, meus, sessao.id]);
 

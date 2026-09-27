@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   IconeAlerta, IconeBalao, IconeBandeira, IconeCalendario, IconeCheck, IconeCheckCirculo,
-  IconeCirculo, IconeClipe, IconeDocumento, IconeEtiqueta, IconeLapis, IconeLixeira,
+  IconeCirculo, IconeClipe, IconeDocumento, IconeEquipe, IconeEtiqueta, IconeLapis, IconeLixeira,
   IconeRepetir, IconeUsuario, IconeX,
 } from '@/components/icones';
 import { AnexosDemanda } from '@/components/AnexosDemanda';
@@ -16,13 +16,16 @@ import {
 import { formatarDiaCurto, formatarDiaExtenso } from '@/lib/datas';
 import { adiadoNaVespera, prazoTravado } from '@/lib/prazo';
 import { useDialogo } from '@/components/Dialogo';
-import type { Anexo, Comentario, Demanda, Notificar, Reagendamento, SessaoUI } from '@/lib/tipos';
+import type {
+  Anexo, Comentario, Demanda, Notificar, Reagendamento, SessaoUI, Usuario,
+} from '@/lib/tipos';
 
 export function GavetaDemanda({
   demanda,
   hoje,
   sessao,
   podeEditar,
+  equipe,
   aoFechar,
   aoAtualizar,
   notificar,
@@ -31,6 +34,8 @@ export function GavetaDemanda({
   hoje: string;
   sessao: SessaoUI;
   podeEditar: boolean;
+  /** Pessoas que o admin pode atribuir. Vazia para analista, que não atribui. */
+  equipe: Usuario[];
   aoFechar: () => void;
   aoAtualizar: () => Promise<void> | void;
   notificar: Notificar;
@@ -112,6 +117,35 @@ export function GavetaDemanda({
     } finally {
       setSalvando(false);
     }
+  }
+
+  const colaboradores = demanda.colaboradores ?? [];
+  const idsColaboradores = colaboradores.map((c) => c.usuario.id);
+  const ativos = equipe.filter((u) => u.ativo);
+  /** Quem ainda pode entrar como colaborador: ativo, fora da demanda. */
+  const disponiveis = ativos.filter(
+    (u) => u.id !== demanda.autorId && !idsColaboradores.includes(u.id),
+  );
+
+  /** Só admin chega aqui: o seletor nem aparece para analista, e a API recusa. */
+  async function trocarResponsavel(novoId: string) {
+    const novo = ativos.find((u) => u.id === novoId);
+    if (!novo || novoId === demanda.autorId) return;
+    const segue = await confirmar({
+      titulo: `Passar a demanda para ${novo.nome}?`,
+      mensagem: `${demanda.autor.nome} deixa de ver esta demanda e para de receber os alertas dela.`,
+      detalhes: [
+        'Se quiser que continue acompanhando, adicione a pessoa como colaboradora depois.',
+      ],
+      confirmar: 'Trocar responsável',
+      tom: 'aviso',
+    });
+    if (!segue) return;
+    await salvar({ autorId: novoId }, `Demanda passada para ${novo.nome}.`);
+  }
+
+  async function mudarColaboradores(ids: string[], mensagem: string) {
+    await salvar({ colaboradores: ids }, mensagem);
   }
 
   /** Encerra a série: as demandas já criadas ficam, novas deixam de nascer. */
@@ -414,8 +448,74 @@ export function GavetaDemanda({
                 <div className="propriedade">
                   <span className="propriedade-icone"><IconeUsuario size={18} /></span>
                   <span className="propriedade-rotulo">Responsável</span>
-                  <span className="propriedade-valor">{demanda.autor.nome}</span>
+                  <span className="propriedade-valor">
+                    {ehAdmin ? (
+                      <select
+                        className="selecao selecao-inline"
+                        value={demanda.autorId}
+                        disabled={salvando}
+                        aria-label="Trocar responsável"
+                        onChange={(e) => void trocarResponsavel(e.target.value)}
+                      >
+                        {/* O atual continua na lista mesmo inativo, para o valor não sumir. */}
+                        {!ativos.some((u) => u.id === demanda.autorId) && (
+                          <option value={demanda.autorId}>{demanda.autor.nome}</option>
+                        )}
+                        {ativos.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                      </select>
+                    ) : (
+                      demanda.autor.nome
+                    )}
+                  </span>
                 </div>
+                {(ehAdmin || colaboradores.length > 0) && (
+                  <div className="propriedade">
+                    <span className="propriedade-icone"><IconeEquipe size={18} /></span>
+                    <span className="propriedade-rotulo">Colaboradores</span>
+                    <span className="propriedade-valor colaboradores">
+                      {colaboradores.map((c) => (
+                        <span key={c.usuario.id} className="colaborador">
+                          {c.usuario.nome}
+                          {ehAdmin && (
+                            <button
+                              type="button"
+                              className="colaborador-remover"
+                              disabled={salvando}
+                              aria-label={`Remover ${c.usuario.nome}`}
+                              title="Remover colaborador"
+                              onClick={() => void mudarColaboradores(
+                                idsColaboradores.filter((id) => id !== c.usuario.id),
+                                `${c.usuario.nome} saiu da demanda.`,
+                              )}
+                            >
+                              <IconeX size={13} />
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                      {ehAdmin && disponiveis.length > 0 && (
+                        <select
+                          className="selecao selecao-inline"
+                          value=""
+                          disabled={salvando}
+                          aria-label="Adicionar colaborador"
+                          onChange={(e) => {
+                            const novo = disponiveis.find((u) => u.id === e.target.value);
+                            if (novo) {
+                              void mudarColaboradores(
+                                [...idsColaboradores, novo.id], `${novo.nome} agora colabora na demanda.`,
+                              );
+                            }
+                          }}
+                        >
+                          <option value="">+ Adicionar</option>
+                          {disponiveis.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                        </select>
+                      )}
+                      {ehAdmin && colaboradores.length === 0 && disponiveis.length === 0 && '—'}
+                    </span>
+                  </div>
+                )}
                 {demanda.categoria && (
                   <div className="propriedade">
                     <span className="propriedade-icone"><IconeEtiqueta size={18} /></span>
@@ -542,9 +642,12 @@ export function GavetaDemanda({
                     Reabrir
                   </button>
                 )}
-                <button className="btn btn-perigo" disabled={salvando} onClick={excluir}>
-                  <IconeLixeira size={17} />
-                </button>
+                {/* Colaborador edita, mas excluir é do responsável ou de um admin. */}
+                {(ehAdmin || demanda.autorId === sessao.id) && (
+                  <button className="btn btn-perigo" disabled={salvando} onClick={excluir}>
+                    <IconeLixeira size={17} />
+                  </button>
+                )}
               </>
             )}
           </div>

@@ -19,6 +19,7 @@ import { metaAtual, type Ofensiva } from '@/lib/ofensiva';
 import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
+import { podeEditarDemanda } from '@/lib/permissoes';
 
 /** Abas que existem na URL. Vale conferir: ?aba= vem de fora e pode vir torto. */
 const ABAS: Aba[] = [
@@ -288,7 +289,8 @@ export function App({ sessao }: { sessao: SessaoUI }) {
           demanda={detalhe}
           hoje={hoje}
           sessao={sessao}
-          podeEditar={sessao.perfil === 'ADMIN' || detalhe.autorId === sessao.id}
+          podeEditar={podeEditarDemanda(detalhe, sessao)}
+          equipe={equipe}
           aoFechar={() => setDetalhe(null)}
           aoAtualizar={carregar}
           notificar={notificar}

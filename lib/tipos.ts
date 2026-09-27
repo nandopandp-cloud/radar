@@ -46,6 +46,8 @@ export type Demanda = {
   recorrenciaId?: string | null;
   recorrencia?: RecorrenciaDaDemanda | null;
   _count?: { comentarios: number };
+  /** Pessoas que um admin adicionou além do responsável. */
+  colaboradores?: { usuario: { id: string; nome: string } }[];
 };
 
 export type SessaoUI = {

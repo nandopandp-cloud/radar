@@ -4,12 +4,14 @@ import { sessaoAtual } from '@/lib/auth';
 import { diaParaDate, paraDiaISO } from '@/lib/datas';
 import { ehOrigem, ehPrioridade, ehStatus } from '@/lib/dominio';
 import { registrarAtividade } from '@/lib/registrar-atividade';
+import { SELECAO_COLABORADORES } from '@/lib/acesso';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Lista demandas. Analista vê as próprias e aquelas em que foi mencionado num
- * comentário; admin vê as de todos e pode filtrar por autor com ?autorId=.
+ * Lista demandas. Analista vê as próprias, as em que é colaborador e aquelas
+ * em que foi mencionado num comentário; admin vê as de todos e pode filtrar
+ * por pessoa com ?autorId= (responsável ou colaboradora).
  * O recorte por mês (?de=&ate=) alimenta o calendário sem trazer o histórico
  * inteiro.
  */
@@ -29,11 +31,12 @@ export async function GET(req: Request) {
   const escopo =
     sessao.perfil === 'ADMIN'
       ? autorFiltro && autorFiltro !== 'TODOS'
-        ? { autorId: autorFiltro }
+        ? { OR: [{ autorId: autorFiltro }, { colaboradores: { some: { usuarioId: autorFiltro } } }] }
         : {}
       : {
           OR: [
             { autorId: sessao.sub },
+            { colaboradores: { some: { usuarioId: sessao.sub } } },
             { comentarios: { some: { mencoes: { some: { usuarioId: sessao.sub } } } } },
           ],
         };
@@ -49,6 +52,7 @@ export async function GET(req: Request) {
       autor: { select: { id: true, nome: true, email: true, equipe: true } },
       recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
       _count: { select: { comentarios: true } },
+      colaboradores: SELECAO_COLABORADORES,
     },
     orderBy: [{ prazo: 'asc' }, { criadoEm: 'asc' }],
   });

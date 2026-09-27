@@ -8,6 +8,7 @@ import {
 import { ROTULO_PRIORIDADE, type Prioridade, type Situacao } from '@/lib/dominio';
 import { formatarDiaCurto } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
+import { podeEditarDemanda } from '@/lib/permissoes';
 
 /** Uma coluna do quadro: a situação que ela reúne e como ela se apresenta. */
 type Coluna = {
@@ -155,7 +156,7 @@ export function QuadroDemandas({
     return mapa;
   }, [itens]);
 
-  const podeEditar = (d: Demanda) => sessao.perfil === 'ADMIN' || d.autorId === sessao.id;
+  const podeEditar = (d: Demanda) => podeEditarDemanda(d, sessao);
 
   function soltar(coluna: Coluna) {
     const item = itens.find(({ d }) => d.id === arrastado);

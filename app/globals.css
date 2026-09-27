@@ -3480,3 +3480,20 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   .eq-item { gap: 10px; padding-left: 12px; }
   .eq-item .avatar { width: 42px; height: 42px; }
 }
+
+/* ══ Responsável e colaboradores (gaveta da demanda) ════════════════════ */
+.selecao-inline {
+  width: auto; max-width: 100%; padding: 5px 30px 5px 10px; font-size: 13.5px;
+  border-radius: 8px;
+}
+.propriedade-valor.colaboradores { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.colaborador {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px;
+  border-radius: 999px; background: var(--marca-clara); color: var(--marca-escura);
+  font-size: 13px; font-weight: 500;
+}
+.colaborador-remover {
+  width: 20px; height: 20px; display: grid; place-items: center; border: none;
+  border-radius: 50%; background: none; color: inherit; opacity: .7;
+}
+.colaborador-remover:hover { background: #dbeafe; opacity: 1; }

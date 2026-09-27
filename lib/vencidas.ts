@@ -26,8 +26,9 @@ export type GrupoAutor = {
 };
 
 /**
- * Demandas pendentes que já venceram ou vencem hoje, agrupadas por autor —
- * é o resumo diário enviado por e-mail.
+ * Demandas pendentes que já venceram ou vencem hoje, agrupadas por pessoa —
+ * é o resumo diário enviado por e-mail. Cada demanda entra no grupo do
+ * responsável e no de cada colaborador.
  *
  * Regra do produto: o prazo é o último dia válido para entregar. Uma demanda
  * com prazo em 10 aparece como "vence hoje" no dia 10 e como "atrasada" a
@@ -44,28 +45,21 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
       status: { in: STATUS_PENDENTES },
       prazo: { lt: amanha },
     },
-    include: { autor: true },
+    include: { autor: true, colaboradores: { include: { usuario: true } } },
     orderBy: { prazo: 'asc' },
   });
 
   const porAutor = new Map<string, GrupoAutor>();
 
   for (const d of demandas) {
-    if (!d.autor.ativo) continue;
+    const pessoas = [d.autor, ...d.colaboradores.map((c) => c.usuario)].filter((u) => u.ativo);
+    if (pessoas.length === 0) continue;
 
     const prazo = d.prazo.toISOString().slice(0, 10);
     const atrasada = d.prazo.getTime() < limite.getTime();
     const diasVencido = Math.round((limite.getTime() - d.prazo.getTime()) / 86_400_000);
 
-    const grupo = porAutor.get(d.autorId) ?? {
-      usuarioId: d.autorId,
-      nome: d.autor.nome,
-      email: d.autor.email,
-      equipe: d.autor.equipe,
-      demandas: [],
-    };
-
-    grupo.demandas.push({
+    const item: DemandaVencida = {
       id: d.id,
       titulo: d.titulo,
       descricao: d.descricao,
@@ -76,9 +70,15 @@ export async function buscarVencidas(diaReferencia: string): Promise<GrupoAutor[
       atrasada,
       diasVencido,
       vezesAlertada: d.vezesAlertada,
-    });
+    };
 
-    porAutor.set(d.autorId, grupo);
+    for (const p of pessoas) {
+      const grupo = porAutor.get(p.id) ?? {
+        usuarioId: p.id, nome: p.nome, email: p.email, equipe: p.equipe, demandas: [],
+      };
+      grupo.demandas.push(item);
+      porAutor.set(p.id, grupo);
+    }
   }
 
   // Mais grave primeiro: atrasada antes de hoje, depois prioridade, depois mais antiga.

@@ -8,6 +8,7 @@ import { MenuAcoes, type AcaoMenu } from '@/components/MenuAcoes';
 import { ROTULO_PRIORIDADE, type Prioridade, type Situacao } from '@/lib/dominio';
 import { rotuloDiaRelativo } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
+import { podeEditarDemanda } from '@/lib/permissoes';
 
 /** Quantos cartões cada coluna mostra antes do "Ver todas". */
 const VISIVEIS_POR_COLUNA = 5;
@@ -99,7 +100,7 @@ export function QuadroCelular({
     return mapa;
   }, [itens]);
 
-  const podeMover = (d: Demanda) => sessao.perfil === 'ADMIN' || d.autorId === sessao.id;
+  const podeMover = (d: Demanda) => podeEditarDemanda(d, sessao);
 
   return (
     <div className="qc">
@@ -170,7 +171,7 @@ export function ListaCelular({
           situacao={situacao}
           hoje={hoje}
           mostrarAutor={sessao.perfil === 'ADMIN'}
-          podeMover={sessao.perfil === 'ADMIN' || d.autorId === sessao.id}
+          podeMover={podeEditarDemanda(d, sessao)}
           aoAbrir={() => aoAbrirDemanda(d)}
           aoMover={(status) => aoMoverDemanda(d, status)}
         />

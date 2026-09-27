@@ -40,6 +40,7 @@ model Usuario {
   conquistas Conquista[]
   missoes    Missao[]
   mencoes    Mencao[]
+  colaboracoes Colaborador[]
   linksGerados      LinkAcesso[] @relation("AdminDoLink")
   linksRecebidos    LinkAcesso[] @relation("AlvoDoLink")
 
@@ -99,6 +100,7 @@ model Demanda {
   anexos       Anexo[]
   comentarios  Comentario[]
   historicoPrazo Reagendamento[]
+  colaboradores Colaborador[]
 
   /// Preenchido quando a demanda nasceu de uma regra de recorrência.
   recorrenciaId String?
@@ -401,5 +403,19 @@ model Missao {
   atualizadoEm DateTime @updatedAt
 
   @@unique([usuarioId, chave])
+  @@index([usuarioId])
+}
+
+/// Pessoa que um admin adicionou à demanda além do responsável. Tem as mesmas
+/// permissões dele (ver lib/acesso.ts) e também recebe o alerta de atraso.
+/// Só admin inclui ou remove colaboradores.
+model Colaborador {
+  demandaId String
+  demanda   Demanda  @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  criadoEm  DateTime @default(now())
+
+  @@id([demandaId, usuarioId])
   @@index([usuarioId])
 }

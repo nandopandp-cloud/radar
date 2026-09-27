@@ -51,6 +51,9 @@ export async function dispararAlertas(opcoes: {
     : todos;
   const dataRef = diaParaDate(diaReferencia);
   const itens: ItemResultado[] = [];
+  // Com colaboradores, a mesma demanda sai em mais de um e-mail; o contador
+  // de avisos sobe uma vez por dia, não uma vez por pessoa.
+  const jaContadas = new Set<string>();
 
   for (const grupo of grupos) {
     if (!forcar) {
@@ -115,7 +118,11 @@ export async function dispararAlertas(opcoes: {
     // Só contamos o aviso quando ele de fato saiu, e só para o que já está
     // atrasado — o lembrete das que vencem hoje não é uma cobrança.
     if (status === 'ENVIADO' || status === 'PREVIEW') {
-      await registrarAlerta(grupo.demandas.filter((d) => d.atrasada).map((d) => d.id));
+      const novas = grupo.demandas
+        .filter((d) => d.atrasada && !jaContadas.has(d.id))
+        .map((d) => d.id);
+      novas.forEach((id) => jaContadas.add(id));
+      await registrarAlerta(novas);
     }
 
     itens.push({

@@ -86,7 +86,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const demanda = await prisma.demanda.findUnique({
     where: { id },
-    select: { id: true, titulo: true, autorId: true },
+    select: { id: true, titulo: true, autorId: true, colaboradores: { select: { usuarioId: true } } },
   });
   if (!demanda) return NextResponse.json({ erro: 'Demanda não encontrada.' }, { status: 404 });
 

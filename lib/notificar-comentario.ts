@@ -8,8 +8,8 @@ import {
 import { enviarEmail } from '@/lib/mailer';
 
 /**
- * Avisa por e-mail quem precisa saber de um comentário novo: o dono da demanda
- * e as pessoas marcadas com @.
+ * Avisa por e-mail quem precisa saber de um comentário novo: o dono da demanda,
+ * os colaboradores e as pessoas marcadas com @.
  *
  * Três regras definem a lista de destinatários:
  *
@@ -24,7 +24,7 @@ import { enviarEmail } from '@/lib/mailer';
  */
 export async function notificarComentario(opcoes: {
   comentarioId: string;
-  demanda: { id: string; titulo: string; autorId: string };
+  demanda: { id: string; titulo: string; autorId: string; colaboradores?: { usuarioId: string }[] };
   texto: string;
   autorNome: string;
   /** Quem escreveu. Nulo em teoria; na prática sempre vem da sessão. */
@@ -37,6 +37,8 @@ export async function notificarComentario(opcoes: {
   // Menção vence "dono": quem está nos dois papéis recebe só o aviso de menção.
   const motivoPorUsuario = new Map<string, MotivoComentario>();
   motivoPorUsuario.set(demanda.autorId, 'DONO');
+  // Colaboradores acompanham a demanda como o responsável.
+  for (const c of demanda.colaboradores ?? []) motivoPorUsuario.set(c.usuarioId, 'DONO');
   for (const id of opcoes.mencionadosIds) motivoPorUsuario.set(id, 'MENCAO');
 
   // Quem escreveu não é avisado da própria fala.

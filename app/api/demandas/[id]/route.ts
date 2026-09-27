@@ -5,35 +5,92 @@ import { diaParaDate, paraDiaISO } from '@/lib/datas';
 import { diasEntre, prazoTravado } from '@/lib/prazo';
 import { ehPrioridade, ehStatus } from '@/lib/dominio';
 import { registrarAtividade } from '@/lib/registrar-atividade';
+import { SELECAO_COLABORADORES } from '@/lib/acesso';
 
 export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** Analista só mexe no que é dele; admin mexe em tudo. */
-async function permitido(id: string) {
+/**
+ * Admin mexe em tudo. Analista edita o que é dele ou onde é colaborador, mas
+ * só exclui o que é dele: o colaborador foi chamado para ajudar, não para
+ * decidir se a demanda existe.
+ */
+async function permitido(id: string, acao: 'editar' | 'excluir') {
   const sessao = await sessaoAtual();
   if (!sessao) return { erro: 'Não autenticado.', codigo: 401 as const };
 
   const demanda = await prisma.demanda.findUnique({
     where: { id },
-    select: { autorId: true, inicio: true, prazo: true },
+    select: {
+      autorId: true, inicio: true, prazo: true,
+      colaboradores: { select: { usuarioId: true } },
+    },
   });
   if (!demanda) return { erro: 'Demanda não encontrada.', codigo: 404 as const };
 
-  if (sessao.perfil !== 'ADMIN' && demanda.autorId !== sessao.sub) {
-    return { erro: 'Esta demanda não é sua.', codigo: 403 as const };
+  const dono = demanda.autorId === sessao.sub;
+  const colabora = demanda.colaboradores.some((c) => c.usuarioId === sessao.sub);
+  if (sessao.perfil !== 'ADMIN' && !dono && !(acao === 'editar' && colabora)) {
+    return {
+      erro: colabora ? 'Só o responsável ou um admin pode excluir esta demanda.' : 'Esta demanda não é sua.',
+      codigo: 403 as const,
+    };
   }
   return { ok: true as const, demanda, sessao };
 }
 
+/** Confere que os ids são de contas ativas; devolve só os válidos, sem repetir. */
+async function contasAtivas(ids: string[]): Promise<string[]> {
+  const unicos = [...new Set(ids)];
+  if (unicos.length === 0) return [];
+  const achados = await prisma.usuario.findMany({
+    where: { id: { in: unicos }, ativo: true },
+    select: { id: true },
+  });
+  return achados.map((u) => u.id);
+}
+
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
-  const check = await permitido(id);
+  const check = await permitido(id, 'editar');
   if ('erro' in check) return NextResponse.json({ erro: check.erro }, { status: check.codigo });
 
   const corpo = await req.json().catch(() => null);
   if (!corpo) return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 });
+
+  /*
+   * Atribuição: trocar o responsável e escolher colaboradores é decisão de
+   * admin. Analista que tente pelo corpo da requisição recebe 403, não um
+   * silêncio que pareça ter funcionado.
+   */
+  const mexeNaAtribuicao = 'autorId' in corpo || 'colaboradores' in corpo;
+  if (mexeNaAtribuicao && check.sessao.perfil !== 'ADMIN') {
+    return NextResponse.json(
+      { erro: 'Só um admin pode trocar o responsável ou os colaboradores.' },
+      { status: 403 },
+    );
+  }
+
+  let novoAutorId: string | null = null;
+  if ('autorId' in corpo) {
+    if (typeof corpo.autorId !== 'string' || !corpo.autorId) {
+      return NextResponse.json({ erro: 'Escolha o novo responsável.' }, { status: 400 });
+    }
+    const [valido] = await contasAtivas([corpo.autorId]);
+    if (!valido) {
+      return NextResponse.json({ erro: 'Esse usuário não existe ou está inativo.' }, { status: 400 });
+    }
+    if (valido !== check.demanda.autorId) novoAutorId = valido;
+  }
+
+  let novosColaboradores: string[] | null = null;
+  if ('colaboradores' in corpo) {
+    if (!Array.isArray(corpo.colaboradores) || corpo.colaboradores.some((c: unknown) => typeof c !== 'string')) {
+      return NextResponse.json({ erro: 'Lista de colaboradores inválida.' }, { status: 400 });
+    }
+    novosColaboradores = await contasAtivas(corpo.colaboradores);
+  }
 
   const dados: Record<string, unknown> = {};
   if (typeof corpo.titulo === 'string' && corpo.titulo.trim()) dados.titulo = corpo.titulo.trim();
@@ -89,7 +146,22 @@ export async function PATCH(req: Request, { params }: Ctx) {
     dados.reagendamentos = { increment: 1 };
   }
 
+  if (novoAutorId) dados.autorId = novoAutorId;
+  const autorFinal = novoAutorId ?? check.demanda.autorId;
+
   const demanda = await prisma.$transaction(async (tx) => {
+    // O responsável nunca é colaborador da própria demanda. Trocar o
+    // responsável tira o antigo da demanda: se ele deve continuar, o admin o
+    // adiciona como colaborador.
+    if (novosColaboradores !== null) {
+      await tx.colaborador.deleteMany({ where: { demandaId: id } });
+      const lista = novosColaboradores.filter((u) => u !== autorFinal);
+      if (lista.length > 0) {
+        await tx.colaborador.createMany({ data: lista.map((usuarioId) => ({ demandaId: id, usuarioId })) });
+      }
+    } else if (novoAutorId) {
+      await tx.colaborador.deleteMany({ where: { demandaId: id, usuarioId: novoAutorId } });
+    }
     if (trocouPrazo) {
       await tx.reagendamento.create({
         data: {
@@ -110,6 +182,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       include: {
         autor: { select: { id: true, nome: true, email: true, equipe: true } },
         recorrencia: { select: { id: true, frequencia: true, intervalo: true, diaDoMes: true, diasSemana: true, apenasDiasUteis: true, inicio: true, ativa: true } },
+        colaboradores: SELECAO_COLABORADORES,
       },
     });
   });
@@ -119,7 +192,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
-  const check = await permitido(id);
+  const check = await permitido(id, 'excluir');
   if ('erro' in check) return NextResponse.json({ erro: check.erro }, { status: check.codigo });
 
   await prisma.demanda.delete({ where: { id } });
