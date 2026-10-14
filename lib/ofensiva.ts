@@ -1,16 +1,19 @@
 import { diaParaDate, paraDiaISO, somarDias } from '@/lib/datas';
+import { ehFeriadoNacional } from '@/lib/feriados';
 
 /**
  * Ofensiva Radar: dias seguidos em que a pessoa trabalhou no produto.
  *
- * Conta dias úteis. Sábado e domingo não somam nem quebram a sequência — num
- * escritório contábil, cobrar presença no fim de semana puniria o descanso.
+ * Conta dias úteis. Sábado, domingo e feriado nacional não somam nem quebram a
+ * sequência — num escritório contábil, cobrar presença na folga puniria o
+ * descanso. Como a ofensiva é apurada na hora a partir dos dias ativos, isto
+ * vale também para o passado.
  */
 
-/** Sábado (6) e domingo (0) não entram na contagem. */
+/** Sábado (6), domingo (0) e feriados nacionais não entram na contagem. */
 export function ehDiaUtil(dia: string): boolean {
   const semana = diaParaDate(dia).getUTCDay();
-  return semana !== 0 && semana !== 6;
+  return semana !== 0 && semana !== 6 && !ehFeriadoNacional(dia);
 }
 
 /** Dia útil anterior a este. */
