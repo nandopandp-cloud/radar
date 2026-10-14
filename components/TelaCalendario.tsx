@@ -6,7 +6,7 @@ import { MiniCalendario } from '@/components/MiniCalendario';
 import { SeloOfensiva } from '@/components/OfensivaRadar';
 import {
   IconeAlerta, IconeBandeira, IconeCheckCirculo, IconeCirculo, IconeDireita, IconeDocumento,
-  IconeMais, IconeRelogio, IconeUsuario,
+  IconeMais, IconeRelogio, IconeRepetir, IconeUsuario,
 } from '@/components/icones';
 import {
   COR_SITUACAO, PESO_SITUACAO, ROTULO_PRIORIDADE, ROTULO_SITUACAO,
@@ -16,6 +16,31 @@ import { diaParaDate, rotuloDiaRelativo } from '@/lib/datas';
 import { proximosPrazos } from '@/lib/painel';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
 import type { Ofensiva } from '@/lib/ofensiva';
+import type { Prevista } from '@/lib/previstas';
+
+/** Linha da prevista: não abre nada, porque a demanda ainda não existe. */
+function LinhaPrevista({ p, celular }: { p: Prevista; celular: boolean }) {
+  return celular ? (
+    <div className="lista-dia-item prevista" title="Será criada automaticamente neste dia">
+      <span className="ponto ponto-prevista" />
+      <span className="lista-dia-texto">
+        <span className="lista-dia-titulo">{p.titulo}</span>
+        <span className="lista-dia-meta">
+          <span><IconeUsuario size={14} /> {p.autorNome}</span>
+          <span className="selo selo-prevista"><IconeRepetir size={12} /> Prevista</span>
+        </span>
+      </span>
+    </div>
+  ) : (
+    <div className="agenda-item prevista" title="Será criada automaticamente neste dia">
+      <span className="ponto ponto-prevista" />
+      <span className="agenda-texto">
+        <span className="agenda-titulo">{p.titulo}</span>
+        <span className="agenda-sub"><IconeRepetir size={12} /> Prevista · recorrente</span>
+      </span>
+    </div>
+  );
+}
 
 /**
  * Quantas demandas o cartão do dia mostra antes de remeter ao modal, que
@@ -59,6 +84,7 @@ const LINHAS_RESUMO: { situacao: Situacao; rotulo: string; tom: string; Icone: t
 export function TelaCalendario({
   sessao,
   demandas,
+  previstas,
   hoje,
   ano,
   mes,
@@ -74,6 +100,8 @@ export function TelaCalendario({
 }: {
   sessao: SessaoUI;
   demandas: Demanda[];
+  /** Ocorrências futuras das recorrências, que ainda não viraram demanda. */
+  previstas: Prevista[];
   hoje: string;
   ano: number;
   mes: number;
@@ -114,6 +142,20 @@ export function TelaCalendario({
         .sort((a, b) => PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao]),
     [demandas, diaSelecionado, hoje],
   );
+
+  /** A agenda do dia: primeiro o que já é demanda, depois o que está previsto. */
+  const previstasDoDia = useMemo(
+    () => previstas.filter((p) => p.dia === diaSelecionado),
+    [previstas, diaSelecionado],
+  );
+  type Item =
+    | { tipo: 'demanda'; d: Demanda; situacao: Situacao }
+    | { tipo: 'prevista'; p: Prevista };
+  const itensDoDia: Item[] = [
+    ...doDia.map((x) => ({ tipo: 'demanda' as const, ...x })),
+    ...previstasDoDia.map((p) => ({ tipo: 'prevista' as const, p })),
+  ];
+  const totalDoDia = itensDoDia.length;
 
   const prazos = useMemo(() => proximosPrazos(demandas, hoje, 4), [demandas, hoje]);
 
@@ -159,6 +201,7 @@ export function TelaCalendario({
             hoje={hoje}
             diaSelecionado={diaSelecionado}
             demandas={demandas}
+            previstas={previstas}
             filtro={filtro}
             contagem={contagem}
             aoFiltrar={setFiltro}
@@ -173,19 +216,19 @@ export function TelaCalendario({
                 <div className="cartao-desc primeira-maiuscula so-desktop">{rotuloDiaSelecionado}</div>
                 <div className="cartao-desc so-celular">{rotuloDiaComAno}</div>
               </div>
-              {doDia.length > 0 && (
+              {totalDoDia > 0 && (
                 <button
                   className="btn btn-secundario btn-pequeno"
                   onClick={() => aoSelecionarDia(diaSelecionado)}
                 >
                   Ver todas
-                  <span className="so-desktop">{doDia.length > MAXIMO_AGENDA ? ` (${doDia.length})` : ''}</span>
-                  <span className="so-celular">{` (${doDia.length})`}</span>
+                  <span className="so-desktop">{totalDoDia > MAXIMO_AGENDA ? ` (${totalDoDia})` : ''}</span>
+                  <span className="so-celular">{` (${totalDoDia})`}</span>
                 </button>
               )}
             </div>
 
-            {doDia.length === 0 ? (
+            {totalDoDia === 0 ? (
               <div className="agenda-vazia">
                 <p>Nenhuma demanda com prazo neste dia.</p>
                 <button className="btn-adicionar-dia" onClick={() => aoNovaDemanda(diaSelecionado)}>
@@ -195,29 +238,33 @@ export function TelaCalendario({
             ) : (
               <>
               <ul className="lista-dia so-celular">
-                {doDia.slice(0, MAXIMO_AGENDA_CELULAR).map(({ d, situacao }) => (
-                  <li key={d.id}>
-                    <button className="lista-dia-item" onClick={() => aoAbrirDemanda(d)}>
-                      <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                {itensDoDia.slice(0, MAXIMO_AGENDA_CELULAR).map((item) => item.tipo === 'prevista' ? (
+                  <li key={item.p.id}><LinhaPrevista p={item.p} celular /></li>
+                ) : (
+                  <li key={item.d.id}>
+                    <button className="lista-dia-item" onClick={() => aoAbrirDemanda(item.d)}>
+                      <span className="ponto" style={{ background: COR_SITUACAO[item.situacao] }} />
                       <span className="lista-dia-texto">
-                        <span className="lista-dia-titulo">{d.titulo}</span>
-                        <MetaDemanda d={d} situacao={situacao} hoje={hoje} />
+                        <span className="lista-dia-titulo">{item.d.titulo}</span>
+                        <MetaDemanda d={item.d} situacao={item.situacao} hoje={hoje} />
                       </span>
                       <IconeDireita size={18} className="lista-dia-seta" />
                     </button>
                   </li>
                 ))}
-                {doDia.length > MAXIMO_AGENDA_CELULAR && (
+                {totalDoDia > MAXIMO_AGENDA_CELULAR && (
                   <li>
                     <button className="lista-dia-mais" onClick={() => aoSelecionarDia(diaSelecionado)}>
-                      +{doDia.length - MAXIMO_AGENDA_CELULAR}{' '}
-                      {doDia.length - MAXIMO_AGENDA_CELULAR === 1 ? 'outra demanda' : 'outras demandas'}
+                      +{totalDoDia - MAXIMO_AGENDA_CELULAR}{' '}
+                      {totalDoDia - MAXIMO_AGENDA_CELULAR === 1 ? 'outra demanda' : 'outras demandas'}
                     </button>
                   </li>
                 )}
               </ul>
               <div className="agenda so-desktop">
-                {doDia.slice(0, MAXIMO_AGENDA).map(({ d, situacao }) => (
+                {itensDoDia.slice(0, MAXIMO_AGENDA).map((item) => item.tipo === 'prevista' ? (
+                  <LinhaPrevista key={item.p.id} p={item.p} celular={false} />
+                ) : (({ d, situacao }) => (
                   <button key={d.id} className="agenda-item" onClick={() => aoAbrirDemanda(d)}>
                     <span className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
                     <span className="agenda-texto">
@@ -229,12 +276,12 @@ export function TelaCalendario({
                       </span>
                     </span>
                   </button>
-                ))}
+                ))(item))}
                 {/* O restante fica no modal do dia, que já lista tudo. */}
-                {doDia.length > MAXIMO_AGENDA && (
+                {totalDoDia > MAXIMO_AGENDA && (
                   <button className="agenda-mais" onClick={() => aoSelecionarDia(diaSelecionado)}>
-                    +{doDia.length - MAXIMO_AGENDA}{' '}
-                    {doDia.length - MAXIMO_AGENDA === 1 ? 'outra demanda' : 'outras demandas'}
+                    +{totalDoDia - MAXIMO_AGENDA}{' '}
+                    {totalDoDia - MAXIMO_AGENDA === 1 ? 'outra demanda' : 'outras demandas'}
                   </button>
                 )}
               </div>
@@ -250,6 +297,7 @@ export function TelaCalendario({
             hoje={hoje}
             diaSelecionado={diaSelecionado}
             demandas={demandas}
+            previstas={previstas}
             aoSelecionar={aoSelecionarDia}
             aoIrParaHoje={irParaHoje}
           />

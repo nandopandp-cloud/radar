@@ -5,6 +5,7 @@ import { COR_SITUACAO, PESO_SITUACAO, situacaoDe, type Situacao } from '@/lib/do
 import { diaParaDate, somarDias } from '@/lib/datas';
 import { IconeCalendario, IconeDireita } from '@/components/icones';
 import type { Demanda } from '@/lib/tipos';
+import type { Prevista } from '@/lib/previstas';
 
 const INICIAIS_DIA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
@@ -30,6 +31,7 @@ export function MiniCalendario({
   hoje,
   diaSelecionado,
   demandas,
+  previstas,
   aoSelecionar,
   aoIrParaHoje,
 }: {
@@ -38,6 +40,7 @@ export function MiniCalendario({
   hoje: string;
   diaSelecionado: string;
   demandas: Demanda[];
+  previstas: Prevista[];
   aoSelecionar: (dia: string) => void;
   aoIrParaHoje: () => void;
 }) {
@@ -57,8 +60,13 @@ export function MiniCalendario({
       const unicas = [...new Set(lista)].sort((a, b) => PESO_SITUACAO[a] - PESO_SITUACAO[b]);
       resultado.set(dia, unicas.slice(0, MAX_PONTOS).map((s) => COR_SITUACAO[s]));
     }
+    // Dia com prevista ganha um ponto vazado, se ainda couber.
+    for (const p of previstas) {
+      const cores = resultado.get(p.dia) ?? [];
+      if (cores.length < MAX_PONTOS && !cores.includes('prevista')) resultado.set(p.dia, [...cores, 'prevista']);
+    }
     return resultado;
-  }, [demandas, hoje]);
+  }, [demandas, previstas, hoje]);
 
   const rotuloMes = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -99,7 +107,9 @@ export function MiniCalendario({
               {cores.length > 0 && (
                 <span className="mini-pontos">
                   {cores.map((cor, i) => (
-                    <span key={i} className="mini-ponto" style={{ background: cor }} />
+                    cor === 'prevista'
+                      ? <span key={i} className="mini-ponto mini-ponto-prevista" />
+                      : <span key={i} className="mini-ponto" style={{ background: cor }} />
                   ))}
                 </span>
               )}

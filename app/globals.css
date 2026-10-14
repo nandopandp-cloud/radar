@@ -3190,7 +3190,7 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
     background: #f1f5f9; color: var(--tinta-suave);
   }
   .cal-celula.selecionada .cal-pontos-mais { background: #fff; color: var(--marca); }
-  .legenda { justify-content: space-between; flex-wrap: nowrap; gap: 8px; padding: 14px 16px 16px; margin-top: 0; }
+  .legenda { justify-content: center; flex-wrap: wrap; gap: 6px 14px; padding: 14px 16px 16px; margin-top: 0; }
   .legenda .legenda-item { font-size: 12.5px; gap: 6px; white-space: nowrap; }
 
   /* Listas do dia e dos próximos prazos. */
@@ -3497,3 +3497,22 @@ button.resumo-linha:hover { border-color: var(--borda-forte); transform: transla
   border-radius: 50%; background: none; color: inherit; opacity: .7;
 }
 .colaborador-remover:hover { background: #dbeafe; opacity: 1; }
+
+/* ══ Ocorrências previstas de recorrência ═══════════════════════════════ */
+/* Ainda não são demandas: aparecem vazadas e tracejadas, sem clique. */
+.ponto-prevista { background: transparent !important; box-shadow: inset 0 0 0 1.5px var(--pendente); }
+.mini-ponto-prevista { background: transparent; box-shadow: inset 0 0 0 1px var(--pendente); }
+.mini-dia.hoje .mini-ponto-prevista { background: transparent !important; box-shadow: inset 0 0 0 1px #fff; }
+.cal-item.prevista { background: transparent; outline: 1px dashed var(--marca-borda); outline-offset: -1px; color: var(--tinta-suave); }
+.cal-celula.selecionada .cal-item.prevista { background: transparent; }
+.agenda-item.prevista, .lista-dia-item.prevista, .dia-item.prevista { cursor: default; }
+.agenda-item.prevista:hover { background: transparent; border-color: transparent; }
+.agenda-item.prevista .agenda-titulo, .lista-dia-item.prevista .lista-dia-titulo { color: var(--tinta-media); }
+.agenda-item.prevista .agenda-sub { gap: 5px; }
+.dia-item.prevista { border-style: dashed; background: #fafcff; }
+.dia-item.prevista:hover { border-color: var(--borda); box-shadow: none; }
+.selo-prevista {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--marca-clara); color: var(--marca); border: 1px dashed var(--marca-borda);
+}
+.cal-celula.selecionada .ponto-prevista { box-shadow: inset 0 0 0 1.5px #fff; }

@@ -7,6 +7,7 @@ import {
 import { diaParaDate, somarDias } from '@/lib/datas';
 import { IconeCalendarioHoje, IconeDireita, IconeEsquerda } from '@/components/icones';
 import type { Demanda } from '@/lib/tipos';
+import type { Prevista } from '@/lib/previstas';
 
 const NOMES_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -40,6 +41,7 @@ export function Calendario({
   hoje,
   diaSelecionado,
   demandas,
+  previstas,
   filtro,
   contagem,
   aoFiltrar,
@@ -51,6 +53,7 @@ export function Calendario({
   hoje: string;
   diaSelecionado: string;
   demandas: Demanda[];
+  previstas: Prevista[];
   /** Situação em foco; `null` mostra todas. */
   filtro: Situacao | null;
   /** Quantas demandas do mês há em cada situação, mais o total. */
@@ -77,6 +80,14 @@ export function Calendario({
     }
     return mapa;
   }, [demandas, hoje, filtro]);
+
+  /** Previstas são futuras e abertas: somem quando o filtro é outra situação. */
+  const previstasPorDia = useMemo(() => {
+    const mapa = new Map<string, Prevista[]>();
+    if (filtro && filtro !== 'PENDENTE') return mapa;
+    for (const p of previstas) mapa.set(p.dia, [...(mapa.get(p.dia) ?? []), p]);
+    return mapa;
+  }, [previstas, filtro]);
 
   const rotuloMes = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -147,29 +158,38 @@ export function Calendario({
             const data = diaParaDate(dia);
             const doMes = data.getUTCMonth() === mes;
             const lista = porDia.get(dia) ?? [];
+            const prev = previstasPorDia.get(dia) ?? [];
+            const total = lista.length + prev.length;
+            // Até 3 pontos: os reais coloridos, as previstas vazadas.
+            const pontos = [
+              ...lista.map(({ d, situacao }) => ({ id: d.id, cor: COR_SITUACAO[situacao] as string | null })),
+              ...prev.map((p) => ({ id: p.id, cor: null })),
+            ];
 
             return (
               <button
                 key={dia}
                 className={`cal-celula${doMes ? '' : ' fora'}${dia === diaSelecionado ? ' selecionada' : ''}`}
                 onClick={() => aoSelecionar(dia)}
-                aria-label={`${data.getUTCDate()} — ${lista.length} demanda(s)`}
+                aria-label={`${data.getUTCDate()} — ${lista.length} demanda(s)${prev.length ? `, ${prev.length} prevista(s)` : ''}`}
               >
                 <span className={`cal-numero${dia === hoje ? ' hoje' : ''}`}>
                   {data.getUTCDate()}
                 </span>
 
                 {/* Celular: sem espaço para títulos, só pontos e a contagem do resto. */}
-                {lista.length > 0 && (
+                {total > 0 && (
                   <span className="cal-pontos so-celular">
-                    {(lista.length <= 3 ? lista : lista.slice(0, 1)).map(({ d, situacao }) => (
-                      <span key={d.id} className="ponto" style={{ background: COR_SITUACAO[situacao] }} />
+                    {(total <= 3 ? pontos : pontos.slice(0, 1)).map((p) => (
+                      p.cor
+                        ? <span key={p.id} className="ponto" style={{ background: p.cor }} />
+                        : <span key={p.id} className="ponto ponto-prevista" />
                     ))}
-                    {lista.length > 3 && <span className="cal-pontos-mais">+{lista.length - 1}</span>}
+                    {total > 3 && <span className="cal-pontos-mais">+{total - 1}</span>}
                   </span>
                 )}
 
-                {lista.length > 0 && (
+                {total > 0 && (
                   <div className="cal-itens so-desktop">
                     {lista.slice(0, 2).map(({ d, situacao }) => (
                       <span className="cal-item" key={d.id} title={d.titulo}>
@@ -177,8 +197,14 @@ export function Calendario({
                         <span className="cal-item-texto">{d.titulo}</span>
                       </span>
                     ))}
-                    {lista.length > 2 && (
-                      <span className="cal-mais">+{lista.length - 2} mais</span>
+                    {prev.slice(0, Math.max(0, 2 - lista.length)).map((p) => (
+                      <span className="cal-item prevista" key={p.id} title={`${p.titulo} (prevista)`}>
+                        <span className="ponto ponto-prevista" />
+                        <span className="cal-item-texto">{p.titulo}</span>
+                      </span>
+                    ))}
+                    {total > 2 && (
+                      <span className="cal-mais">+{total - 2} mais</span>
                     )}
                   </div>
                 )}
@@ -194,6 +220,12 @@ export function Calendario({
               {ROTULO_SITUACAO[s]}
             </span>
           ))}
+          {previstas.length > 0 && (
+            <span className="legenda-item">
+              <span className="ponto ponto-prevista" />
+              Prevista
+            </span>
+          )}
         </div>
       </div>
     </div>

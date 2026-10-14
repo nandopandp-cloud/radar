@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { IconeMais, IconeX } from '@/components/icones';
+import { IconeMais, IconeRepetir, IconeX } from '@/components/icones';
 import { COR_SITUACAO, PESO_SITUACAO, ROTULO_SITUACAO, situacaoDe } from '@/lib/dominio';
 import { formatarDiaExtenso } from '@/lib/datas';
 import type { Demanda, SessaoUI } from '@/lib/tipos';
+import type { Prevista } from '@/lib/previstas';
 
 /**
  * Demandas de um dia, em modal no centro (desktop) ou folha inferior (celular).
@@ -14,6 +15,7 @@ import type { Demanda, SessaoUI } from '@/lib/tipos';
 export function ModalDia({
   dia,
   demandas,
+  previstas,
   hoje,
   sessao,
   aoFechar,
@@ -22,6 +24,7 @@ export function ModalDia({
 }: {
   dia: string;
   demandas: Demanda[];
+  previstas: Prevista[];
   hoje: string;
   sessao: SessaoUI;
   aoFechar: () => void;
@@ -38,6 +41,8 @@ export function ModalDia({
     .filter((d) => d.prazo.slice(0, 10) === dia)
     .map((d) => ({ d, situacao: situacaoDe(d.status, dia, hoje) }))
     .sort((a, b) => PESO_SITUACAO[a.situacao] - PESO_SITUACAO[b.situacao]);
+
+  const doDia = previstas.filter((p) => p.dia === dia);
 
   const diaLongo = new Intl.DateTimeFormat('pt-BR', {
     day: 'numeric', month: 'long', timeZone: 'UTC',
@@ -64,7 +69,7 @@ export function ModalDia({
         </div>
 
         <div className="modal-corpo">
-          {lista.length === 0 ? (
+          {lista.length === 0 && doDia.length === 0 ? (
             <div className="modal-vazio">
               <div className="modal-vazio-icone">
                 <IconeMais size={26} />
@@ -98,6 +103,21 @@ export function ModalDia({
                     )}
                   </div>
                 </button>
+              ))}
+              {doDia.map((p) => (
+                <div key={p.id} className="dia-item prevista" title="Será criada automaticamente neste dia">
+                  <span className="ponto ponto-prevista" style={{ marginTop: 6 }} />
+                  <div className="dia-item-corpo">
+                    <div className="dia-item-topo">
+                      <span className="dia-item-titulo">{p.titulo}</span>
+                      <span className="selo selo-prevista"><IconeRepetir size={12} /> Prevista</span>
+                    </div>
+                    <div className="dia-item-desc">
+                      Recorrente · vira demanda automaticamente neste dia
+                      {sessao.perfil === 'ADMIN' && ` · ${p.autorNome}`}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}

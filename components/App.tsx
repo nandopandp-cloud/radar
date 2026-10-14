@@ -20,6 +20,7 @@ import { paraDiaISO } from '@/lib/datas';
 import { situacaoDe } from '@/lib/dominio';
 import type { Demanda, SessaoUI, Toast, Usuario } from '@/lib/tipos';
 import { podeEditarDemanda } from '@/lib/permissoes';
+import { calcularPrevistas, type RecorrenciaLista } from '@/lib/previstas';
 
 /** Abas que existem na URL. Vale conferir: ?aba= vem de fora e pode vir torto. */
 const ABAS: Aba[] = [
@@ -70,6 +71,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
 
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [equipe, setEquipe] = useState<Usuario[]>([]);
+  const [regras, setRegras] = useState<RecorrenciaLista[]>([]);
   const [autorFiltro, setAutorFiltro] = useState('TODOS');
   const [carregando, setCarregando] = useState(true);
 
@@ -97,11 +99,14 @@ export function App({ sessao }: { sessao: SessaoUI }) {
       // A lista da equipe é restrita a administradores — nem pedimos como analista.
       const ehAdmin = sessao.perfil === 'ADMIN';
       // Ofensiva é um recurso de analista — admin não acumula nem vê contagem.
-      const [rd, re, ro] = await Promise.all([
+      const [rd, re, ro, rr] = await Promise.all([
         fetch(`/api/demandas?${params}`),
         ehAdmin ? fetch('/api/usuarios') : Promise.resolve(null),
         ehAdmin ? Promise.resolve(null) : fetch('/api/ofensiva'),
+        fetch('/api/recorrencias'),
       ]);
+      // Sem as regras o calendário só perde as previstas; não vale um erro.
+      if (rr.ok) setRegras(await rr.json());
       if (!rd.ok) throw new Error('Falha ao carregar as demandas.');
       const lista: Demanda[] = await rd.json();
       setDemandas(lista);
@@ -146,6 +151,14 @@ export function App({ sessao }: { sessao: SessaoUI }) {
     }
     setLinkAberto(true);
   }, [linkDemanda, linkAberto, demandas]);
+
+  /** Datas futuras das recorrências, no mesmo recorte de pessoa da lista. */
+  const previstas = useMemo(() => {
+    const doFiltro = sessao.perfil === 'ADMIN' && autorFiltro !== 'TODOS'
+      ? regras.filter((r) => r.autorId === autorFiltro)
+      : regras;
+    return calcularPrevistas(doFiltro, hoje);
+  }, [regras, autorFiltro, sessao.perfil, hoje]);
 
   const atrasadas = useMemo(
     () =>
@@ -215,6 +228,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <TelaCalendario
           sessao={sessao}
           demandas={demandas}
+          previstas={previstas}
           hoje={hoje}
           ano={ano}
           mes={mes}
@@ -257,6 +271,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <TelaCalendario
           sessao={sessao}
           demandas={demandas}
+          previstas={previstas}
           hoje={hoje}
           ano={ano}
           mes={mes}
@@ -276,6 +291,7 @@ export function App({ sessao }: { sessao: SessaoUI }) {
         <ModalDia
           dia={diaAberto}
           demandas={demandas}
+          previstas={previstas}
           hoje={hoje}
           sessao={sessao}
           aoFechar={() => setDiaAberto(null)}
